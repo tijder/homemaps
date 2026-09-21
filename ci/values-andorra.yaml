@@ -1,0 +1,59 @@
+# Het kleinste gebied waar alle drie de bronnen een extract van hebben: PBF 3,5 MB,
+# Photon-index 1,8 MB. Gebruikt door ci/up.sh (lokaal en in de workflow).
+gebied:
+  naam: andorra
+  pbfUrl: https://download.geofabrik.de/europe/andorra-latest.osm.pbf
+  bbox: "1.41,42.43,1.79,42.66"
+
+storage:
+  storageClassName: ""
+
+web:
+  image: { repository: homemaps-web, tag: ci, pullPolicy: Never }
+
+tiles:
+  publicUrl: http://localhost:8080/tiles/
+  size: 2Gi
+  planetiler:
+    scratchSize: 4Gi
+    javaOpts: "-Xmx1g"
+    resources:
+      requests: { cpu: 100m, memory: 512Mi }
+      limits: { memory: 3Gi }
+    # De wereld-run rekent de kustlijnen van de hele planeet door; dat hoort niet
+    # in een smoke-test.
+    wereld: { enabled: false }
+  resources:
+    requests: { cpu: 50m, memory: 256Mi }
+    limits: { memory: 1Gi }
+
+valhalla:
+  size: 2Gi
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { memory: 1Gi }
+  build:
+    resources:
+      requests: { cpu: 100m, memory: 256Mi }
+      limits: { memory: 2Gi }
+  verkeer:
+    image: { repository: homemaps-traffic, tag: ci, pullPolicy: Never }
+    # NDW kent Andorra niet; ci/nep-ndw levert dezelfde drie feeds met een file en
+    # een afsluiting op wegen die daar wel liggen.
+    ndwUrl: http://nep-ndw:8080
+    intervalSeconden: 60
+    resources:
+      requests: { cpu: 20m, memory: 64Mi }
+      limits: { memory: 256Mi }
+
+photon:
+  dbUrl: https://download1.graphhopper.com/public/europe/andorra/photon-db-andorra-1.0-latest.tar.bz2
+  size: 1Gi
+  # kind is IPv4-only; daar bestaat de keuze niet.
+  ipFamilies: []
+  resources:
+    requests: { cpu: 50m, memory: 256Mi }
+    limits: { memory: 1Gi }
+
+networkPolicy:
+  enabled: false
