@@ -100,14 +100,17 @@ jobs:
         run: flutter build apk --release --build-name "${{ needs.gate.outputs.version }}" --build-number "${{ needs.gate.outputs.build }}"
       - name: Build Web
         run: flutter build web --release --wasm --no-web-resources-cdn --build-name "${{ needs.gate.outputs.version }}" --build-number "${{ needs.gate.outputs.build }}"
-      - name: Pak de web-build in
-        run: tar -czf "$GITHUB_WORKSPACE/homemaps-web-${{ needs.gate.outputs.version }}.tar.gz" -C build/web .
+      # Beide bestanden in één map: upload-artifact bewaart het pad vanaf de
+      # gezamenlijke bovenliggende map, en de publish-job verwacht ze plat in dist/.
+      - name: Verzamel de release-bestanden
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/uit"
+          cp build/app/outputs/flutter-apk/app-release.apk "$GITHUB_WORKSPACE/uit/"
+          tar -czf "$GITHUB_WORKSPACE/uit/homemaps-web-${{ needs.gate.outputs.version }}.tar.gz" -C build/web .
       - uses: actions/upload-artifact@v7
         with:
           name: release-app
-          path: |
-            app/build/app/outputs/flutter-apk/app-release.apk
-            homemaps-web-${{ needs.gate.outputs.version }}.tar.gz
+          path: uit/
       - uses: actions/upload-artifact@v7
         with:
           name: web-build

@@ -1,6 +1,9 @@
 # Bouwen vanuit de repo-root:  docker build -f importer/Dockerfile importer
 FROM docker.io/library/python:3.14-alpine
 
+# Koppelt het pakket op ghcr aan de repo (zichtbaarheid, README, releases).
+LABEL org.opencontainers.image.source=https://github.com/tijder/homemaps
+
 # Geen afhankelijkheden buiten de standaardbibliotheek; alleen het pakket zelf.
 COPY pyproject.toml /src/
 COPY src /src/src

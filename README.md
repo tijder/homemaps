@@ -31,7 +31,7 @@ adres; de web-app gebruikt zijn eigen origin.
 ```bash
 cd app && flutter pub get && flutter test
 cd app && flutter build web --release --wasm --no-web-resources-cdn
-ci/up.sh            # de hele chart in kind, met toetsen (KIND_EXPERIMENTAL_PROVIDER=podman kan; POORT=8090 als 8080 bezet is)
+ci/up.sh            # de hele chart in kind, met toetsen (KIND_EXPERIMENTAL_PROVIDER=podman kan)
 ci/up.sh --weg
 cd importer && pip install -e '.[dev]' && pytest && ruff check .
 ```
@@ -55,13 +55,12 @@ Na een wijziging aan routes of vertalingen: `flutter gen-l10n` en
 
 ## Nog open
 
-- **De workflows hebben nog nooit gedraaid**: de repo staat nog niet op GitHub.
-  Ze zijn met actionlint gecontroleerd en `ci/up.sh` is dezelfde toets als de
-  `e2e`-job, maar met docker in plaats van podman.
 - **De APK is alleen gebouwd, niet op een toestel gedraaid**, en wordt met de
   debug-sleutel ondertekend. Voor een installeerbare release: een keystore als
   secret en een `signingConfig` in `app/android/app/build.gradle.kts`.
-- **NDW-licentie** nalezen (ndw.nu/copyright) voordat de repo publiek gaat.
+- **NDW-voorwaarden**: de repo bevat geen NDW-data (de testfeed is nagemaakt), maar
+  wie de importer draait gebruikt NDW's open data onder hun voorwaarden
+  (ndw.nu/copyright).
 - **De laatste 3,7% van de segmenten** matcht niet (route veel langer dan de lijn:
   het punt viel op een parallelweg of de andere rijbaan). Snappen op rijrichting
   of een ruimere zoekstraal is de volgende stap als dat ertoe doet.

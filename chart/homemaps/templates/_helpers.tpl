@@ -70,15 +70,10 @@ spec:
       storage: {{ .size }}
 {{- end }}
 
-{{/* De URL waaronder de tegels van buiten bereikbaar zijn. */}}
-{{- define "homemaps.tilesPublicUrl" -}}
-{{- if .Values.tiles.publicUrl }}
-{{- .Values.tiles.publicUrl }}
-{{- else if and .Values.httpRoute.enabled .Values.httpRoute.hostnames }}
-{{- printf "https://%s/tiles/" (first .Values.httpRoute.hostnames) }}
-{{- else if and .Values.ingress.enabled .Values.ingress.hosts }}
-{{- printf "https://%s/tiles/" (first .Values.ingress.hosts) }}
-{{- end }}
+{{/* De hostnamen waaronder de installatie bereikbaar is, voor tileserver-gl. */}}
+{{- define "homemaps.allowedHosts" -}}
+{{- $hosts := concat (.Values.httpRoute.enabled | ternary .Values.httpRoute.hostnames list) (.Values.ingress.enabled | ternary .Values.ingress.hosts list) .Values.tiles.extraAllowedHosts }}
+{{- if $hosts }}{{ join "," ($hosts | uniq) }}{{ else }}*{{ end }}
 {{- end }}
 
 {{- define "homemaps.image" -}}

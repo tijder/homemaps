@@ -48,10 +48,15 @@ tiles:
     repository: docker.io/maptiler/tileserver-gl
     tag: v5.6.0
     pullPolicy: IfNotPresent
-  # -- De URL waaronder de tegels van buiten bereikbaar zijn, mét slash aan het
-  # eind. tileserver-gl zet dit in style.json en de TileJSON. Leeg = afgeleid van
-  # de eerste host in `ingress`/`httpRoute`: https://<host>/tiles/
+  # -- Leeg (aanbevolen): tileserver-gl leidt de URL's in style.json af uit het
+  # verzoek, zodat dezelfde installatie onder meerdere hostnamen werkt. Alleen
+  # invullen als de tegels van buiten op één vaste URL moeten staan, mét slash aan
+  # het eind.
   publicUrl: ""
+  # -- Hostnamen die tileserver-gl naast die van `httpRoute`/`ingress` vertrouwt,
+  # bijvoorbeeld `localhost` voor een port-forward. Zonder enige hostnaam is alles
+  # toegestaan.
+  extraAllowedHosts: []
   size: 20Gi
   resources:
     requests: { cpu: 50m, memory: 512Mi }

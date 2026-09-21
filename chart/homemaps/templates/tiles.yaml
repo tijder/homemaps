@@ -103,11 +103,16 @@ spec:
             - "/script/config.json"
             - "--port"
             - "8080"
-            {{- with include "homemaps.tilesPublicUrl" . }}
+            {{- with .Values.tiles.publicUrl }}
             - "--public_url"
             - {{ . | quote }}
             {{- end }}
           env:
+            # Zonder vaste publicUrl bouwt tileserver-gl zijn URL's uit de Host-header
+            # (de nginx van de web-pod zet X-Forwarded-Path erbij). Dan mogen alleen de
+            # eigen hostnamen: anders kan een verzonnen Host in een gecachet antwoord
+            # belanden.
+            - { name: TILESERVER_GL_ALLOWED_HOSTS, value: {{ include "homemaps.allowedHosts" . | quote }} }
             - { name: HOME, value: "/tmp" }
             - { name: XDG_CACHE_HOME, value: "/tmp" }
           securityContext: {{- include "homemaps.containerSecurity" . | nindent 12 }}

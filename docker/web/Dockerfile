@@ -3,6 +3,9 @@
 #   docker build -f docker/web/Dockerfile .
 FROM nginxinc/nginx-unprivileged:1.31-alpine
 
+# Koppelt het pakket op ghcr aan de repo (zichtbaarheid, README, releases).
+LABEL org.opencontainers.image.source=https://github.com/tijder/homemaps
+
 # Welke variabelen de entrypoint in het template invult. Zonder filter vervangt
 # envsubst óók nginx' eigen $uri en $host.
 ENV NGINX_ENVSUBST_FILTER='^(VALHALLA_UPSTREAM|PHOTON_UPSTREAM|TILES_UPSTREAM|NGINX_LOCAL_RESOLVERS)$' \

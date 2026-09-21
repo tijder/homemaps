@@ -12,7 +12,6 @@ web:
   image: { repository: homemaps-web, tag: ci, pullPolicy: Never }
 
 tiles:
-  publicUrl: http://localhost:8080/tiles/
   size: 2Gi
   planetiler:
     scratchSize: 4Gi

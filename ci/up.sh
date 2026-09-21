@@ -14,8 +14,7 @@ cd "$(dirname "$0")/.."
 CLUSTER=${CLUSTER:-homemaps}
 NS=${NS:-homemaps}
 RELEASE=${RELEASE:-hm}
-# De poort waarop je de app lokaal opent. tileserver-gl zet hem in de URL's van
-# style.json, dus hij moet kloppen met de port-forward -- anders blijft de kaart leeg.
+# Alleen voor de slotregel: de poort waarop je de app lokaal wilt openen.
 POORT=${POORT:-8080}
 ENGINE=${ENGINE:-$(command -v docker >/dev/null 2>&1 && [ -z "${KIND_EXPERIMENTAL_PROVIDER:-}" ] && echo docker || echo podman)}
 K="kubectl --context kind-$CLUSTER -n $NS"
@@ -57,7 +56,6 @@ stap "chart installeren"
 PREFIX=$( [ "$ENGINE" = podman ] && echo localhost/ || echo "" )
 helm --kube-context "kind-$CLUSTER" upgrade --install "$RELEASE" chart/homemaps -n "$NS" \
   -f ci/values-andorra.yaml \
-  --set tiles.publicUrl="http://localhost:$POORT/tiles/" \
   --set web.image.repository="${PREFIX}homemaps-web" \
   --set valhalla.verkeer.image.repository="${PREFIX}homemaps-traffic"
 
