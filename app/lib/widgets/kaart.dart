@@ -5,6 +5,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../models/plaats.dart';
 import '../models/route.dart';
+import '../utils/afstand.dart';
 
 /// De kaart met de routes en de punten erop. Weet niets van de planner: krijgt
 /// wat hij moet tekenen en meldt wat er wordt aangetikt.
@@ -41,6 +42,10 @@ class Kaart extends StatefulWidget {
 
 class _KaartState extends State<Kaart> {
   static const _routeBron = 'routes', _puntBron = 'punten';
+  static const _aansluitBron = 'aansluiting';
+
+  /// Kleiner dan dit is het gat tussen een punt en de weg niet het tonen waard.
+  static const _minAansluiting = 15.0;
   static const _lagen = ['route-alt', 'route-rand', 'route', 'punt'];
 
   MapLibreMapController? _controller;
@@ -67,6 +72,7 @@ class _KaartState extends State<Kaart> {
     final c = _controller!;
     await c.addGeoJsonSource(_routeBron, _leeg);
     await c.addGeoJsonSource(_puntBron, _leeg);
+    await c.addGeoJsonSource(_aansluitBron, _leeg);
     // Alternatieven grijs en onderop; de gekozen route blauw met een witte rand.
     await c.addLineLayer(
       _routeBron,
@@ -115,6 +121,20 @@ class _KaartState extends State<Kaart> {
         true,
       ],
     );
+    // Van waar je klikte naar waar de route de weg oppakt: Valhalla legt een punt
+    // naast de weg op de dichtstbijzijnde weg, en zonder dit lijntje lijkt de
+    // route dan zomaar ergens anders te beginnen.
+    await c.addLineLayer(
+      _aansluitBron,
+      'aansluiting',
+      const LineLayerProperties(
+        lineColor: '#546e7a',
+        lineWidth: 3,
+        lineDasharray: [0.5, 2],
+        lineCap: 'round',
+      ),
+      enableInteraction: false,
+    );
     await c.addCircleLayer(
       _puntBron,
       'punt',
@@ -158,6 +178,32 @@ class _KaartState extends State<Kaart> {
               ],
             },
           },
+      ],
+    });
+    final route = widget.routes.isEmpty
+        ? null
+        : widget.routes[widget.gekozen.clamp(0, widget.routes.length - 1)];
+    final begin = widget.punten.first?.punt, eind = widget.punten.last?.punt;
+    await c.setGeoJsonSource(_aansluitBron, {
+      'type': 'FeatureCollection',
+      'features': [
+        if (route != null && route.punten.isNotEmpty)
+          for (final (klik, weg) in [
+            (begin, route.punten.first),
+            (eind, route.punten.last),
+          ])
+            if (klik != null && meters(klik, weg) > _minAansluiting)
+              {
+                'type': 'Feature',
+                'properties': <String, dynamic>{},
+                'geometry': {
+                  'type': 'LineString',
+                  'coordinates': [
+                    [klik.longitude, klik.latitude],
+                    [weg.longitude, weg.latitude],
+                  ],
+                },
+              },
       ],
     });
     final laatste = widget.punten.length - 1;
