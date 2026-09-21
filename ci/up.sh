@@ -60,6 +60,10 @@ helm --kube-context "kind-$CLUSTER" upgrade --install "$RELEASE" chart/homemaps 
 stap "bouwjobs (tiles en routegraaf)"
 for paar in "tiles-planetiler:planetiler-eerste" "valhalla-bouw:valhalla-eerste"; do
   cronjob="$RELEASE-homemaps-${paar%%:*}"; job="${paar##*:}"
+  # Een mislukte job van een vorige run staat een nieuwe poging in de weg.
+  if [ "$($K get job "$job" -o jsonpath='{.status.failed}' 2>/dev/null || true)" != "" ]; then
+    $K delete job "$job" --wait
+  fi
   $K get job "$job" >/dev/null 2>&1 || $K create job --from="cronjob/$cronjob" "$job"
 done
 $K wait --for=condition=complete --timeout=30m job/valhalla-eerste job/planetiler-eerste || {

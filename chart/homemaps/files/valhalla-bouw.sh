@@ -8,11 +8,11 @@ mkdir -p /data/bron /data/hoogte
 rm -rf /data/nieuw && mkdir -p /data/nieuw
 
 echo "== PBF ophalen: $PBF_URL"
-python3 /scripts/haal.py "$PBF_URL" "$PBF"
+python3 /script/haal.py "$PBF_URL" "$PBF"
 
 if [ -n "${HOOGTE_BBOX:-}" ]; then
   echo "== hoogtetegels voor $HOOGTE_BBOX"
-  python3 /scripts/hoogte.py "$HOOGTE_BBOX" /data/hoogte
+  python3 /script/hoogte.py "$HOOGTE_BBOX" /data/hoogte
 fi
 
 cd /data/nieuw
