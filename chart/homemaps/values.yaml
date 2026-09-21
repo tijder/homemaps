@@ -127,6 +127,9 @@ photon:
   # -- Kant-en-klare index; zie https://download1.graphhopper.com/public/
   dbUrl: https://download1.graphhopper.com/public/europe/netherlands/photon-db-netherlands-1.0-latest.tar.bz2
   size: 20Gi
+  # -- Heap van de JVM. Houd hem ruim onder de geheugenlimiet hieronder: OpenSearch
+  # wil daarnaast evenveel ruimte buiten de heap.
+  heap: 1g
   # Het image draait als deze vaste gebruiker.
   runAsUser: 9011
   # -- Photon bindt alleen IPv4. Op een cluster waar IPv6 de eerste familie is

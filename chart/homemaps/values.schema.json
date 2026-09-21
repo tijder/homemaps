@@ -61,6 +61,7 @@
       "properties": {
         "enabled": { "type": "boolean" },
         "dbUrl": { "type": "string", "pattern": "^https?://" },
+        "heap": { "type": "string", "pattern": "^[0-9]+[mMgG]$" },
         "ipFamilies": { "type": "array", "items": { "enum": ["IPv4", "IPv6"] } }
       }
     },

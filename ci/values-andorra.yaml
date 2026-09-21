@@ -48,6 +48,7 @@ valhalla:
 photon:
   dbUrl: https://download1.graphhopper.com/public/europe/andorra/photon-db-andorra-1.0-latest.tar.bz2
   size: 1Gi
+  heap: 384m
   # kind is IPv4-only; daar bestaat de keuze niet.
   ipFamilies: []
   resources:

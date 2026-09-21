@@ -49,6 +49,12 @@ spec:
             - { name: LOG_LEVEL, value: "INFO" }
             - { name: FILE_URL, value: {{ .Values.photon.dbUrl | quote }} }
             - { name: MD5_URL, value: {{ printf "%s.md5" .Values.photon.dbUrl | quote }} }
+            # Expliciet, en niet aan de JVM overgelaten: die leidt zijn heap af van het
+            # geheugen dat hij ziet, en dat is niet overal de limiet van de pod. In
+            # kind op een GitHub-runner nam hij 3,9 GB bij een limiet van 1 GiB, en
+            # OpenSearch weigert dan te starten ("total physical memory minus JVM heap
+            # is non-positive").
+            - { name: JAVA_PARAMS, value: {{ printf "-Xms%s -Xmx%s" .Values.photon.heap .Values.photon.heap | quote }} }
           securityContext: {{- include "homemaps.containerSecurity" . | nindent 12 }}
           ports:
             - { name: http, containerPort: 2322 }
