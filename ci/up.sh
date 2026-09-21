@@ -14,6 +14,9 @@ cd "$(dirname "$0")/.."
 CLUSTER=${CLUSTER:-homemaps}
 NS=${NS:-homemaps}
 RELEASE=${RELEASE:-hm}
+# De poort waarop je de app lokaal opent. tileserver-gl zet hem in de URL's van
+# style.json, dus hij moet kloppen met de port-forward -- anders blijft de kaart leeg.
+POORT=${POORT:-8080}
 ENGINE=${ENGINE:-$(command -v docker >/dev/null 2>&1 && [ -z "${KIND_EXPERIMENTAL_PROVIDER:-}" ] && echo docker || echo podman)}
 K="kubectl --context kind-$CLUSTER -n $NS"
 
@@ -54,6 +57,7 @@ stap "chart installeren"
 PREFIX=$( [ "$ENGINE" = podman ] && echo localhost/ || echo "" )
 helm --kube-context "kind-$CLUSTER" upgrade --install "$RELEASE" chart/homemaps -n "$NS" \
   -f ci/values-andorra.yaml \
+  --set tiles.publicUrl="http://localhost:$POORT/tiles/" \
   --set web.image.repository="${PREFIX}homemaps-web" \
   --set valhalla.verkeer.image.repository="${PREFIX}homemaps-traffic"
 
@@ -79,4 +83,4 @@ helm --kube-context "kind-$CLUSTER" test "$RELEASE" -n "$NS" --logs
 stap "live verkeer"
 ci/e2e/verkeer_cluster.sh "$CLUSTER" "$NS" "$RELEASE"
 
-printf '\nKlaar. De app: kubectl --context kind-%s -n %s port-forward svc/%s-homemaps-web 8080:8080  ->  http://localhost:8080\n' "$CLUSTER" "$NS" "$RELEASE"
+printf '\nKlaar. De app: kubectl --context kind-%s -n %s port-forward svc/%s-homemaps-web %s:8080  ->  http://localhost:%s\n' "$CLUSTER" "$NS" "$RELEASE" "$POORT" "$POORT"

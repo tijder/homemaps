@@ -31,7 +31,7 @@ adres; de web-app gebruikt zijn eigen origin.
 ```bash
 cd app && flutter pub get && flutter test
 cd app && flutter build web --release --wasm --no-web-resources-cdn
-ci/up.sh            # de hele chart in kind, met toetsen (KIND_EXPERIMENTAL_PROVIDER=podman kan)
+ci/up.sh            # de hele chart in kind, met toetsen (KIND_EXPERIMENTAL_PROVIDER=podman kan; POORT=8090 als 8080 bezet is)
 ci/up.sh --weg
 cd importer && pip install -e '.[dev]' && pytest && ruff check .
 ```
