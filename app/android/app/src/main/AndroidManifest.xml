@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Zonder deze permissie heeft een release-build geen netwerk (debug krijgt hem vanzelf). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="homemaps"
+        android:label="HomeMaps"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

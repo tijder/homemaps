@@ -1,0 +1,64 @@
+{
+  "@@locale": "nl",
+  "appTitel": "HomeMaps",
+  "van": "Van",
+  "naar": "Naar",
+  "via": "Via",
+  "zoekPlaats": "Zoek een plaats of adres",
+  "viaToevoegen": "Tussenpunt toevoegen",
+  "omdraaien": "Heen en terug omdraaien",
+  "verwijderen": "Verwijderen",
+  "wissen": "Route wissen",
+  "profielAuto": "Auto",
+  "profielFiets": "Fiets",
+  "profielLopen": "Lopen",
+  "opties": "Opties",
+  "liveVerkeer": "Actueel verkeer meenemen",
+  "liveVerkeerUitleg": "Files en afsluitingen van nu; alleen voor de auto",
+  "vermijdSnelwegen": "Snelwegen vermijden",
+  "vermijdTol": "Tolwegen vermijden",
+  "vermijdVeren": "Veerponten vermijden",
+  "routeBezig": "Route berekenen…",
+  "geenRoute": "Geen route gevonden tussen deze punten.",
+  "geenWegInDeBuurt": "Bij een van de punten ligt geen weg die je met dit vervoermiddel kunt gebruiken.",
+  "serverOnbereikbaar": "De server is niet bereikbaar.",
+  "snelste": "Snelste",
+  "alternatief": "Alternatief {nummer}",
+  "@alternatief": {
+    "placeholders": {
+      "nummer": {
+        "type": "int"
+      }
+    }
+  },
+  "stijgingDaling": "+{stijging} m / -{daling} m",
+  "@stijgingDaling": {
+    "placeholders": {
+      "stijging": {
+        "type": "int"
+      },
+      "daling": {
+        "type": "int"
+      }
+    }
+  },
+  "metTol": "tol",
+  "metVeer": "veerpont",
+  "instructies": "Routebeschrijving",
+  "hoogteprofiel": "Hoogteprofiel",
+  "hierVandaan": "Route vanaf hier",
+  "hierNaartoe": "Route hierheen",
+  "alsTussenpunt": "Als tussenpunt",
+  "kaartstijl": "Kaartstijl",
+  "stijlKaart": "Kaart",
+  "stijlLicht": "Licht",
+  "stijlDonker": "Donker",
+  "instellingen": "Instellingen",
+  "server": "Server",
+  "serverUitleg": "Het adres van je HomeMaps-installatie, bijvoorbeeld https://maps.example.org",
+  "serverOngeldig": "Vul een adres in dat met http:// of https:// begint.",
+  "opslaan": "Opslaan",
+  "serverNodig": "Stel eerst het adres van je server in.",
+  "over": "Over",
+  "overTekst": "Kaart © OpenMapTiles © OpenStreetMap-bijdragers. Routes: Valhalla. Zoeken: Photon. Verkeer: NDW open data."
+}
