@@ -99,6 +99,18 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
     }
   }
 
+  /// Noorden boven én plat: `bearingTo(0)` alleen laat een gekantelde kaart scheef
+  /// staan. Plek en zoom blijven wat ze zijn.
+  void _zetRecht() {
+    final nu = _kaart?.cameraPosition;
+    if (nu == null) return;
+    _kaart!.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(target: nu.target, zoom: nu.zoom, bearing: 0, tilt: 0),
+      ),
+    );
+  }
+
   void _versleept(int index, LatLng punt) {
     ref
         .read(plannerProvider.notifier)
@@ -175,8 +187,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                 IconButton(
                   tooltip: l.noordBoven,
                   icon: const _Rondje(Icons.explore_outlined),
-                  onPressed: () =>
-                      _kaart?.animateCamera(CameraUpdate.bearingTo(0)),
+                  onPressed: _zetRecht,
                 ),
                 IconButton(
                   tooltip: l.instellingen,
