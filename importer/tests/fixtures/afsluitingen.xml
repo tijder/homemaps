@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mc:messageContainer xmlns:mc="http://datex2.eu/schema/3/messageContainer" xmlns:sit="http://datex2.eu/schema/3/situation" xmlns:com="http://datex2.eu/schema/3/common" xmlns:loc="http://datex2.eu/schema/3/locationReferencing" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" modelBaseVersion="3">
+  <mc:payload xsi:type="sit:SituationPublication">
+    <sit:situation id="S1"><sit:situationRecord xsi:type="sit:RoadOrCarriagewayOrLaneManagement" id="ACTIEF" version="1">
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-15T17:40:18.057252991Z</com:overallStartTime><com:overallEndTime>2026-11-12T15:00:00Z</com:overallEndTime></com:validityTimeSpecification></sit:validity>
+      <sit:locationReference><loc:gmlLineString><loc:posList>53.0 4.7 53.1 4.8 53.2 4.9</loc:posList></loc:gmlLineString></sit:locationReference>
+      <sit:roadOrCarriagewayOrLaneManagementType>carriagewayClosures</sit:roadOrCarriagewayOrLaneManagementType>
+    </sit:situationRecord></sit:situation>
+    <sit:situation id="S2"><sit:situationRecord xsi:type="sit:RoadOrCarriagewayOrLaneManagement" id="VOORBIJ" version="1">
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-01-01T00:00:00Z</com:overallStartTime><com:overallEndTime>2026-02-01T00:00:00Z</com:overallEndTime></com:validityTimeSpecification></sit:validity>
+      <sit:locationReference><loc:gmlLineString><loc:posList>53.0 4.7 53.1 4.8</loc:posList></loc:gmlLineString></sit:locationReference>
+      <sit:roadOrCarriagewayOrLaneManagementType>carriagewayClosures</sit:roadOrCarriagewayOrLaneManagementType>
+    </sit:situationRecord></sit:situation>
+    <sit:situation id="S3"><sit:situationRecord xsi:type="sit:RoadOrCarriagewayOrLaneManagement" id="RIJSTROOK" version="1">
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-01T00:00:00Z</com:overallStartTime></com:validityTimeSpecification></sit:validity>
+      <sit:locationReference><loc:gmlLineString><loc:posList>53.0 4.7 53.1 4.8</loc:posList></loc:gmlLineString></sit:locationReference>
+      <sit:roadOrCarriagewayOrLaneManagementType>laneClosures</sit:roadOrCarriagewayOrLaneManagementType>
+    </sit:situationRecord></sit:situation>
+    <sit:situation id="S4"><sit:situationRecord xsi:type="sit:RoadOrCarriagewayOrLaneManagement" id="NACHT" version="2">
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-01T00:00:00Z</com:overallStartTime><com:overallEndTime>2026-10-01T00:00:00Z</com:overallEndTime>
+        <com:validPeriod><com:startOfPeriod>2026-09-21T19:00:00Z</com:startOfPeriod><com:endOfPeriod>2026-09-22T04:00:00Z</com:endOfPeriod></com:validPeriod>
+      </com:validityTimeSpecification></sit:validity>
+      <sit:locationReference><loc:gmlLineString><loc:posList>52.0 5.0 52.01 5.01</loc:posList></loc:gmlLineString></sit:locationReference>
+      <sit:roadOrCarriagewayOrLaneManagementType>roadClosed</sit:roadOrCarriagewayOrLaneManagementType>
+    </sit:situationRecord></sit:situation>
+    <sit:situation id="S5"><sit:situationRecord xsi:type="sit:RoadOrCarriagewayOrLaneManagement" id="VRACHT" version="1">
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-01T00:00:00Z</com:overallStartTime></com:validityTimeSpecification></sit:validity>
+      <sit:locationReference><loc:gmlLineString><loc:posList>52.0 5.0 52.01 5.01</loc:posList></loc:gmlLineString></sit:locationReference>
+      <sit:forVehiclesWithCharacteristicsOf><com:vehicleType>lorry</com:vehicleType></sit:forVehiclesWithCharacteristicsOf>
+      <sit:roadOrCarriagewayOrLaneManagementType>carriagewayClosures</sit:roadOrCarriagewayOrLaneManagementType>
+    </sit:situationRecord></sit:situation>
+  </mc:payload>
+</mc:messageContainer>

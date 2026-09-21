@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mc:messageContainer xmlns:mc="http://datex2.eu/schema/3/messageContainer" xmlns:roa="http://datex2.eu/schema/3/roadTrafficData" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" modelBaseVersion="3">
+  <mc:payload xsi:type="roa:MeasuredDataPublication">
+    <roa:siteMeasurements>
+      <roa:measurementSiteReference targetClass="roa:MeasurementSite" id="SITE_A" version="27"/>
+      <roa:physicalQuantity index="1"><roa:physicalQuantity xsi:type="roa:SinglePhysicalQuantity"><roa:basicData xsi:type="roa:TravelTimeData">
+        <roa:travelTimeType>reconstituted</roa:travelTimeType>
+        <roa:travelTime numberOfInputValuesUsed="88"><roa:duration>113.76</roa:duration></roa:travelTime>
+        <roa:normallyExpectedTravelTime numberOfInputValuesUsed="88"><roa:duration>60.0</roa:duration></roa:normallyExpectedTravelTime>
+      </roa:basicData></roa:physicalQuantity></roa:physicalQuantity>
+    </roa:siteMeasurements>
+    <roa:siteMeasurements>
+      <roa:measurementSiteReference targetClass="roa:MeasurementSite" id="SITE_B" version="3"/>
+      <roa:physicalQuantity index="1"><roa:physicalQuantity xsi:type="roa:SinglePhysicalQuantity"><roa:basicData xsi:type="roa:TravelTimeData">
+        <roa:travelTime><roa:dataError>true</roa:dataError><roa:duration>-1.0</roa:duration></roa:travelTime>
+      </roa:basicData></roa:physicalQuantity></roa:physicalQuantity>
+    </roa:siteMeasurements>
+    <roa:siteMeasurements>
+      <roa:measurementSiteReference targetClass="roa:MeasurementSite" id="SITE_C" version="1"/>
+      <roa:physicalQuantity index="1"><roa:physicalQuantity xsi:type="roa:SinglePhysicalQuantity"><roa:basicData xsi:type="roa:TravelTimeData">
+        <roa:travelTime numberOfInputValuesUsed="0"><roa:duration>50.0</roa:duration></roa:travelTime>
+      </roa:basicData></roa:physicalQuantity></roa:physicalQuantity>
+    </roa:siteMeasurements>
+    <roa:siteMeasurements>
+      <roa:measurementSiteReference targetClass="roa:MeasurementSite" id="SITE_D" version="1"/>
+      <roa:physicalQuantity index="1"><roa:physicalQuantity xsi:type="roa:SinglePhysicalQuantity"><roa:basicData xsi:type="roa:TravelTimeData">
+        <roa:travelTime numberOfInputValuesUsed="4"><roa:duration>30.0</roa:duration></roa:travelTime>
+        <roa:normallyExpectedTravelTime><roa:dataError>true</roa:dataError></roa:normallyExpectedTravelTime>
+      </roa:basicData></roa:physicalQuantity></roa:physicalQuantity>
+    </roa:siteMeasurements>
+  </mc:payload>
+</mc:messageContainer>

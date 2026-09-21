@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mc:messageContainer xmlns:mc="http://datex2.eu/schema/3/messageContainer" xmlns:roa="http://datex2.eu/schema/3/roadTrafficData" xmlns:loc="http://datex2.eu/schema/3/locationReferencing" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" modelBaseVersion="3">
+  <mc:payload xsi:type="roa:MeasurementSiteTablePublication">
+    <roa:measurementSiteTable id="NDW01_AVG_TRAVELTIME" version="latest">
+      <roa:measurementSite id="SITE_A" version="27">
+        <roa:measurementSiteLocation xsi:type="loc:ItineraryByIndexedLocations">
+          <loc:locationContainedInItinerary index="0"><loc:location xsi:type="loc:LinearLocation">
+            <loc:gmlLineString><loc:posList>52.389347 4.818521 52.389328 4.794803</loc:posList></loc:gmlLineString>
+          </loc:location></loc:locationContainedInItinerary>
+        </roa:measurementSiteLocation>
+      </roa:measurementSite>
+      <roa:measurementSite id="SITE_B" version="3">
+        <roa:measurementSiteLocation xsi:type="loc:ItineraryByIndexedLocations">
+          <loc:locationContainedInItinerary index="0"><loc:location xsi:type="loc:LinearLocation">
+            <loc:gmlLineString><loc:posList>52.1 5.1 52.2 5.2</loc:posList></loc:gmlLineString>
+          </loc:location></loc:locationContainedInItinerary>
+          <loc:locationContainedInItinerary index="1"><loc:location xsi:type="loc:LinearLocation">
+            <loc:gmlLineString><loc:posList>52.2 5.2 52.3 5.3</loc:posList></loc:gmlLineString>
+          </loc:location></loc:locationContainedInItinerary>
+        </roa:measurementSiteLocation>
+      </roa:measurementSite>
+      <roa:measurementSite id="SITE_ZONDER_LIJN" version="1"/>
+    </roa:measurementSiteTable>
+  </mc:payload>
+</mc:messageContainer>
