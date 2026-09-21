@@ -1,0 +1,72 @@
+{{- if .Values.photon.enabled }}
+{{- $p := dict "root" . "naam" "photon" }}
+{{- $naam := include "homemaps.onderdeel" $p }}
+{{ include "homemaps.pvc" (merge (dict "size" .Values.photon.size) $p) }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $naam }}
+  labels: {{- include "homemaps.labels" $p | nindent 4 }}
+spec:
+  {{- with .Values.photon.ipFamilies }}
+  ipFamilies: {{- toYaml . | nindent 4 }}
+  ipFamilyPolicy: SingleStack
+  {{- end }}
+  selector: {{- include "homemaps.selector" $p | nindent 4 }}
+  ports:
+    - { name: http, port: 2322, targetPort: http }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $naam }}
+  labels: {{- include "homemaps.labels" $p | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 0
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {{- include "homemaps.selector" $p | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "homemaps.labels" $p | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext: {{- include "homemaps.podSecurity" (dict "root" . "uid" .Values.photon.runAsUser) | nindent 8 }}
+      containers:
+        # Het image haalt bij de eerste start de index op en houdt hem daarna zelf
+        # bij; er is dus geen bouwjob.
+        - name: photon
+          image: {{ include "homemaps.image" (dict "root" . "image" .Values.photon.image) }}
+          imagePullPolicy: {{ .Values.photon.image.pullPolicy }}
+          env:
+            - { name: IMPORT_MODE, value: "db" }
+            - { name: LOG_LEVEL, value: "INFO" }
+            - { name: FILE_URL, value: {{ .Values.photon.dbUrl | quote }} }
+            - { name: MD5_URL, value: {{ printf "%s.md5" .Values.photon.dbUrl | quote }} }
+          securityContext: {{- include "homemaps.containerSecurity" . | nindent 12 }}
+          ports:
+            - { name: http, containerPort: 2322 }
+          # De eerste start downloadt en pakt de index uit; dat duurt lang.
+          startupProbe:
+            httpGet: { path: /status, port: http }
+            periodSeconds: 30
+            failureThreshold: 120
+          readinessProbe:
+            httpGet: { path: /status, port: http }
+            periodSeconds: 30
+          resources: {{- toYaml .Values.photon.resources | nindent 12 }}
+          volumeMounts:
+            - { name: data, mountPath: /photon/data }
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: {{ $naam }} }
+        - name: tmp
+          emptyDir: { sizeLimit: 1Gi }
+{{- end }}

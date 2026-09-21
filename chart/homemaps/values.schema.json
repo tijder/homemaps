@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["gebied", "storage", "web", "tiles", "valhalla", "photon"],
+  "properties": {
+    "clusterDomain": { "type": "string", "minLength": 1 },
+    "gebied": {
+      "type": "object",
+      "required": ["naam", "pbfUrl"],
+      "properties": {
+        "naam": { "type": "string", "minLength": 1 },
+        "pbfUrl": { "type": "string", "pattern": "^https?://" },
+        "bbox": { "type": "string", "pattern": "^$|^-?[0-9.]+,-?[0-9.]+,-?[0-9.]+,-?[0-9.]+$" }
+      }
+    },
+    "storage": {
+      "type": "object",
+      "properties": {
+        "storageClassName": { "type": "string" },
+        "accessMode": { "enum": ["ReadWriteOnce", "ReadWriteMany", "ReadWriteOncePod"] }
+      }
+    },
+    "web": { "type": "object", "required": ["enabled"], "properties": { "enabled": { "type": "boolean" }, "config": { "type": "object" } } },
+    "tiles": {
+      "type": "object",
+      "required": ["enabled"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "publicUrl": { "type": "string", "pattern": "^$|^https?://.*/$" },
+        "styles": { "type": "array", "minItems": 1, "items": { "enum": ["osm-bright", "positron", "dark-matter"] } },
+        "planetiler": {
+          "type": "object",
+          "properties": {
+            "wereld": {
+              "type": "object",
+              "properties": { "enabled": { "type": "boolean" }, "maxzoom": { "type": "integer", "minimum": 0, "maximum": 10 } }
+            }
+          }
+        }
+      }
+    },
+    "valhalla": {
+      "type": "object",
+      "required": ["enabled"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "threads": { "type": "integer", "minimum": 1 },
+        "verkeer": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "intervalSeconden": { "type": "integer", "minimum": 60 },
+            "afsluitingen": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "photon": {
+      "type": "object",
+      "required": ["enabled"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "dbUrl": { "type": "string", "pattern": "^https?://" },
+        "ipFamilies": { "type": "array", "items": { "enum": ["IPv4", "IPv6"] } }
+      }
+    },
+    "httpRoute": { "type": "object", "properties": { "enabled": { "type": "boolean" }, "hostnames": { "type": "array" }, "parentRefs": { "type": "array" } } },
+    "ingress": { "type": "object", "properties": { "enabled": { "type": "boolean" }, "hosts": { "type": "array" } } }
+  }
+}

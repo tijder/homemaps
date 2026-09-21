@@ -1,0 +1,74 @@
+{{- if .Values.web.enabled }}
+{{- $w := dict "root" . "naam" "web" }}
+{{- $naam := include "homemaps.onderdeel" $w }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $naam }}
+  labels: {{- include "homemaps.labels" $w | nindent 4 }}
+data:
+  config.json: {{ .Values.web.config | toJson | quote }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $naam }}
+  labels: {{- include "homemaps.labels" $w | nindent 4 }}
+spec:
+  selector: {{- include "homemaps.selector" $w | nindent 4 }}
+  ports:
+    - { name: http, port: 8080, targetPort: http }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $naam }}
+  labels: {{- include "homemaps.labels" $w | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 0
+  # Eén replica op mogelijk één node: met een surge-rollout kan de nieuwe pod
+  # blijven hangen; eerst stoppen, dan starten werkt altijd.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {{- include "homemaps.selector" $w | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "homemaps.labels" $w | nindent 8 }}
+      annotations:
+        checksum/config: {{ .Values.web.config | toJson | sha256sum | trunc 16 }}
+    spec:
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: web
+          image: {{ include "homemaps.image" (dict "root" . "image" .Values.web.image) }}
+          imagePullPolicy: {{ .Values.web.image.pullPolicy }}
+          env:
+            # nginx proxyt /valhalla, /geocode en /tiles hierheen. Een onderdeel
+            # dat uit staat levert op zijn pad een 502, niets ergers. Volledige
+            # namen: de resolver van nginx kent de search-domeinen van de pod niet.
+            - { name: VALHALLA_UPSTREAM, value: "http://{{ include "homemaps.onderdeel" (dict "root" . "naam" "valhalla") }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}:8002" }
+            - { name: PHOTON_UPSTREAM, value: "http://{{ include "homemaps.onderdeel" (dict "root" . "naam" "photon") }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}:2322" }
+            - { name: TILES_UPSTREAM, value: "http://{{ include "homemaps.onderdeel" (dict "root" . "naam" "tiles") }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}:8080" }
+          securityContext: {{- include "homemaps.containerSecurity" . | nindent 12 }}
+          ports:
+            - { name: http, containerPort: 8080 }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 30
+          resources: {{- toYaml .Values.web.resources | nindent 12 }}
+          volumeMounts:
+            - { name: config, mountPath: /usr/share/nginx/html/config }
+      volumes:
+        - name: config
+          configMap: { name: {{ $naam }} }
+{{- end }}

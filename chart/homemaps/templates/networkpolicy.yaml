@@ -1,0 +1,59 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- $l := dict "root" . "naam" "netwerk" }}
+# Binnenkomend verkeer: standaard dicht. De onderdelen praten onderling, de
+# gateway mag alleen bij de web-pod (die proxyt de rest), Prometheus bij de
+# metrics. Uitgaand blijft open: de bouwjobs en de importer halen hun data buiten.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "homemaps.fullname" . }}-onderling
+  labels: {{- include "homemaps.labels" $l | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: {{ .Release.Name }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "homemaps.fullname" . }}-web
+  labels: {{- include "homemaps.labels" $l | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {{- include "homemaps.selector" (dict "root" . "naam" "web") | nindent 6 }}
+  policyTypes: ["Ingress"]
+  ingress:
+    - ports:
+        - { port: 8080 }
+      from:
+        {{- range .Values.networkPolicy.ingressNamespaces }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ . }}
+        {{- end }}
+{{- if and .Values.valhalla.enabled .Values.valhalla.verkeer.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "homemaps.fullname" . }}-metrics
+  labels: {{- include "homemaps.labels" $l | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {{- include "homemaps.selector" (dict "root" . "naam" "valhalla") | nindent 6 }}
+  policyTypes: ["Ingress"]
+  ingress:
+    - ports:
+        - { port: 9100 }
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.networkPolicy.monitoringNamespace }}
+{{- end }}
+{{- end }}

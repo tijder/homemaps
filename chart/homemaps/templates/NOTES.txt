@@ -1,0 +1,11 @@
+HomeMaps is geïnstalleerd. Bij een verse installatie zijn er nog geen kaart en geen
+routegraaf; de pods wachten daarop. Start de twee bouwjobs één keer met de hand:
+{{ if .Values.tiles.enabled }}
+  kubectl -n {{ .Release.Namespace }} create job --from=cronjob/{{ include "homemaps.onderdeel" (dict "root" . "naam" "tiles") }}-planetiler planetiler-eerste
+{{- end }}
+{{- if .Values.valhalla.enabled }}
+  kubectl -n {{ .Release.Namespace }} create job --from=cronjob/{{ include "homemaps.onderdeel" (dict "root" . "naam" "valhalla") }}-bouw valhalla-eerste
+{{- end }}
+
+Daarna verversen ze zichzelf volgens hun schema. Photon haalt zijn index zelf op.
+Controleren: helm test {{ .Release.Name }} -n {{ .Release.Namespace }}

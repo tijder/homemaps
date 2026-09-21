@@ -1,0 +1,10 @@
+apiVersion: v2
+name: homemaps
+description: Eigen kaart- en routeplanner - tiles (planetiler + tileserver-gl), routing (Valhalla) met live NDW-verkeer, zoeken (Photon) en de web-app
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+home: https://github.com/tijder/homemaps
+sources:
+  - https://github.com/tijder/homemaps
+keywords: [maps, routing, valhalla, tileserver, photon, openstreetmap]

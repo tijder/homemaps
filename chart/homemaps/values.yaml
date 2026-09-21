@@ -1,0 +1,167 @@
+# -- Naam-overrides, zoals in elke chart.
+nameOverride: ""
+fullnameOverride: ""
+commonLabels: {}
+imagePullSecrets: []
+# -- DNS-domein van het cluster; nginx heeft volledige servicenamen nodig.
+clusterDomain: cluster.local
+
+# Het gebied dat gebouwd wordt. Tiles en routing delen één PBF-bron; Photon heeft
+# zijn eigen kant-en-klare index (photon.dbUrl).
+gebied:
+  # -- Geofabrik-gebied zoals planetiler het kent (`--area`).
+  naam: netherlands
+  # -- Dezelfde PBF voor Valhalla.
+  pbfUrl: https://download.geofabrik.de/europe/netherlands-latest.osm.pbf
+  # -- minlon,minlat,maxlon,maxlat voor de hoogtetegels; leeg = geen hoogtedata
+  # (dan is er geen hoogteprofiel en weegt de fiets geen hellingen).
+  bbox: "3.3,50.7,7.3,53.6"
+
+# Alle volumes. `longhorn-no-backup` of iets dergelijks is hier op zijn plaats:
+# alles wat erop staat is herbouwbaar.
+storage:
+  storageClassName: ""
+  accessMode: ReadWriteOnce
+
+# Pods draaien als deze gebruiker, non-root, zonder capabilities.
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+web:
+  enabled: true
+  image:
+    repository: ghcr.io/tijder/homemaps-web
+    tag: ""  # leeg = appVersion van de chart
+    pullPolicy: IfNotPresent
+  resources:
+    requests: { cpu: 10m, memory: 32Mi }
+    limits: { memory: 128Mi }
+  # -- Inhoud van /config.json, de runtime-config van de app. Leeg laten is goed:
+  # de app leidt alles af van zijn eigen origin (/valhalla, /geocode, /tiles).
+  config: {}
+
+tiles:
+  enabled: true
+  image:
+    repository: docker.io/maptiler/tileserver-gl
+    tag: v5.6.0
+    pullPolicy: IfNotPresent
+  # -- De URL waaronder de tegels van buiten bereikbaar zijn, mét slash aan het
+  # eind. tileserver-gl zet dit in style.json en de TileJSON. Leeg = afgeleid van
+  # de eerste host in `ingress`/`httpRoute`: https://<host>/tiles/
+  publicUrl: ""
+  size: 20Gi
+  resources:
+    requests: { cpu: 50m, memory: 512Mi }
+    limits: { memory: 2Gi }
+  # Hooguit zoveel renderers per stijl ([1x, 2x]); de default van tileserver-gl
+  # is veel te ruim voor een gedeelde node.
+  rendererPool: { min: [1, 1], max: [3, 1] }
+  styles: [osm-bright, positron, dark-matter]
+  planetiler:
+    image:
+      repository: ghcr.io/onthegomap/planetiler
+      tag: 0.10.2
+    schedule: "0 2 5 * *"
+    timeZone: Europe/Amsterdam
+    scratchSize: 40Gi
+    javaOpts: "-Xmx2g"
+    # De request is alleen de drempel om ingepland te worden; zonder limit gebruikt
+    # de job wat er vrij is.
+    resources:
+      requests: { cpu: 100m, memory: 3Gi }
+      limits: { memory: 6Gi }
+    # -- De wereld op lage zoom (z0-z`maxzoom`) onder het gebied, als vormen zonder
+    # labels. Uit = alleen het gebied, vanaf z0.
+    wereld:
+      enabled: true
+      maxzoom: 7
+
+valhalla:
+  enabled: true
+  image:
+    repository: ghcr.io/valhalla/valhalla
+    tag: 3.9.0
+    pullPolicy: IfNotPresent
+  size: 20Gi
+  threads: 2
+  resources:
+    requests: { cpu: 50m, memory: 1Gi }
+    limits: { memory: 4Gi }
+  build:
+    schedule: "0 3 6 * *"
+    timeZone: Europe/Amsterdam
+    threads: 2
+    resources:
+      requests: { cpu: 100m, memory: 2Gi }
+      limits: { memory: 8Gi }
+
+  # De sidecar die live NDW-verkeer in traffic.tar schrijft. Alleen zinnig voor
+  # Nederland.
+  verkeer:
+    enabled: true
+    image:
+      repository: ghcr.io/tijder/homemaps-traffic
+      tag: ""  # leeg = appVersion van de chart
+      pullPolicy: IfNotPresent
+    intervalSeconden: 300
+    afsluitingen: true
+    ndwUrl: https://opendata.ndw.nu
+    resources:
+      requests: { cpu: 20m, memory: 256Mi }
+      limits: { memory: 1Gi }
+
+photon:
+  enabled: true
+  image:
+    repository: docker.io/rtuszik/photon-docker
+    tag: 2.4.0
+    pullPolicy: IfNotPresent
+  # -- Kant-en-klare index; zie https://download1.graphhopper.com/public/
+  dbUrl: https://download1.graphhopper.com/public/europe/netherlands/photon-db-netherlands-1.0-latest.tar.bz2
+  size: 20Gi
+  # Het image draait als deze vaste gebruiker.
+  runAsUser: 9011
+  # -- Photon bindt alleen IPv4. Op een cluster waar IPv6 de eerste familie is
+  # moet de Service dat expliciet zeggen, anders krijgt hij een IPv6-ClusterIP
+  # waar niemand achter luistert. Leeg = de default van het cluster.
+  ipFamilies: [IPv4]
+  resources:
+    requests: { cpu: 50m, memory: 2Gi }
+    limits: { memory: 4Gi }
+
+# Gateway API. Eén route, alles naar de web-service.
+httpRoute:
+  enabled: false
+  hostnames: []
+  parentRefs: []
+  #  - name: public-gateway
+  #    namespace: default
+  #    sectionName: https-maps
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts: []
+  tls: []
+
+networkPolicy:
+  enabled: true
+  # -- Namespaces die bij de web-service mogen (de ingress-controller of gateway).
+  ingressNamespaces: [envoy-gateway-system]
+  # -- Namespace van Prometheus, voor de scrape van de verkeersimporter.
+  monitoringNamespace: monitoring
+
+monitoring:
+  serviceMonitor:
+    enabled: false
+    labels: {}
+  # -- Alert als de verkeersimporter stilvalt. Valhalla kent geen veroudering, dus
+  # een stille importer betekent files van uren geleden in de routes.
+  prometheusRule:
+    enabled: false
+    labels: {}
+    maxLeeftijdSeconden: 1800

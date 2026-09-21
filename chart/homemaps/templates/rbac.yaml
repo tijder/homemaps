@@ -1,0 +1,34 @@
+{{- if or .Values.tiles.enabled .Values.valhalla.enabled }}
+{{- $l := dict "root" . "naam" "ververs" }}
+# Precies genoeg voor de bouwjobs om de pod die hun bestanden leest weg te gooien.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "homemaps.fullname" . }}-ververs
+  labels: {{- include "homemaps.labels" $l | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "homemaps.fullname" . }}-ververs
+  labels: {{- include "homemaps.labels" $l | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    # `watch` hoort erbij: `kubectl delete pod` kijkt toe tot de pod echt weg is.
+    verbs: ["get", "list", "watch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "homemaps.fullname" . }}-ververs
+  labels: {{- include "homemaps.labels" $l | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "homemaps.fullname" . }}-ververs
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "homemaps.fullname" . }}-ververs
+    namespace: {{ .Release.Namespace }}
+{{- end }}

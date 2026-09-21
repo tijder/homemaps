@@ -1,0 +1,53 @@
+{{- if and .Values.valhalla.enabled .Values.valhalla.verkeer.enabled }}
+{{- $v := dict "root" . "naam" "valhalla" }}
+{{- if .Values.monitoring.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "homemaps.fullname" . }}-verkeer
+  labels:
+    {{- include "homemaps.labels" $v | nindent 4 }}
+    {{- with .Values.monitoring.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels: {{- include "homemaps.selector" $v | nindent 6 }}
+  endpoints:
+    - port: metrics
+      interval: 60s
+{{- end }}
+{{- if .Values.monitoring.prometheusRule.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "homemaps.fullname" . }}-verkeer
+  labels:
+    {{- include "homemaps.labels" $v | nindent 4 }}
+    {{- with .Values.monitoring.prometheusRule.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  groups:
+    - name: homemaps-verkeer
+      rules:
+        # Valhalla kent geen veroudering: schrijft de importer niet meer, dan
+        # blijven de files van toen in elke route zitten.
+        - alert: HomemapsVerkeerVerouderd
+          expr: time() - homemaps_traffic_laatste_ronde_timestamp_seconds > {{ .Values.monitoring.prometheusRule.maxLeeftijdSeconden }}
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: De verkeersimporter heeft al {{ "{{ $value | humanizeDuration }}" }} geen ronde afgemaakt
+            description: Live verkeer in Valhalla is verouderd. Kijk in de logs van container `verkeer` in de valhalla-pod.
+        - alert: HomemapsVerkeerAfwezig
+          expr: absent(homemaps_traffic_laatste_ronde_timestamp_seconds)
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: De verkeersimporter levert geen metrics
+{{- end }}
+{{- end }}
