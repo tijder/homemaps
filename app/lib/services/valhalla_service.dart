@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
@@ -74,14 +76,14 @@ class ValhallaService {
     bool vermijdVeren = false,
     CancelToken? annuleer,
   }) async {
-    try {
+    Future<List<RouteOptie>> vraag({required bool live}) async {
       final antwoord = await _dio.post<Map<String, dynamic>>(
         '$basis/route',
         data: verzoek(
           punten,
           profiel,
           taal: taal,
-          liveVerkeer: liveVerkeer,
+          liveVerkeer: live,
           vermijdSnelwegen: vermijdSnelwegen,
           vermijdTol: vermijdTol,
           vermijdVeren: vermijdVeren,
@@ -89,17 +91,63 @@ class ValhallaService {
         cancelToken: annuleer,
       );
       return leesAntwoord(antwoord.data ?? const {});
-    } on DioException catch (fout) {
-      final data = fout.response?.data;
-      if (data is Map && data['error'] != null) {
-        throw RouteFout(
-          (data['error_code'] as num?)?.toInt() ?? 0,
-          data['error'].toString(),
-        );
-      }
-      if (CancelToken.isCancel(fout)) rethrow;
-      throw RouteFout(0, fout.message ?? fout.type.name);
     }
+
+    try {
+      final metVertrektijd =
+          liveVerkeer && profiel == Profiel.auto && punten.length == 2;
+      if (!metVertrektijd) return await vraag(live: liveVerkeer);
+      // Valhalla geeft bij een vertrektijd geen alternatieven: die komen alleen
+      // uit zijn tweerichtingszoeker, en die rekent zonder tijd. Daarom twee
+      // verzoeken tegelijk -- de route van nu met live verkeer, en de
+      // alternatieven zonder -- en daarna samenvoegen.
+      final (nu, zonderTijd) = await (
+        vraag(live: true),
+        vraag(live: false),
+      ).wait;
+      return voegSamen(nu, zonderTijd);
+    } on ParallelWaitError<dynamic, dynamic> catch (fout) {
+      // Het eerste echte probleem van de twee; de afhandeling hieronder past erop.
+      final (eerste, tweede) = fout.errors as (AsyncError?, AsyncError?);
+      final oorzaak = (eerste ?? tweede)!.error;
+      if (oorzaak is DioException) {
+        if (CancelToken.isCancel(oorzaak)) throw oorzaak;
+        throw _routeFout(oorzaak);
+      }
+      throw oorzaak;
+    } on DioException catch (fout) {
+      if (CancelToken.isCancel(fout)) rethrow;
+      throw _routeFout(fout);
+    }
+  }
+
+  static RouteFout _routeFout(DioException fout) {
+    final data = fout.response?.data;
+    if (data is Map && data['error'] != null) {
+      return RouteFout(
+        (data['error_code'] as num?)?.toInt() ?? 0,
+        data['error'].toString(),
+      );
+    }
+    return RouteFout(0, fout.message ?? fout.type.name);
+  }
+
+  /// De route met live verkeer voorop, daarna de alternatieven uit het verzoek
+  /// zonder vertrektijd -- behalve die welke dezelfde weg zijn als de eerste. De
+  /// hoofdroute van het tweede verzoek doet ook mee: met file kan juist die het
+  /// alternatief zijn.
+  static List<RouteOptie> voegSamen(
+    List<RouteOptie> nu,
+    List<RouteOptie> zonderTijd,
+  ) {
+    final uit = [...nu];
+    for (final kandidaat in zonderTijd) {
+      final dubbel = uit.any(
+        (route) => (route.meters - kandidaat.meters).abs() < 50,
+      );
+      if (!dubbel) uit.add(kandidaat);
+    }
+    return uit.take(3).toList();
   }
 
   static List<RouteOptie> leesAntwoord(Map<String, dynamic> json) => [

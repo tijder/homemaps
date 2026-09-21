@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:homemaps/models/profiel.dart';
+import 'package:homemaps/models/route.dart';
 import 'package:homemaps/services/valhalla_service.dart';
 import 'package:homemaps/utils/polyline.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
@@ -38,6 +39,33 @@ void main() {
     expect(auto['costing_options'], {
       'auto': {'use_highways': 0.0, 'use_ferry': 0.0},
     });
+  });
+
+  test('samenvoegen: live route voorop, dubbele wegen eruit, hooguit drie', () {
+    RouteOptie r(double km, double min) => RouteOptie(
+      meters: km * 1000,
+      seconden: min * 60,
+      punten: const [],
+      manoeuvres: const [],
+      hoogtes: const [],
+      hoogteInterval: 30,
+      heeftTol: false,
+      heeftVeer: false,
+    );
+    final samen = ValhallaService.voegSamen(
+      [r(46.1, 52)], // nu, met file
+      [r(46.12, 37), r(54.2, 40), r(102.1, 73), r(60, 50)],
+    );
+    // De eerste zonder tijd is dezelfde weg als de live route (20 m verschil).
+    expect(samen.map((x) => x.meters), [46100, 54200, 102100]);
+    expect(samen.first.seconden, 52 * 60);
+    // Rijdt de live route om de file heen, dan is de gewone hoofdroute juist het
+    // alternatief.
+    final omgereden = ValhallaService.voegSamen(
+      [r(54.2, 45)],
+      [r(46.1, 37), r(54.2, 40)],
+    );
+    expect(omgereden.map((x) => x.meters), [54200, 46100]);
   });
 
   test('polyline met zes decimalen', () {
