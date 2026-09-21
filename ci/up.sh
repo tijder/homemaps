@@ -72,9 +72,24 @@ for paar in "tiles-planetiler:planetiler-eerste" "valhalla-bouw:valhalla-eerste"
   fi
   $K get job "$job" >/dev/null 2>&1 || $K create job --from="cronjob/$cronjob" "$job"
 done
-$K wait --for=condition=complete --timeout=30m job/valhalla-eerste job/planetiler-eerste || {
-  $K get pods; $K logs job/planetiler-eerste --all-containers --tail=30 || true
-  $K logs job/valhalla-eerste --all-containers --tail=30 || true; exit 1; }
+# Niet blind 30 minuten wachten: een job die mislukt (een bronserver die plat ligt,
+# zoals osmdata.openstreetmap.de voor planetiler) moet de run meteen stoppen.
+for _ in $(seq 1 180); do
+  klaar=0
+  for job in valhalla-eerste planetiler-eerste; do
+    toestand=$($K get job "$job" -o jsonpath='{range .status.conditions[?(@.status=="True")]}{.type} {end}')
+    case "$toestand" in
+      *Failed*)
+        echo "job $job is mislukt:"; $K get pods
+        $K logs "job/$job" --all-containers --tail=40 || true
+        exit 1 ;;
+      *Complete*) klaar=$((klaar + 1)) ;;
+    esac
+  done
+  [ "$klaar" -eq 2 ] && break
+  sleep 10
+done
+[ "$klaar" -eq 2 ] || { echo "bouwjobs niet klaar binnen 30 minuten"; $K get pods; exit 1; }
 
 stap "wachten tot alles draait"
 # Per deployment: zonder naam wacht `rollout status` niet op een herstart die nog
