@@ -1,0 +1,27 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "customManagers": [
+    {
+      "description": "Image-tags in de values van de chart (repository en tag op aparte regels)",
+      "customType": "regex",
+      "managerFilePatterns": ["/^chart/homemaps/values\\.yaml$/"],
+      "matchStrings": ["repository: (?<depName>[^\\s]+)\\n\\s+tag: \"?(?<currentValue>[^\\s\"]+)\"?"],
+      "datasourceTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "maplibre_gl hoort bij één exacte maplibre-gl-js (app/web/maplibre/README.md): nooit vanzelf",
+      "matchPackageNames": ["maplibre_gl"],
+      "automerge": false,
+      "prBodyNotes": ["Controleer `kMapLibreJsVersion` in maplibre_gl_web en werk `app/web/maplibre/` bij naar precies die versie."]
+    },
+    {
+      "description": "Valhalla's major is ook de versie van het traffic.tar-formaat (importer/src/homemaps_traffic/traffictile.py)",
+      "matchPackageNames": ["ghcr.io/valhalla/valhalla"],
+      "matchUpdateTypes": ["major"],
+      "prBodyNotes": ["`TILE_VERSION` in traffictile.py moet gelijk zijn aan VALHALLA_VERSION_MAJOR; anders negeert Valhalla al het live verkeer, zonder melding."]
+    }
+  ]
+}

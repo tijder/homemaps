@@ -1,0 +1,224 @@
+name: Release
+
+# Elke nacht, als main sinds de laatste tag bewogen heeft en groen is; of met de hand.
+# De versie volgt uit de conventional commits sinds de laatste tag:
+#   fix -> patch, feat -> minor, `!` of BREAKING CHANGE -> major.
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Versiesprong
+        type: choice
+        default: auto
+        options: [auto, patch, minor, major]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/homemaps
+
+jobs:
+  gate:
+    name: Moet er een release komen?
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      release: ${{ steps.versie.outputs.release }}
+      version: ${{ steps.versie.outputs.version }}
+      build: ${{ steps.versie.outputs.build }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Bepaal de versie
+        id: versie
+        env:
+          BUMP: ${{ inputs.bump || 'auto' }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          laatste=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
+          bereik=${laatste:+$laatste..}HEAD
+          # De eigen boekhoudcommit telt niet als beweging.
+          commits=$(git log --no-merges --pretty='%s%n%b' "$bereik" | grep -v '^chore(release):' || true)
+          if ! git log --no-merges --pretty='%s' "$bereik" | grep -qv '^chore(release):'; then
+            echo "geen nieuwe commits sinds ${laatste:-het begin}"; echo "release=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # Alleen uitbrengen wat groen gebouwd is.
+          status=$(gh run list --workflow workflow.yml --branch main --commit "$(git rev-parse HEAD)" \
+                   --json conclusion --jq '.[0].conclusion' || true)
+          if [ "$status" != "success" ]; then
+            echo "::warning::de build van HEAD is '${status:-onbekend}', geen release"
+            echo "release=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if [ "$BUMP" = auto ]; then
+            if echo "$commits" | grep -qE '^[a-z]+(\(.+\))?!:|BREAKING CHANGE'; then BUMP="major"
+            elif echo "$commits" | grep -qE '^feat(\(.+\))?:'; then BUMP="minor"
+            else BUMP="patch"; fi
+          fi
+          IFS=. read -r major minor patch <<< "${laatste#v}"
+          major=${major:-0}; minor=${minor:-0}; patch=${patch:-0}
+          case "$BUMP" in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+          esac
+          {
+            echo "version=$major.$minor.$patch"
+            # Android wil een oplopend geheel getal als versionCode.
+            echo "build=$(git rev-list --count HEAD)"
+            echo "release=true"
+          } >> "$GITHUB_OUTPUT"
+          echo "release v$major.$minor.$patch ($BUMP) sinds ${laatste:-het begin}"
+
+  app:
+    name: App
+    needs: gate
+    if: needs.gate.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: app/pubspec.yaml
+          cache: true
+      - uses: actions/setup-java@v6
+        with:
+          java-version: 21
+          distribution: zulu
+      - run: flutter pub get
+      - name: Build Android
+        run: flutter build apk --release --build-name "${{ needs.gate.outputs.version }}" --build-number "${{ needs.gate.outputs.build }}"
+      - name: Build Web
+        run: flutter build web --release --wasm --no-web-resources-cdn --build-name "${{ needs.gate.outputs.version }}" --build-number "${{ needs.gate.outputs.build }}"
+      - name: Pak de web-build in
+        run: tar -czf "$GITHUB_WORKSPACE/homemaps-web-${{ needs.gate.outputs.version }}.tar.gz" -C build/web .
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-app
+          path: |
+            app/build/app/outputs/flutter-apk/app-release.apk
+            homemaps-web-${{ needs.gate.outputs.version }}.tar.gz
+      - uses: actions/upload-artifact@v7
+        with:
+          name: web-build
+          path: app/build/web/
+
+  publish:
+    name: Images, chart, tag en release
+    needs: [gate, app]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    env:
+      VERSION: ${{ needs.gate.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v8
+        with:
+          name: web-build
+          path: app/build/web
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-app
+          path: dist
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # De images gaan vóór de tag: een tag zonder image is erger dan een image
+      # zonder tag.
+      - id: meta-web
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE_PREFIX }}-web
+          flavor: latest=true
+          tags: |
+            type=semver,pattern={{version}},value=${{ env.VERSION }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ env.VERSION }}
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/web/Dockerfile
+          push: true
+          tags: ${{ steps.meta-web.outputs.tags }}
+          labels: ${{ steps.meta-web.outputs.labels }}
+      - id: meta-traffic
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE_PREFIX }}-traffic
+          flavor: latest=true
+          tags: |
+            type=semver,pattern={{version}},value=${{ env.VERSION }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ env.VERSION }}
+      - uses: docker/build-push-action@v7
+        with:
+          context: importer
+          file: importer/Dockerfile
+          push: true
+          tags: ${{ steps.meta-traffic.outputs.tags }}
+          labels: ${{ steps.meta-traffic.outputs.labels }}
+
+      # Chart, app en importer delen één versie: de chart trekt de images met zijn
+      # appVersion.
+      - name: Zet de versie in de bronnen
+        run: |
+          sed -i -E "s/^version: .*/version: $VERSION/; s/^appVersion: .*/appVersion: \"$VERSION\"/" chart/homemaps/Chart.yaml
+          sed -i -E "s/^version: .*/version: $VERSION+${{ needs.gate.outputs.build }}/" app/pubspec.yaml
+          sed -i -E "s/^version = .*/version = \"$VERSION\"/" importer/pyproject.toml
+
+      - uses: azure/setup-helm@v5
+      - name: Chart als OCI naar ghcr
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+          helm package chart/homemaps -d dist
+          helm push "dist/homemaps-$VERSION.tgz" "oci://ghcr.io/${{ github.repository_owner }}/charts"
+
+      - name: Release-notes uit de commits
+        run: |
+          laatste=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
+          bereik=${laatste:+$laatste..}HEAD
+          sectie() { # titel, patroon
+            regels=$(git log --no-merges --pretty='- %s (%h)' "$bereik" | grep -E "^- $2" | grep -v 'chore(release)' || true)
+            [ -n "$regels" ] && printf '### %s\n%s\n\n' "$1" "$regels" || true
+          }
+          {
+            sectie "Nieuw" 'feat'
+            sectie "Opgelost" 'fix'
+            sectie "Overig" '(chore|docs|test|refactor|perf|build|ci)'
+            # shellcheck disable=SC2016  # de backticks horen letterlijk in de notes
+            printf '### Installeren\n```\nhelm install homemaps oci://ghcr.io/%s/charts/homemaps --version %s\n```\n' "${{ github.repository_owner }}" "$VERSION"
+          } > RELEASE_NOTES.md
+          cat RELEASE_NOTES.md
+
+      - name: Commit, tag en push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add chart/homemaps/Chart.yaml app/pubspec.yaml importer/pyproject.toml
+          git commit -m "chore(release): v$VERSION"
+          git tag "v$VERSION"
+          # Atomair: de tag mag niet bestaan zonder de commit op main, en omgekeerd.
+          git push --atomic origin HEAD:main "v$VERSION"
+
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mv dist/app-release.apk "dist/homemaps-$VERSION.apk"
+          gh release create "v$VERSION" --title "v$VERSION" --notes-file RELEASE_NOTES.md \
+            "dist/homemaps-$VERSION.apk" "dist/homemaps-web-$VERSION.tar.gz" "dist/homemaps-$VERSION.tgz"

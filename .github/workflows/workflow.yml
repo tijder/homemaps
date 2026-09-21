@@ -1,0 +1,235 @@
+name: Build and Test
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+env:
+  REGISTRY: ghcr.io
+  # Eén plek voor de naam: ghcr.io/<owner>/homemaps-web, -traffic en charts/homemaps.
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/homemaps
+
+jobs:
+  # release.yml leidt de versiesprong en de release-notes af uit conventional commits;
+  # een onderwerpregel die daar niet aan voldoet kost een release zijn notes.
+  commit-lint:
+    name: Commit messages
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Check the subjects against the convention
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          bad=$(git log --no-merges --pretty='%s' "${BASE}..${HEAD}" |
+                grep -vP '^[a-z]+(\(.+\))?!?: .+' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::These commit subjects are not conventional commits:"
+            printf '  %s\n' "$bad"
+            echo "Expected: <type>[(scope)][!]: <description>  — see CONTRIBUTING.md"
+            exit 1
+          fi
+          echo "all commit subjects follow the convention"
+
+  build:
+    name: App (test, Android, web)
+    # De commit die release.yml pusht is versieboekhouding en al groen gebouwd.
+    if: ${{ github.event_name == 'pull_request' || !startsWith(github.event.head_commit.message, 'chore(release):') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: app/pubspec.yaml
+          cache: true
+      - name: Cache pub dependencies
+        uses: actions/cache@v6
+        with:
+          path: ~/.pub-cache
+          # Geen restore-keys: een cache van een oudere pubspec.lock kan pub's
+          # resolutie halverwege laten struikelen.
+          key: pub-${{ runner.os }}-${{ hashFiles('app/pubspec.lock') }}
+      - uses: actions/setup-java@v6
+        with:
+          java-version: 21
+          distribution: zulu
+
+      - run: flutter pub get
+
+      # De gegenereerde bestanden (l10n, auto_route) zijn ingecheckt; dit vangt een
+      # vergeten `build_runner` of `gen-l10n`.
+      - name: Generated code is up to date
+        run: |
+          flutter gen-l10n
+          dart run build_runner build --delete-conflicting-outputs
+          dart format lib test
+          git diff --exit-code -- lib
+
+      - run: flutter analyze
+      - run: flutter test
+
+      - name: Build Android
+        run: flutter build apk --release
+
+      - name: Build Web
+        run: flutter build web --release --wasm --no-web-resources-cdn
+
+      # De hele reden van dit project: tijdens het gebruik gaat er niets naar buiten.
+      # maplibre_gl valt zonder webLibrarySource terug op unpkg; de string mag in de
+      # bundel staan (het is de default in de plugin), maar de bibliotheek zelf moet
+      # er lokaal bij zitten.
+      - name: maplibre-gl-js is bundled
+        run: |
+          for f in maplibre-gl.mjs maplibre-gl-shared.mjs maplibre-gl-worker.mjs maplibre-gl.css; do
+            test -s "build/web/maplibre/$f" || { echo "::error::build/web/maplibre/$f ontbreekt"; exit 1; }
+          done
+
+      - name: Upload Web Build
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-build
+          path: app/build/web/
+
+      - name: Upload Android Build
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-apk
+          path: app/build/app/outputs/flutter-apk/app-release.apk
+
+  importer:
+    name: Importer (lint, test)
+    if: ${{ github.event_name == 'pull_request' || !startsWith(github.event.head_commit.message, 'chore(release):') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: importer
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - run: pip install -e '.[dev]'
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: pytest -q
+
+  chart:
+    name: Chart (lint, render)
+    if: ${{ github.event_name == 'pull_request' || !startsWith(github.event.head_commit.message, 'chore(release):') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: azure/setup-helm@v5
+      - run: helm lint chart/homemaps --strict
+      - name: Render met de defaults, met alles aan, en met het CI-gebied
+        run: |
+          helm template hm chart/homemaps > /dev/null
+          helm template hm chart/homemaps \
+            --set httpRoute.enabled=true --set 'httpRoute.hostnames={maps.example.org}' \
+            --set 'httpRoute.parentRefs[0].name=gw' \
+            --set ingress.enabled=true --set 'ingress.hosts={maps.example.org}' \
+            --set monitoring.serviceMonitor.enabled=true --set monitoring.prometheusRule.enabled=true > /dev/null
+          helm template hm chart/homemaps -f ci/values-andorra.yaml > /dev/null
+      - name: Het schema weigert een publicUrl zonder slash
+        run: |
+          if helm template hm chart/homemaps --set tiles.publicUrl=https://x/tiles >/dev/null 2>&1; then
+            echo "::error::values.schema.json laat een ongeldige publicUrl door"; exit 1
+          fi
+
+  # De hele chart in kind, met Andorra als gebied en een nagemaakte NDW-feed: bouwjobs,
+  # helm test over de vier proxypaden, en de toets dat live verkeer de route verandert.
+  e2e:
+    name: Chart end-to-end on kind
+    needs: [build, importer, chart]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - name: Download Web build
+        uses: actions/download-artifact@v8
+        with:
+          name: web-build
+          path: app/build/web
+      - uses: azure/setup-helm@v5
+      - name: Install kind
+        uses: helm/kind-action@v1
+        with:
+          install_only: true
+      - name: Bring up the cluster and test it
+        run: ci/up.sh
+      - name: Diagnostics
+        if: failure()
+        run: |
+          K="kubectl --context kind-homemaps -n homemaps"
+          $K get pods -o wide || true
+          $K get events --sort-by=.lastTimestamp | tail -40 || true
+          $K get pods -o name | while read -r p; do
+            echo "----- $p"
+            $K logs "$p" --all-containers --prefix --tail=200 || true
+          done
+
+  docker:
+    name: Images
+    needs: [build, importer, e2e]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Download Web build
+        uses: actions/download-artifact@v8
+        with:
+          name: web-build
+          path: app/build/web
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push the web image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/web/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}-web:main
+      - name: Build and push the traffic importer image
+        uses: docker/build-push-action@v7
+        with:
+          context: importer
+          file: importer/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}-traffic:main
+
+  chart-push:
+    name: Chart (OCI)
+    needs: [chart, e2e]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: azure/setup-helm@v5
+      # Een voorloopversie per run: de echte versies komen uit release.yml. appVersion
+      # `main` laat de chart de images van hierboven trekken.
+      - name: Package and push
+        run: |
+          basis=$(grep '^version:' chart/homemaps/Chart.yaml | awk '{print $2}')
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+          helm package chart/homemaps --version "${basis}-main.${{ github.run_number }}" --app-version main -d dist
+          helm push dist/homemaps-*.tgz "oci://ghcr.io/${{ github.repository_owner }}/charts"
