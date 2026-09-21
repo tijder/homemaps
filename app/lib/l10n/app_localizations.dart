@@ -361,6 +361,12 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'Kaart © OpenMapTiles © OpenStreetMap-bijdragers. Routes: Valhalla. Zoeken: Photon. Verkeer: NDW open data.'**
   String get overTekst;
+
+  /// No description provided for @noordBoven.
+  ///
+  /// In nl, this message translates to:
+  /// **'Noorden boven'**
+  String get noordBoven;
 }
 
 class _AppLocalizationsDelegate

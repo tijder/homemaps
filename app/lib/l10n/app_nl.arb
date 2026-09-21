@@ -60,5 +60,6 @@
   "opslaan": "Opslaan",
   "serverNodig": "Stel eerst het adres van je server in.",
   "over": "Over",
-  "overTekst": "Kaart © OpenMapTiles © OpenStreetMap-bijdragers. Routes: Valhalla. Zoeken: Photon. Verkeer: NDW open data."
+  "overTekst": "Kaart © OpenMapTiles © OpenStreetMap-bijdragers. Routes: Valhalla. Zoeken: Photon. Verkeer: NDW open data.",
+  "noordBoven": "Noorden boven"
 }

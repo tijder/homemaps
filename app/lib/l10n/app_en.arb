@@ -43,5 +43,6 @@
   "opslaan": "Save",
   "serverNodig": "Set the address of your server first.",
   "over": "About",
-  "overTekst": "Map © OpenMapTiles © OpenStreetMap contributors. Routing: Valhalla. Search: Photon. Traffic: NDW open data."
+  "overTekst": "Map © OpenMapTiles © OpenStreetMap contributors. Routing: Valhalla. Search: Photon. Traffic: NDW open data.",
+  "noordBoven": "North up"
 }

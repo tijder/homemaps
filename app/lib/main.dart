@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
@@ -21,6 +22,9 @@ Future<void> main() async {
       styleUrl: Uri.base.resolve('maplibre/maplibre-gl.css').toString(),
     );
     webConfig = await _laadWebConfig();
+    // De rechtermuisknop is hier van de app (het puntmenu op de kaart); het menu
+    // van de browser zou eroverheen komen.
+    await BrowserContextMenu.disableContextMenu();
   }
   final doos = await openInstellingen();
   runApp(

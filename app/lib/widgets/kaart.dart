@@ -233,7 +233,9 @@ class _KaartState extends State<Kaart> {
     styleString: widget.stijlUrl,
     initialCameraPosition: widget.start,
     trackCameraPosition: true,
-    compassEnabled: true,
+    // Het kompas van de plugin staat rechtsboven, precies onder onze eigen knoppen;
+    // het scherm heeft er een eigen knop voor.
+    compassEnabled: false,
     attributionButtonPosition: AttributionButtonPosition.bottomRight,
     onMapCreated: (controller) {
       _controller = controller;

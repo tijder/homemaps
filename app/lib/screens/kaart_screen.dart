@@ -30,6 +30,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
   static const _stijlen = ['osm-bright', 'positron', 'dark-matter'];
 
   MapLibreMapController? _kaart;
+  ({Offset plek, LatLng punt})? _menu;
   late final void Function() _stopRechtsklik;
 
   LatLng? _midden() => _kaart?.cameraPosition?.target;
@@ -58,27 +59,15 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
   }
 
   /// Het menu "van hier / hierheen / als tussenpunt": rechtermuisknop op het web,
-  /// lang indrukken op Android.
-  Future<void> _puntMenu(Point<double> scherm, LatLng punt) async {
-    final l = AppLocalizations.of(context);
-    final actie = await showMenu<String>(
-      context: context,
-      position: RelativeRect.fromLTRB(scherm.x, scherm.y, scherm.x, scherm.y),
-      items: [
-        for (final (waarde, tekst) in [
-          ('van', l.hierVandaan),
-          ('naar', l.hierNaartoe),
-          ('via', l.alsTussenpunt),
-        ])
-          PopupMenuItem(
-            value: waarde,
-            // Het menu ligt boven de kaart; zonder interceptor gaat de klik (en
-            // de cursor) naar de kaart eronder.
-            child: PointerInterceptor(child: Text(tekst)),
-          ),
-      ],
-    );
-    if (actie == null) return;
+  /// lang indrukken op Android. Geen showMenu: de kaart is op het web een los
+  /// HTML-element dat de muis afvangt, dus Flutters eigen menu kreeg de klik
+  /// ernaast nooit te zien -- het sloot niet, en elke rechtsklik zette er een bij.
+  /// Dit is één stuk state, dus er is er altijd hooguit één.
+  void _puntMenu(Point<double> scherm, LatLng punt) =>
+      setState(() => _menu = (plek: Offset(scherm.x, scherm.y), punt: punt));
+
+  Future<void> _kies(String actie, LatLng punt) async {
+    setState(() => _menu = null);
     final planner = ref.read(plannerProvider.notifier);
     void zet(Plaats plaats) => switch (actie) {
       'van' => planner.zetPunt(0, plaats),
@@ -158,10 +147,16 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                       (_stijlen[2], l.stijlDonker),
                     ])
                       PopupMenuItem(
-                      value: stijl,
-                      child: PointerInterceptor(child: Text(naam)),
-                    ),
+                        value: stijl,
+                        child: PointerInterceptor(child: Text(naam)),
+                      ),
                   ],
+                ),
+                IconButton(
+                  tooltip: l.noordBoven,
+                  icon: const _Rondje(Icons.explore_outlined),
+                  onPressed: () =>
+                      _kaart?.animateCamera(CameraUpdate.bearingTo(0)),
                 ),
                 IconButton(
                   tooltip: l.instellingen,
@@ -175,6 +170,8 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
         ),
       ),
     );
+
+    final menu = _menu == null ? null : _menuLaag(context, _menu!);
 
     return Scaffold(
       body: breed
@@ -196,6 +193,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                   ),
                 ),
                 knoppen,
+                ?menu,
               ],
             )
           : Stack(
@@ -236,8 +234,69 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                     ),
                   ),
                 ),
+                ?menu,
               ],
             ),
+    );
+  }
+
+  /// Een vlak over het hele scherm dat de muis van de kaart afhoudt, met het menu
+  /// erop. Ernaast klikken sluit het; ernaast rechtsklikken verplaatst het.
+  Widget _menuLaag(BuildContext context, ({Offset plek, LatLng punt}) menu) {
+    final l = AppLocalizations.of(context);
+    final scherm = MediaQuery.sizeOf(context);
+    const breedte = 220.0, hoogte = 3 * 48.0 + 16;
+    return Positioned.fill(
+      child: PointerInterceptor(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => setState(() => _menu = null),
+          onSecondaryTapDown: (details) async {
+            // Dit vlak ligt precies over de kaart, dus de plek erop is ook de plek
+            // op de kaart.
+            final plek = Point(
+              details.localPosition.dx,
+              details.localPosition.dy,
+            );
+            final punt = await _kaart?.toLatLng(plek);
+            if (punt != null && mounted) _puntMenu(plek, punt);
+          },
+          child: Stack(
+            children: [
+              Positioned(
+                // Binnen beeld blijven, ook bij een klik in de hoek.
+                left: min(menu.plek.dx, scherm.width - breedte - 8),
+                top: min(menu.plek.dy, scherm.height - hoogte - 8),
+                width: breedte,
+                child: Material(
+                  elevation: 8,
+                  borderRadius: BorderRadius.circular(8),
+                  clipBehavior: Clip.antiAlias,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (final (actie, pictogram, tekst) in [
+                          ('van', Icons.trip_origin, l.hierVandaan),
+                          ('naar', Icons.place, l.hierNaartoe),
+                          ('via', Icons.more_vert, l.alsTussenpunt),
+                        ])
+                          ListTile(
+                            dense: true,
+                            leading: Icon(pictogram),
+                            title: Text(tekst),
+                            onTap: () => _kies(actie, menu.punt),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

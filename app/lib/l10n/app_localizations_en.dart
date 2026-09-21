@@ -148,4 +148,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get overTekst =>
       'Map © OpenMapTiles © OpenStreetMap contributors. Routing: Valhalla. Search: Photon. Traffic: NDW open data.';
+
+  @override
+  String get noordBoven => 'North up';
 }
