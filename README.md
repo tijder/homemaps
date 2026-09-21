@@ -36,6 +36,9 @@ ci/up.sh --weg
 cd importer && pip install -e '.[dev]' && pytest && ruff check .
 ```
 
+Het app-icoon is code: `python3 app/tool/maak_icoon.py` tekent het, daarna maakt
+`dart run flutter_launcher_icons` er de Android- en web-iconen van.
+
 Na een wijziging aan routes of vertalingen: `flutter gen-l10n` en
 `dart run build_runner build`; het resultaat is ingecheckt en de CI controleert dat.
 

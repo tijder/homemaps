@@ -367,6 +367,30 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'Noorden boven'**
   String get noordBoven;
+
+  /// No description provided for @zoekHier.
+  ///
+  /// In nl, this message translates to:
+  /// **'Zoek op de kaart'**
+  String get zoekHier;
+
+  /// No description provided for @route.
+  ///
+  /// In nl, this message translates to:
+  /// **'Route'**
+  String get route;
+
+  /// No description provided for @terugNaarZoeken.
+  ///
+  /// In nl, this message translates to:
+  /// **'Terug naar zoeken'**
+  String get terugNaarZoeken;
+
+  /// No description provided for @sleepOmTeVerplaatsen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Sleep om de volgorde te wijzigen'**
+  String get sleepOmTeVerplaatsen;
 }
 
 class _AppLocalizationsDelegate

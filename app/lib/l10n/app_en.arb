@@ -44,5 +44,9 @@
   "serverNodig": "Set the address of your server first.",
   "over": "About",
   "overTekst": "Map © OpenMapTiles © OpenStreetMap contributors. Routing: Valhalla. Search: Photon. Traffic: NDW open data.",
-  "noordBoven": "North up"
+  "noordBoven": "North up",
+  "zoekHier": "Search the map",
+  "route": "Directions",
+  "terugNaarZoeken": "Back to search",
+  "sleepOmTeVerplaatsen": "Drag to reorder"
 }

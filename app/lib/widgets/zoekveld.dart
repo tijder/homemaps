@@ -19,6 +19,8 @@ class Zoekveld extends ConsumerStatefulWidget {
     required this.onGewist,
     this.nabij,
     this.pictogram = Icons.place_outlined,
+    this.zwevend = false,
+    this.voor,
   });
 
   final String label;
@@ -30,6 +32,13 @@ class Zoekveld extends ConsumerStatefulWidget {
   final LatLng? Function()? nabij;
   final IconData pictogram;
 
+  /// De zoekbalk van het zoekscherm: zonder rand en label, de suggesties in
+  /// dezelfde kaart eronder.
+  final bool zwevend;
+
+  /// Vóór het tekstvak, bijvoorbeeld de sleepgreep van de routelijst.
+  final Widget? voor;
+
   @override
   ConsumerState<Zoekveld> createState() => _ZoekveldState();
 }
@@ -38,6 +47,7 @@ class _ZoekveldState extends ConsumerState<Zoekveld> {
   final _tekst = TextEditingController();
   final _focus = FocusNode();
   Timer? _wacht;
+  Timer? _sluit;
   CancelToken? _lopend;
   List<Plaats> _resultaten = const [];
 
@@ -52,11 +62,15 @@ class _ZoekveldState extends ConsumerState<Zoekveld> {
     super.initState();
     _tekst.text = _naam = widget.plaats?.naam ?? '';
     _focus.addListener(() {
-      // Verlaten zonder te kiezen: terug naar wat er stond.
-      if (!_focus.hasFocus) {
-        _tekst.text = _naam;
-        setState(() => _resultaten = const []);
-      }
+      if (_focus.hasFocus) return;
+      // Verlaten zonder te kiezen: terug naar wat er stond. De suggesties gaan pas
+      // even later weg -- een klik óp een suggestie haalt in sommige browsers eerst
+      // de focus weg, en dan was de lijst verdwenen voordat de klik aankwam.
+      _tekst.text = _naam;
+      _sluit?.cancel();
+      _sluit = Timer(const Duration(milliseconds: 250), () {
+        if (mounted && !_focus.hasFocus) setState(() => _resultaten = const []);
+      });
     });
   }
 
@@ -72,6 +86,7 @@ class _ZoekveldState extends ConsumerState<Zoekveld> {
   @override
   void dispose() {
     _wacht?.cancel();
+    _sluit?.cancel();
     _lopend?.cancel();
     _tekst.dispose();
     _focus.dispose();
@@ -107,6 +122,7 @@ class _ZoekveldState extends ConsumerState<Zoekveld> {
   }
 
   void _kies(Plaats plaats) {
+    _sluit?.cancel();
     _tekst.text = _naam = plaats.naam;
     setState(() => _resultaten = const []);
     widget.onGekozen(plaats);
@@ -116,37 +132,51 @@ class _ZoekveldState extends ConsumerState<Zoekveld> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final veld = TextField(
+      controller: _tekst,
+      focusNode: _focus,
+      onChanged: _getypt,
+      onSubmitted: (_) {
+        if (_resultaten.isNotEmpty) _kies(_resultaten.first);
+      },
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        labelText: widget.zwevend ? null : widget.label,
+        hintText: widget.zwevend ? widget.label : l.zoekPlaats,
+        prefixIcon: Icon(widget.pictogram),
+        isDense: true,
+        border: widget.zwevend ? InputBorder.none : const OutlineInputBorder(),
+        contentPadding: widget.zwevend
+            ? const EdgeInsets.symmetric(vertical: 14)
+            : null,
+        suffixIcon: widget.plaats == null && _tekst.text.isEmpty
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.clear),
+                tooltip: l.verwijderen,
+                onPressed: () {
+                  _tekst.clear();
+                  _naam = '';
+                  setState(() => _resultaten = const []);
+                  widget.onGewist();
+                },
+              ),
+      ),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        TextField(
-          controller: _tekst,
-          focusNode: _focus,
-          onChanged: _getypt,
-          onSubmitted: (_) {
-            if (_resultaten.isNotEmpty) _kies(_resultaten.first);
-          },
-          textInputAction: TextInputAction.search,
-          decoration: InputDecoration(
-            labelText: widget.label,
-            hintText: l.zoekPlaats,
-            prefixIcon: Icon(widget.pictogram),
-            isDense: true,
-            border: const OutlineInputBorder(),
-            suffixIcon: widget.plaats == null && _tekst.text.isEmpty
-                ? null
-                : IconButton(
-                    icon: const Icon(Icons.clear),
-                    tooltip: l.verwijderen,
-                    onPressed: () {
-                      _tekst.clear();
-                      _naam = '';
-                      setState(() => _resultaten = const []);
-                      widget.onGewist();
-                    },
-                  ),
+        if (widget.voor == null)
+          veld
+        else
+          Row(
+            children: [
+              widget.voor!,
+              Expanded(child: veld),
+            ],
           ),
-        ),
+        if (widget.zwevend && _resultaten.isNotEmpty) const Divider(height: 1),
         for (final plaats in _resultaten)
           ListTile(
             dense: true,

@@ -151,4 +151,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noordBoven => 'North up';
+
+  @override
+  String get zoekHier => 'Search the map';
+
+  @override
+  String get route => 'Directions';
+
+  @override
+  String get terugNaarZoeken => 'Back to search';
+
+  @override
+  String get sleepOmTeVerplaatsen => 'Drag to reorder';
 }

@@ -61,5 +61,9 @@
   "serverNodig": "Stel eerst het adres van je server in.",
   "over": "Over",
   "overTekst": "Kaart © OpenMapTiles © OpenStreetMap-bijdragers. Routes: Valhalla. Zoeken: Photon. Verkeer: NDW open data.",
-  "noordBoven": "Noorden boven"
+  "noordBoven": "Noorden boven",
+  "zoekHier": "Zoek op de kaart",
+  "route": "Route",
+  "terugNaarZoeken": "Terug naar zoeken",
+  "sleepOmTeVerplaatsen": "Sleep om de volgorde te wijzigen"
 }

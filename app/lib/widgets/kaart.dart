@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
@@ -15,6 +16,9 @@ class Kaart extends StatefulWidget {
     required this.stijlUrl,
     required this.start,
     required this.punten,
+    required this.gevonden,
+    required this.beeldVersie,
+    required this.onPuntVersleept,
     required this.routes,
     required this.gekozen,
     required this.onRouteGekozen,
@@ -25,7 +29,16 @@ class Kaart extends StatefulWidget {
 
   final String stijlUrl;
   final CameraPosition start;
+
+  /// De punten van de route (van, via's, naar); op de kaart te verslepen.
   final List<Plaats?> punten;
+
+  /// De plaats uit het zoekscherm: een vaste, blauwe stip.
+  final Plaats? gevonden;
+
+  /// Loopt op als het resultaat in beeld gebracht moet worden (zie PlannerState).
+  final int beeldVersie;
+  final void Function(int index, LatLng punt) onPuntVersleept;
   final List<RouteOptie> routes;
   final int gekozen;
   final ValueChanged<int> onRouteGekozen;
@@ -41,15 +54,20 @@ class Kaart extends StatefulWidget {
 }
 
 class _KaartState extends State<Kaart> {
-  static const _routeBron = 'routes', _puntBron = 'punten';
+  static const _routeBron = 'routes';
   static const _aansluitBron = 'aansluiting';
 
   /// Kleiner dan dit is het gat tussen een punt en de weg niet het tonen waard.
   static const _minAansluiting = 15.0;
-  static const _lagen = ['route-alt', 'route-rand', 'route', 'punt'];
+  static const _lagen = ['route-alt', 'route-rand', 'route'];
 
   MapLibreMapController? _controller;
   bool _stijlKlaar = false;
+
+  /// Cirkel-id -> index in [Kaart.punten]; de gevonden plaats zit er niet in.
+  final _cirkelIndex = <String, int>{};
+  int _ingepast = 0;
+  int _tekenVolgnummer = 0;
 
   @override
   void didUpdateWidget(Kaart oud) {
@@ -63,15 +81,21 @@ class _KaartState extends State<Kaart> {
     if (!_stijlKlaar) return;
     if (oud.routes != widget.routes ||
         oud.gekozen != widget.gekozen ||
-        oud.punten != widget.punten) {
-      _teken(pasBeeldAan: oud.routes != widget.routes);
+        // Het scherm bouwt deze lijst elke keer opnieuw; op inhoud vergelijken,
+        // anders worden de cirkels bij elke rebuild vervangen.
+        !listEquals(oud.punten, widget.punten) ||
+        oud.gevonden != widget.gevonden ||
+        oud.beeldVersie != widget.beeldVersie) {
+      _teken();
     }
   }
 
   Future<void> _stijlGeladen() async {
     final c = _controller!;
+    // De cirkels van de punten zijn annotaties; hun laag bestaat al. De routelijnen
+    // moeten daar ónder, anders verdwijnt een punt achter zijn eigen route.
+    final onder = c.circleManager?.layerIds.firstOrNull;
     await c.addGeoJsonSource(_routeBron, _leeg);
-    await c.addGeoJsonSource(_puntBron, _leeg);
     await c.addGeoJsonSource(_aansluitBron, _leeg);
     // Alternatieven grijs en onderop; de gekozen route blauw met een witte rand.
     await c.addLineLayer(
@@ -134,35 +158,22 @@ class _KaartState extends State<Kaart> {
         lineCap: 'round',
       ),
       enableInteraction: false,
-    );
-    await c.addCircleLayer(
-      _puntBron,
-      'punt',
-      const CircleLayerProperties(
-        circleRadius: 8,
-        circleColor: [
-          'match',
-          ['get', 'rol'],
-          'van',
-          '#2e7d32',
-          'naar',
-          '#c62828',
-          '#ef6c00',
-        ],
-        circleStrokeColor: '#ffffff',
-        circleStrokeWidth: 2.5,
-      ),
-      enableInteraction: false,
+      belowLayerId: onder,
     );
     _stijlKlaar = true;
-    await _teken(pasBeeldAan: widget.routes.isNotEmpty);
+    _cirkelIndex.clear();
+    _ingepast = 0;
+    await _teken();
   }
 
   static const _leeg = {'type': 'FeatureCollection', 'features': <dynamic>[]};
 
-  Future<void> _teken({required bool pasBeeldAan}) async {
+  Future<void> _teken() async {
     final c = _controller;
     if (c == null || !_stijlKlaar) return;
+    // Twee updates kort na elkaar: alleen de laatste mag cirkels neerzetten, anders
+    // staan ze er dubbel.
+    final volgnummer = ++_tekenVolgnummer;
     await c.setGeoJsonSource(_routeBron, {
       'type': 'FeatureCollection',
       'features': [
@@ -206,31 +217,67 @@ class _KaartState extends State<Kaart> {
               },
       ],
     });
+    await c.clearCircles();
+    _cirkelIndex.clear();
+    if (volgnummer != _tekenVolgnummer) return;
     final laatste = widget.punten.length - 1;
-    await c.setGeoJsonSource(_puntBron, {
-      'type': 'FeatureCollection',
-      'features': [
-        for (final (i, plaats) in widget.punten.indexed)
-          if (plaats != null)
-            {
-              'type': 'Feature',
-              'properties': {
-                'rol': i == 0 ? 'van' : (i == laatste ? 'naar' : 'via'),
-              },
-              'geometry': {
-                'type': 'Point',
-                'coordinates': [plaats.punt.longitude, plaats.punt.latitude],
-              },
-            },
-      ],
-    });
-    if (pasBeeldAan) await _brengInBeeld();
+    for (final (i, plaats) in widget.punten.indexed) {
+      if (plaats == null) continue;
+      final cirkel = await c.addCircle(
+        CircleOptions(
+          geometry: plaats.punt,
+          circleRadius: 9,
+          circleColor: i == 0
+              ? '#2e7d32'
+              : (i == laatste ? '#c62828' : '#ef6c00'),
+          circleStrokeColor: '#ffffff',
+          circleStrokeWidth: 2.5,
+          draggable: true,
+        ),
+      );
+      _cirkelIndex[cirkel.id] = i;
+    }
+    // In het zoekscherm; in het routescherm is dezelfde plaats al een routepunt.
+    final gevonden = widget.gevonden;
+    if (gevonden != null && !widget.punten.contains(gevonden)) {
+      await c.addCircle(
+        CircleOptions(
+          geometry: gevonden.punt,
+          circleRadius: 9,
+          circleColor: '#1565c0',
+          circleStrokeColor: '#ffffff',
+          circleStrokeWidth: 2.5,
+        ),
+      );
+    }
+    if (widget.beeldVersie != _ingepast) {
+      _ingepast = widget.beeldVersie;
+      await _brengInBeeld();
+    }
+  }
+
+  void _versleept(
+    Point<double> _,
+    LatLng _,
+    LatLng huidig,
+    LatLng _,
+    String id,
+    Annotation? _,
+    DragEventType soort,
+  ) {
+    // De plugin verschuift de cirkel zelf; pas bij het loslaten is er een nieuw
+    // punt om een route voor te rekenen.
+    final index = _cirkelIndex[id];
+    if (soort == DragEventType.end && index != null) {
+      widget.onPuntVersleept(index, huidig);
+    }
   }
 
   Future<void> _brengInBeeld() async {
     final alle = [
       for (final route in widget.routes) ...route.punten,
       for (final plaats in widget.punten) ?plaats?.punt,
+      if (widget.routes.isEmpty) ?widget.gevonden?.punt,
     ];
     if (alle.isEmpty) return;
     if (alle.length == 1) {
@@ -254,7 +301,8 @@ class _KaartState extends State<Kaart> {
         ),
         left: widget.rand.left + 40,
         top: widget.rand.top + 40,
-        right: widget.rand.right + 40,
+        // Rechts staan de knoppen (laag, kompas, instellingen).
+        right: widget.rand.right + 72,
         bottom: widget.rand.bottom + 40,
       ),
     );
@@ -286,6 +334,7 @@ class _KaartState extends State<Kaart> {
     onMapCreated: (controller) {
       _controller = controller;
       controller.onFeatureTapped.add(_featureGetikt);
+      controller.onFeatureDrag.add(_versleept);
       widget.onController?.call(controller);
     },
     onStyleLoadedCallback: _stijlGeladen,

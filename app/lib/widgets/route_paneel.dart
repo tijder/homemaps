@@ -33,6 +33,17 @@ class RoutePaneel extends ConsumerWidget {
       controller: scroll,
       padding: const EdgeInsets.all(12),
       children: [
+        Row(
+          children: [
+            IconButton(
+              tooltip: l.terugNaarZoeken,
+              onPressed: acties.naarZoeken,
+              icon: const Icon(Icons.arrow_back),
+            ),
+            Text(l.route, style: Theme.of(context).textTheme.titleMedium),
+          ],
+        ),
+        const SizedBox(height: 4),
         SegmentedButton<Profiel>(
           showSelectedIcon: false,
           segments: [
@@ -57,23 +68,45 @@ class RoutePaneel extends ConsumerWidget {
               zet(instellingen.kopie(profiel: keuze.first)),
         ),
         const SizedBox(height: 12),
-        for (final (i, plaats) in planner.punten.indexed)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Zoekveld(
-              // De sleutel volgt de plaats, zodat omdraaien en verwijderen het
-              // juiste vakje de juiste tekst geven.
-              key: ValueKey('punt-$i-${planner.punten.length}'),
-              label: i == 0 ? l.van : (i == laatste ? l.naar : l.via),
-              pictogram: i == 0
-                  ? Icons.trip_origin
-                  : (i == laatste ? Icons.place : Icons.more_vert),
-              plaats: plaats,
-              nabij: nabij,
-              onGekozen: (gekozen) => acties.zetPunt(i, gekozen),
-              onGewist: () => acties.verwijder(i),
-            ),
-          ),
+        // Verslepen aan de greep wisselt de volgorde. De sleutel is het id van het
+        // punt, zodat elk vakje zijn eigen tekst en suggesties meeneemt.
+        ReorderableListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          buildDefaultDragHandles: false,
+          itemCount: planner.punten.length,
+          onReorderItem: acties.verplaats,
+          itemBuilder: (context, i) {
+            final punt = planner.punten[i];
+            return Padding(
+              key: ValueKey(punt.id),
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Zoekveld(
+                label: i == 0 ? l.van : (i == laatste ? l.naar : l.via),
+                pictogram: i == 0
+                    ? Icons.trip_origin
+                    : (i == laatste ? Icons.place : Icons.more_vert),
+                plaats: punt.plaats,
+                nabij: nabij,
+                onGekozen: (gekozen) => acties.zetPunt(i, gekozen),
+                onGewist: () => acties.verwijder(i),
+                voor: ReorderableDragStartListener(
+                  index: i,
+                  child: Tooltip(
+                    message: l.sleepOmTeVerplaatsen,
+                    child: const MouseRegion(
+                      cursor: SystemMouseCursors.grab,
+                      child: Padding(
+                        padding: EdgeInsets.only(right: 4),
+                        child: Icon(Icons.drag_indicator),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
         Row(
           children: [
             TextButton.icon(
@@ -89,7 +122,7 @@ class RoutePaneel extends ConsumerWidget {
             ),
             IconButton(
               tooltip: l.wissen,
-              onPressed: acties.wis,
+              onPressed: acties.naarZoeken,
               icon: const Icon(Icons.delete_outline),
             ),
           ],

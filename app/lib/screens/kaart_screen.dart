@@ -12,10 +12,11 @@ import '../providers/diensten.dart';
 import '../providers/instellingen.dart';
 import '../providers/planner.dart';
 import '../router/app_router.dart';
-import '../utils/rechtsklik_stub.dart'
-    if (dart.library.js_interop) '../utils/rechtsklik_web.dart';
+import '../utils/muis_stub.dart'
+    if (dart.library.js_interop) '../utils/muis_web.dart';
 import '../widgets/kaart.dart';
 import '../widgets/route_paneel.dart';
+import '../widgets/zoekveld.dart';
 
 @RoutePage()
 class KaartScreen extends ConsumerStatefulWidget {
@@ -31,14 +32,14 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
 
   MapLibreMapController? _kaart;
   ({Offset plek, LatLng punt})? _menu;
-  late final void Function() _stopRechtsklik;
+  late final void Function() _stopMuis;
 
   LatLng? _midden() => _kaart?.cameraPosition?.target;
 
   @override
   void initState() {
     super.initState();
-    _stopRechtsklik = luisterNaarRechtsklik((opKaart, opScherm) async {
+    _stopMuis = koppelMuis((opKaart, opScherm) async {
       final punt = await _kaart?.toLatLng(opKaart);
       if (punt != null && mounted) _puntMenu(opScherm, punt);
     });
@@ -46,7 +47,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
 
   @override
   void dispose() {
-    _stopRechtsklik();
+    _stopMuis();
     super.dispose();
   }
 
@@ -69,27 +70,40 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
   Future<void> _kies(String actie, LatLng punt) async {
     setState(() => _menu = null);
     final planner = ref.read(plannerProvider.notifier);
-    void zet(Plaats plaats) => switch (actie) {
-      'van' => planner.zetPunt(0, plaats),
-      'naar' => planner.zetPunt(
-        ref.read(plannerProvider).punten.length - 1,
-        plaats,
-      ),
-      _ => planner.voegViaToe(plaats),
-    };
-    // Eerst het kale punt, zodat de route meteen rekent; het adres komt erbij
-    // zodra Photon antwoordt -- of niet, en dan blijven het coördinaten.
-    zet(Plaats.vanPunt(punt));
-    if (actie == 'via') return;
+    // Geen volgBeeld: je klikte op de kaart, dus het punt is al in beeld.
+    switch (actie) {
+      case 'van':
+        planner.zetVan(Plaats.vanPunt(punt), volgBeeld: false);
+      case 'naar':
+        planner.zetNaar(Plaats.vanPunt(punt), volgBeeld: false);
+      default:
+        planner.voegViaToe(Plaats.vanPunt(punt));
+    }
+    await _zoekAdresErbij(punt);
+  }
+
+  /// Een punt dat op de kaart is gezet of versleept heet eerst naar zijn
+  /// coördinaten, zodat de route meteen rekent; het adres komt erbij zodra Photon
+  /// antwoordt -- of niet, en dan blijven het coördinaten.
+  Future<void> _zoekAdresErbij(LatLng punt) async {
     try {
       final metAdres = await ref.read(photonProvider)?.omgekeerd(punt);
       if (metAdres == null || !mounted) return;
       final punten = ref.read(plannerProvider).punten;
-      final index = actie == 'van' ? 0 : punten.length - 1;
-      if (punten[index]?.punt == punt) planner.zetPunt(index, metAdres);
+      final index = punten.indexWhere((p) => p.plaats?.punt == punt);
+      if (index < 0) return; // intussen alweer verplaatst
+      // Alleen de naam verandert; de route hoeft niet opnieuw.
+      ref.read(plannerProvider.notifier).hernoem(index, metAdres);
     } on Object {
       // Geen adres is geen fout.
     }
+  }
+
+  void _versleept(int index, LatLng punt) {
+    ref
+        .read(plannerProvider.notifier)
+        .zetPunt(index, Plaats.vanPunt(punt), volgBeeld: false);
+    _zoekAdresErbij(punt);
   }
 
   @override
@@ -113,7 +127,10 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
     final kaart = Kaart(
       stijlUrl: config.stijlUrl(instellingen.stijl),
       start: start,
-      punten: planner.punten,
+      punten: [for (final punt in planner.punten) punt.plaats],
+      gevonden: planner.gevonden,
+      beeldVersie: planner.beeldVersie,
+      onPuntVersleept: _versleept,
       routes: planner.routes.value ?? const [],
       gekozen: planner.gekozen,
       onRouteGekozen: ref.read(plannerProvider.notifier).kies,
@@ -121,7 +138,10 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
       onController: (controller) => _kaart = controller,
       rand: breed
           ? const EdgeInsets.only(left: _paneelBreedte)
-          : EdgeInsets.only(bottom: hoogte * 0.35),
+          : EdgeInsets.only(
+              top: planner.routeModus ? 0 : 72,
+              bottom: planner.routeModus ? hoogte * 0.35 : 0,
+            ),
     );
 
     final knoppen = SafeArea(
@@ -174,69 +194,154 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
     final menu = _menu == null ? null : _menuLaag(context, _menu!);
 
     return Scaffold(
-      body: breed
-          ? Stack(
-              children: [
-                kaart,
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: _paneelBreedte,
-                  // De kaart is op het web een los HTML-element onder Flutter. Zonder
-                  // interceptor schijnt zijn sleep-cursor door het paneel heen.
-                  child: PointerInterceptor(
-                    child: Material(
-                      elevation: 4,
-                      child: SafeArea(child: RoutePaneel(nabij: _midden)),
-                    ),
-                  ),
+      body: Stack(
+        children: [
+          kaart,
+          if (!planner.routeModus)
+            _zoekscherm(context, planner, breed)
+          else if (breed)
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: _paneelBreedte,
+              // De kaart is op het web een los HTML-element onder Flutter. Zonder
+              // interceptor schijnt zijn sleep-cursor door het paneel heen.
+              child: PointerInterceptor(
+                child: Material(
+                  elevation: 4,
+                  child: SafeArea(child: RoutePaneel(nabij: _midden)),
                 ),
-                knoppen,
-                ?menu,
-              ],
+              ),
             )
-          : Stack(
-              children: [
-                kaart,
-                knoppen,
-                DraggableScrollableSheet(
-                  initialChildSize: 0.35,
-                  minChildSize: 0.12,
-                  maxChildSize: 0.92,
-                  snap: true,
-                  builder: (context, scroll) => PointerInterceptor(
-                    child: Material(
-                      elevation: 8,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(16),
+          else
+            DraggableScrollableSheet(
+              initialChildSize: 0.35,
+              minChildSize: 0.12,
+              maxChildSize: 0.92,
+              snap: true,
+              builder: (context, scroll) => PointerInterceptor(
+                child: Material(
+                  elevation: 8,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    children: [
+                      // Het greepje: laat zien dat het paneel te verslepen is.
+                      Container(
+                        width: 36,
+                        height: 4,
+                        margin: const EdgeInsets.only(top: 8),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
-                      clipBehavior: Clip.antiAlias,
-                      child: Column(
-                        children: [
-                          // Het greepje: laat zien dat het paneel te verslepen is.
-                          Container(
-                            width: 36,
-                            height: 4,
-                            margin: const EdgeInsets.only(top: 8),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .outlineVariant,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          Expanded(
-                            child: RoutePaneel(nabij: _midden, scroll: scroll),
-                          ),
-                        ],
+                      Expanded(
+                        child: RoutePaneel(nabij: _midden, scroll: scroll),
                       ),
-                    ),
+                    ],
                   ),
                 ),
-                ?menu,
-              ],
+              ),
             ),
+          // Op een smal scherm staat de zoekbalk bovenaan; de knoppen schuiven
+          // eronder.
+          Padding(
+            padding: EdgeInsets.only(
+              top: !breed && !planner.routeModus ? 64 : 0,
+            ),
+            child: knoppen,
+          ),
+          ?menu,
+        ],
+      ),
+    );
+  }
+
+  /// Het beginscherm: één zoekbalk, en na een keuze een kaartje van de plaats met
+  /// de knop "Route". Pas die knop opent het routescherm.
+  Widget _zoekscherm(BuildContext context, PlannerState planner, bool breed) {
+    final l = AppLocalizations.of(context);
+    final acties = ref.read(plannerProvider.notifier);
+    final gevonden = planner.gevonden;
+    final balk = PointerInterceptor(
+      child: Material(
+        elevation: 4,
+        borderRadius: BorderRadius.circular(28),
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Zoekveld(
+            zwevend: true,
+            label: l.zoekHier,
+            pictogram: Icons.search,
+            plaats: gevonden,
+            nabij: _midden,
+            onGekozen: acties.toonPlaats,
+            onGewist: acties.sluitPlaats,
+          ),
+        ),
+      ),
+    );
+    final kaartje = gevonden == null
+        ? null
+        : PointerInterceptor(
+            child: Material(
+              elevation: 4,
+              borderRadius: BorderRadius.circular(16),
+              // Volle breedte: de interceptor eromheen geeft de breedte van de
+              // kolom niet door, en dan krimpt het kaartje tot zijn tekst.
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      gevonden.naam,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    if (gevonden.omschrijving.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(gevonden.omschrijving),
+                    ],
+                    const SizedBox(height: 12),
+                    FilledButton.icon(
+                      onPressed: acties.startRoute,
+                      icon: const Icon(Icons.directions),
+                      label: Text(l.route),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: breed
+            ? Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox(
+                  width: _paneelBreedte - 24,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [balk, const SizedBox(height: 12), ?kaartje],
+                  ),
+                ),
+              )
+            // Smal: de balk boven, het kaartje onder -- de kaart ertussen blijft
+            // vrij.
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [balk, const Spacer(), ?kaartje],
+              ),
+      ),
     );
   }
 

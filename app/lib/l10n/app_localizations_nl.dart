@@ -152,4 +152,16 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get noordBoven => 'Noorden boven';
+
+  @override
+  String get zoekHier => 'Zoek op de kaart';
+
+  @override
+  String get route => 'Route';
+
+  @override
+  String get terugNaarZoeken => 'Terug naar zoeken';
+
+  @override
+  String get sleepOmTeVerplaatsen => 'Sleep om de volgorde te wijzigen';
 }
