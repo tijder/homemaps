@@ -1,0 +1,9 @@
+# Lokale werkmappen van ci/ en de importer-tests
+/ci/.work/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+# Helm
+/chart/*/charts/*.tgz
