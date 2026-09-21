@@ -61,6 +61,10 @@ helm --kube-context "kind-$CLUSTER" upgrade --install "$RELEASE" chart/homemaps 
   --set web.image.repository="${PREFIX}homemaps-web" \
   --set valhalla.verkeer.image.repository="${PREFIX}homemaps-traffic"
 
+# De tag `ci` verandert niet, dus een nieuw geladen image komt pas na een herstart
+# in de pod.
+$K rollout restart "deploy/$RELEASE-homemaps-web" >/dev/null
+
 stap "bouwjobs (tiles en routegraaf)"
 for paar in "tiles-planetiler:planetiler-eerste" "valhalla-bouw:valhalla-eerste"; do
   cronjob="$RELEASE-homemaps-${paar%%:*}"; job="${paar##*:}"
@@ -75,7 +79,11 @@ $K wait --for=condition=complete --timeout=30m job/valhalla-eerste job/planetile
   $K logs job/valhalla-eerste --all-containers --tail=30 || true; exit 1; }
 
 stap "wachten tot alles draait"
-$K rollout status deploy --timeout=15m
+# Per deployment: zonder naam wacht `rollout status` niet op een herstart die nog
+# maar net is aangevraagd.
+for deploy in $($K get deploy -o name); do
+  $K rollout status "$deploy" --timeout=15m
+done
 
 stap "helm test"
 helm --kube-context "kind-$CLUSTER" test "$RELEASE" -n "$NS" --logs

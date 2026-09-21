@@ -25,7 +25,9 @@ spec:
         - |
           set -eu
           W=http://{{ include "homemaps.onderdeel" (dict "root" . "naam" "web") }}:8080
-          curl -fsS $W/healthz
+          # Direct na een herstart wijst de Service nog een tel naar niets; dat is
+          # geen storing.
+          curl -fsS --retry 10 --retry-delay 3 --retry-connrefused $W/healthz
           curl -fsS -o /dev/null $W/
           {{- if .Values.valhalla.enabled }}
           curl -fsS $W/valhalla/status | grep -q version

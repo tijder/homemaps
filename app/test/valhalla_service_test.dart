@@ -50,6 +50,17 @@ void main() {
     expect(punten[1].longitude, closeTo(4.8922, 1e-9));
   });
 
+  test('polyline met negatieve stappen (ging mis in de JavaScript-build)', () {
+    // Draai deze ook met `flutter test --platform chrome`: alleen daar gedraagt
+    // een bit-operatie zich als in de browser.
+    final punten = decodeerPolyline('onlapA_t{{And@~p@~WnKnKod@');
+    expect(punten, hasLength(4));
+    expect(punten[1].latitude, closeTo(42.5064, 1e-6));
+    expect(punten[1].longitude, closeTo(1.5212, 1e-6));
+    expect(punten[3].latitude, closeTo(42.5058, 1e-6));
+    expect(punten[3].longitude, closeTo(1.5216, 1e-6));
+  });
+
   test('antwoord met alternatief, twee legs en hoogte', () {
     Map<String, dynamic> trip(double km, List<Map<String, dynamic>> legs) => {
       'summary': {

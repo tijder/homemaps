@@ -78,6 +78,12 @@ jobs:
       - run: flutter analyze
       - run: flutter test
 
+      # Nog een keer in de browser: bit-operaties gedragen zich in de JavaScript-build
+      # anders dan in de VM en in wasm. De polyline-decoder tekende daardoor elke
+      # route als een rechte lijn naar het noorden, terwijl alle VM-tests groen waren.
+      - name: Tests in de browser (JavaScript)
+        run: flutter test --platform chrome test/valhalla_service_test.dart test/zoekterm_test.dart
+
       - name: Build Android
         run: flutter build apk --release
 

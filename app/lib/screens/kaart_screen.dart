@@ -4,6 +4,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/plaats.dart';
@@ -11,6 +12,8 @@ import '../providers/diensten.dart';
 import '../providers/instellingen.dart';
 import '../providers/planner.dart';
 import '../router/app_router.dart';
+import '../utils/rechtsklik_stub.dart'
+    if (dart.library.js_interop) '../utils/rechtsklik_web.dart';
 import '../widgets/kaart.dart';
 import '../widgets/route_paneel.dart';
 
@@ -27,8 +30,24 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
   static const _stijlen = ['osm-bright', 'positron', 'dark-matter'];
 
   MapLibreMapController? _kaart;
+  late final void Function() _stopRechtsklik;
 
   LatLng? _midden() => _kaart?.cameraPosition?.target;
+
+  @override
+  void initState() {
+    super.initState();
+    _stopRechtsklik = luisterNaarRechtsklik((opKaart, opScherm) async {
+      final punt = await _kaart?.toLatLng(opKaart);
+      if (punt != null && mounted) _puntMenu(opScherm, punt);
+    });
+  }
+
+  @override
+  void dispose() {
+    _stopRechtsklik();
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -38,15 +57,25 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
     ref.read(plannerProvider.notifier).taal = taal == 'nl' ? 'nl-NL' : 'en-US';
   }
 
-  Future<void> _langIngedrukt(Point<double> scherm, LatLng punt) async {
+  /// Het menu "van hier / hierheen / als tussenpunt": rechtermuisknop op het web,
+  /// lang indrukken op Android.
+  Future<void> _puntMenu(Point<double> scherm, LatLng punt) async {
     final l = AppLocalizations.of(context);
     final actie = await showMenu<String>(
       context: context,
       position: RelativeRect.fromLTRB(scherm.x, scherm.y, scherm.x, scherm.y),
       items: [
-        PopupMenuItem(value: 'van', child: Text(l.hierVandaan)),
-        PopupMenuItem(value: 'naar', child: Text(l.hierNaartoe)),
-        PopupMenuItem(value: 'via', child: Text(l.alsTussenpunt)),
+        for (final (waarde, tekst) in [
+          ('van', l.hierVandaan),
+          ('naar', l.hierNaartoe),
+          ('via', l.alsTussenpunt),
+        ])
+          PopupMenuItem(
+            value: waarde,
+            // Het menu ligt boven de kaart; zonder interceptor gaat de klik (en
+            // de cursor) naar de kaart eronder.
+            child: PointerInterceptor(child: Text(tekst)),
+          ),
       ],
     );
     if (actie == null) return;
@@ -99,7 +128,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
       routes: planner.routes.value ?? const [],
       gekozen: planner.gekozen,
       onRouteGekozen: ref.read(plannerProvider.notifier).kies,
-      onLangIngedrukt: _langIngedrukt,
+      onLangIngedrukt: _puntMenu,
       onController: (controller) => _kaart = controller,
       rand: breed
           ? const EdgeInsets.only(left: _paneelBreedte)
@@ -111,31 +140,37 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
         alignment: Alignment.topRight,
         child: Padding(
           padding: const EdgeInsets.all(8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              PopupMenuButton<String>(
-                tooltip: l.kaartstijl,
-                icon: const _Rondje(Icons.layers_outlined),
-                initialValue: instellingen.stijl,
-                onSelected: (stijl) => ref
-                    .read(instellingenProvider.notifier)
-                    .wijzig(instellingen.kopie(stijl: stijl)),
-                itemBuilder: (_) => [
-                  for (final (stijl, naam) in [
-                    (_stijlen[0], l.stijlKaart),
-                    (_stijlen[1], l.stijlLicht),
-                    (_stijlen[2], l.stijlDonker),
-                  ])
-                    PopupMenuItem(value: stijl, child: Text(naam)),
-                ],
-              ),
-              IconButton(
-                tooltip: l.instellingen,
-                icon: const _Rondje(Icons.settings_outlined),
-                onPressed: () => context.router.push(const InstellingenRoute()),
-              ),
-            ],
+          child: PointerInterceptor(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                PopupMenuButton<String>(
+                  tooltip: l.kaartstijl,
+                  icon: const _Rondje(Icons.layers_outlined),
+                  initialValue: instellingen.stijl,
+                  onSelected: (stijl) => ref
+                      .read(instellingenProvider.notifier)
+                      .wijzig(instellingen.kopie(stijl: stijl)),
+                  itemBuilder: (_) => [
+                    for (final (stijl, naam) in [
+                      (_stijlen[0], l.stijlKaart),
+                      (_stijlen[1], l.stijlLicht),
+                      (_stijlen[2], l.stijlDonker),
+                    ])
+                      PopupMenuItem(
+                      value: stijl,
+                      child: PointerInterceptor(child: Text(naam)),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  tooltip: l.instellingen,
+                  icon: const _Rondje(Icons.settings_outlined),
+                  onPressed: () =>
+                      context.router.push(const InstellingenRoute()),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -151,9 +186,13 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                   top: 0,
                   bottom: 0,
                   width: _paneelBreedte,
-                  child: Material(
-                    elevation: 4,
-                    child: SafeArea(child: RoutePaneel(nabij: _midden)),
+                  // De kaart is op het web een los HTML-element onder Flutter. Zonder
+                  // interceptor schijnt zijn sleep-cursor door het paneel heen.
+                  child: PointerInterceptor(
+                    child: Material(
+                      elevation: 4,
+                      child: SafeArea(child: RoutePaneel(nabij: _midden)),
+                    ),
                   ),
                 ),
                 knoppen,
@@ -168,28 +207,32 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                   minChildSize: 0.12,
                   maxChildSize: 0.92,
                   snap: true,
-                  builder: (context, scroll) => Material(
-                    elevation: 8,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Column(
-                      children: [
-                        // Het greepje: laat zien dat het paneel te verslepen is.
-                        Container(
-                          width: 36,
-                          height: 4,
-                          margin: const EdgeInsets.only(top: 8),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.outlineVariant,
-                            borderRadius: BorderRadius.circular(2),
+                  builder: (context, scroll) => PointerInterceptor(
+                    child: Material(
+                      elevation: 8,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        children: [
+                          // Het greepje: laat zien dat het paneel te verslepen is.
+                          Container(
+                            width: 36,
+                            height: 4,
+                            margin: const EdgeInsets.only(top: 8),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .outlineVariant,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
                           ),
-                        ),
-                        Expanded(
-                          child: RoutePaneel(nabij: _midden, scroll: scroll),
-                        ),
-                      ],
+                          Expanded(
+                            child: RoutePaneel(nabij: _midden, scroll: scroll),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

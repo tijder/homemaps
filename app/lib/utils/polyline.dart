@@ -13,7 +13,12 @@ List<LatLng> decodeerPolyline(String tekst, {int decimalen = 6}) {
         resultaat |= (byte & 0x1f) << schuif;
         schuif += 5;
       } while (byte >= 0x20);
-      final delta = (resultaat & 1) != 0 ? ~(resultaat >> 1) : resultaat >> 1;
+      // Niet `~(resultaat >> 1)`: gecompileerd naar JavaScript is het resultaat van
+      // een bit-operatie een niet-negatief 32-bits getal, dus een negatieve stap
+      // werd daar ruim vier miljard en de lijn schoot recht naar het noorden. In
+      // de VM en in wasm gaat het goed, en daarom vingen de tests het niet.
+      final half = resultaat >> 1;
+      final delta = (resultaat & 1) != 0 ? -half - 1 : half;
       if (as == 0) {
         lat += delta;
       } else {
