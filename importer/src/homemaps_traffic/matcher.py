@@ -9,11 +9,13 @@ Edge-id's veranderen bij elke tile-build. De cache hoort daarom bij één tilese
 (`tileset_last_modified` uit /status) en wordt anders weggegooid.
 """
 
+import http.client
 import json
 import logging
 import math
+import threading
 import urllib.error
-import urllib.request
+import urllib.parse
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -49,25 +51,45 @@ def hemelsbreed(a: Punt, b: Punt) -> float:
 
 
 class Valhalla:
+    """Eén blijvende verbinding per draad. Met een nieuwe verbinding per verzoek
+    raken bij het matchen van 67.000 segmenten (2 verzoeken elk, ~600/s) de
+    tijdelijke poorten op -- elke gesloten verbinding blijft 60 s in TIME_WAIT --
+    en dan mislukt een derde van de verzoeken in golven."""
+
     def __init__(self, url: str, timeout: float = 30):
-        self.url = url.rstrip("/")
+        delen = urllib.parse.urlsplit(url)
+        self.host, self.poort = delen.hostname, delen.port or 80
+        self.basis = delen.path.rstrip("/")
         self.timeout = timeout
+        self._lokaal = threading.local()
 
     def _vraag(self, pad: str, body: dict | None = None) -> dict:
         data = json.dumps(body).encode() if body is not None else None
-        verzoek = urllib.request.Request(self.url + pad, data, {"Content-Type": "application/json"})
-        # Eén herkansing voor een weggevallen verbinding: onder 8 parallelle draden
-        # verbreekt Valhalla er af en toe een (ConnectionResetError). Een HTTP-fout
-        # is een antwoord en wordt niet herhaald.
         for poging in (1, 2):
+            verbinding = getattr(self._lokaal, "verbinding", None)
+            if verbinding is None:
+                verbinding = http.client.HTTPConnection(self.host, self.poort, timeout=self.timeout)
+                self._lokaal.verbinding = verbinding
             try:
-                with urllib.request.urlopen(verzoek, timeout=self.timeout) as antwoord:
-                    return json.load(antwoord)
-            except urllib.error.HTTPError:
-                raise
-            except OSError:
+                verbinding.request(
+                    "POST" if data is not None else "GET",
+                    self.basis + pad,
+                    data,
+                    {"Content-Type": "application/json"},
+                )
+                antwoord = verbinding.getresponse()
+                inhoud = antwoord.read()
+            except (OSError, http.client.HTTPException):
+                # De server mag een stille verbinding sluiten; één keer opnieuw
+                # met een verse is dan geen fout.
+                verbinding.close()
+                self._lokaal.verbinding = None
                 if poging == 2:
                     raise
+                continue
+            if antwoord.status >= 400:
+                raise urllib.error.HTTPError(pad, antwoord.status, inhoud[:200].decode(), {}, None)
+            return json.loads(inhoud)
         raise AssertionError("onbereikbaar")
 
     def tileset(self) -> int:
@@ -204,14 +226,14 @@ class MatchCache:
         def probeer(sleutel: str):
             try:
                 return valhalla.match(items[sleutel])
-            except OSError as fout:
+            except (OSError, http.client.HTTPException) as fout:
                 return fout
 
         tijdelijk = 0
         with ThreadPoolExecutor(draden) as pool:
             resultaten = pool.map(probeer, ontbrekend)
             for nummer, (sleutel, match) in enumerate(zip(ontbrekend, resultaten, strict=True), 1):
-                if isinstance(match, OSError):
+                if isinstance(match, Exception):
                     # Niet in de cache: de volgende ronde probeert het opnieuw.
                     tijdelijk += 1
                 else:
