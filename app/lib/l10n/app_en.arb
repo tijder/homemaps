@@ -110,5 +110,6 @@
   "nietIngesteld": "Not set",
   "recentePlekken": "Recent places",
   "aantalPlekken": "{aantal, plural, =0{None} =1{1 place} other{{aantal} places}}",
-  "wissenKort": "Clear"
+  "wissenKort": "Clear",
+  "nietGevonden": "Not found: {zoek}"
 }

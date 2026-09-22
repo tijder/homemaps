@@ -409,4 +409,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get wissenKort => 'Clear';
+
+  @override
+  String nietGevonden(String zoek) {
+    return 'Not found: $zoek';
+  }
 }

@@ -763,6 +763,12 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'Wissen'**
   String get wissenKort;
+
+  /// No description provided for @nietGevonden.
+  ///
+  /// In nl, this message translates to:
+  /// **'Niet gevonden: {zoek}'**
+  String nietGevonden(String zoek);
 }
 
 class _AppLocalizationsDelegate

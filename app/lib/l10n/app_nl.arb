@@ -231,5 +231,13 @@
       }
     }
   },
-  "wissenKort": "Wissen"
+  "wissenKort": "Wissen",
+  "nietGevonden": "Niet gevonden: {zoek}",
+  "@nietGevonden": {
+    "placeholders": {
+      "zoek": {
+        "type": "String"
+      }
+    }
+  }
 }

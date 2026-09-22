@@ -411,4 +411,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get wissenKort => 'Wissen';
+
+  @override
+  String nietGevonden(String zoek) {
+    return 'Niet gevonden: $zoek';
+  }
 }

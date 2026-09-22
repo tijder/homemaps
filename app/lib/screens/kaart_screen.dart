@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:app_links/app_links.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
 
@@ -24,6 +25,7 @@ import '../providers/locatie.dart';
 import '../providers/planner.dart';
 import '../providers/plekken.dart';
 import '../utils/afstand.dart';
+import '../utils/geo_link.dart';
 import '../router/app_router.dart';
 import '../utils/muis_stub.dart'
     if (dart.library.js_interop) '../utils/muis_web.dart';
@@ -74,6 +76,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
   /// Met het scherm uit (navigatie loopt door) heeft meedraaien geen zin.
   bool _zichtbaar = true;
   late final AppLifecycleListener _levensloop;
+  StreamSubscription<Uri>? _links;
 
   LatLng? _midden() => _kaart?.cameraPosition?.target;
 
@@ -84,6 +87,9 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
       final punt = await _kaart?.toLatLng(opKaart);
       if (punt != null && mounted) _puntMenu(opScherm, punt);
     }, bijAanraking: _zelfBewogen);
+    // Een adres of punt uit een andere app (agenda, contacten, een website):
+    // `geo:` en `google.navigation:`. Ook de link waarmee de app gestart is.
+    if (!kIsWeb) _links = AppLinks().uriLinkStream.listen(_linkOntvangen);
     _levensloop = AppLifecycleListener(
       onHide: () => setState(() => _zichtbaar = false),
       onShow: () => setState(() => _zichtbaar = true),
@@ -95,6 +101,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
     _stopMuis();
     _hervat?.cancel();
     _levensloop.dispose();
+    _links?.cancel();
     _sheet.dispose();
     super.dispose();
   }
@@ -212,6 +219,60 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
     }
     final zoom = max(_kaart?.cameraPosition?.zoom ?? 0, 15.0);
     await _kaart?.animateCamera(CameraUpdate.newLatLngZoom(fix.punt, zoom));
+  }
+
+  Future<void> _linkOntvangen(Uri uri) async {
+    final verzoek = leesGeoLink(uri);
+    if (verzoek == null || !mounted) return;
+    final l = AppLocalizations.of(context);
+    if (ref.read(navigatieProvider) != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l.eerstStoppen)));
+      return;
+    }
+    Plaats? plaats;
+    if (verzoek.punt case final punt?) {
+      plaats = verzoek.label == null
+          ? Plaats.vanPunt(punt)
+          : Plaats(naam: verzoek.label!, punt: punt);
+    } else if (verzoek.zoek case final zoek?) {
+      try {
+        final gevonden = await ref
+            .read(photonProvider)
+            ?.zoek(
+              zoek,
+              nabij: ref.read(locatieProvider).fix?.punt ?? _midden(),
+            );
+        plaats = gevonden?.firstOrNull;
+      } on Object {
+        plaats = null;
+      }
+      if (!mounted) return;
+      if (plaats == null) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(l.nietGevonden(zoek))));
+        return;
+      }
+    }
+    if (plaats == null) return;
+    final planner = ref.read(plannerProvider.notifier);
+    planner.naarZoeken();
+    planner.toonPlaats(plaats);
+    if (verzoek.navigeer) planner.startRoute();
+    // Een kaal punt krijgt zijn adres erbij, zodra Photon het weet.
+    if (verzoek.punt != null && verzoek.label == null) {
+      try {
+        final metAdres = await ref.read(photonProvider)?.omgekeerd(plaats.punt);
+        if (metAdres != null && mounted) {
+          final nu = ref.read(plannerProvider);
+          if (nu.gevonden?.punt == plaats.punt && !nu.routeModus) {
+            planner.toonPlaats(metAdres);
+          }
+        }
+      } on Object {
+        // Dan blijven het coördinaten.
+      }
+    }
   }
 
   /// Locatie aan vanuit het routepaneel (voor navigatie): zonder de kaart te
