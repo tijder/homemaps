@@ -442,6 +442,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String maximumsnelheidTijdelijk(int kmu) {
+    return 'Tijdelijke maximumsnelheid $kmu km/u';
+  }
+
+  @override
   String get meldingOngeval => 'Ongeval';
 
   @override

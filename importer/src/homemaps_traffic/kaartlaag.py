@@ -1,5 +1,5 @@
-"""De verkeerslaag van de app: afsluitingen, werk op de weg en trage stukken, als
-één GeoJSON dat elke ronde opnieuw wordt gemaakt.
+"""De verkeerslaag van de app: afsluitingen, werk op de weg, trage stukken en
+tijdelijke maximumsnelheden, als één GeoJSON dat elke ronde opnieuw wordt gemaakt.
 
 De app vertaalt de codes zelf (soort, rijbaan, oorzaak): de feed heeft vrijwel
 geen vrije tekst, en zo blijft de taal bij de app.
@@ -8,9 +8,9 @@ geen vrije tekst, en zo blijft de taal bij de app.
 import gzip
 import json
 from collections.abc import Iterable
-from datetime import UTC
+from datetime import UTC, datetime
 
-from .datex3 import GeplandeAfsluiting, Maatregel, Melding, Punt, Reistijd
+from .datex3 import GeplandeAfsluiting, Maatregel, Melding, Punt, Reistijd, TijdelijkeSnelheid
 from .matcher import Match
 
 # Een stuk is traag onder dit deel van zijn normale snelheid, en file daaronder.
@@ -124,6 +124,38 @@ def meldingen(items: Iterable[Melding]) -> list[dict]:
                 "type": "Feature",
                 "properties": {k: v for k, v in eigenschappen.items() if v is not None},
                 "geometry": {"type": "Point", "coordinates": [round(lon, 5), round(lat, 5)]},
+            }
+        )
+    return uit
+
+
+def snelheden(items: Iterable[tuple[TijdelijkeSnelheid, Match]], nu: datetime) -> list[dict]:
+    """Tijdelijke maximumsnelheden over de weg zoals Valhalla hem kent, in de
+    rijrichting: de app legt ze onderweg op de route. Niet op de kaart."""
+    uit = []
+    for snelheid, match in items:
+        if not match.vorm:
+            continue
+        # Het eind van het venster waar we nu in zitten.
+        tot = next(
+            (
+                eind
+                for begin, eind in snelheid.vensters
+                if begin <= nu and (eind is None or nu <= eind)
+            ),
+            None,
+        )
+        eigenschappen = {
+            "soort": "snelheid",
+            "kmu": snelheid.kmu,
+            "oorzaak": snelheid.oorzaak,
+            "tot": _iso(tot),
+        }
+        uit.append(
+            {
+                "type": "Feature",
+                "properties": {k: v for k, v in eigenschappen.items() if v is not None},
+                "geometry": _geometrie([decodeer(leg) for leg in match.vorm]),
             }
         )
     return uit

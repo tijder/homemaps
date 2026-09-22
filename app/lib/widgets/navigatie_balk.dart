@@ -458,10 +458,17 @@ class VoorstelKaart extends StatelessWidget {
 
 /// Linksonder tijdens autonavigatie: het verkeersbord met de maximumsnelheid
 /// (als die bekend is) en je eigen snelheid, rood als je er ruim overheen zit.
+/// Een tijdelijke limiet (bij werk) krijgt een werk-pictogram.
 class SnelheidBord extends StatelessWidget {
-  const SnelheidBord({super.key, required this.limiet, required this.snelheid});
+  const SnelheidBord({
+    super.key,
+    required this.limiet,
+    required this.snelheid,
+    this.tijdelijk = false,
+  });
 
   final int? limiet;
+  final bool tijdelijk;
 
   /// In m/s, of null als onbekend.
   final double? snelheid;
@@ -477,27 +484,55 @@ class SnelheidBord extends StatelessWidget {
       children: [
         if (limiet != null)
           Semantics(
-            label: l.maximumsnelheid(limiet!),
-            child: Container(
-              width: 58,
-              height: 58,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFD32F2F), width: 6),
-                boxShadow: const [
-                  BoxShadow(blurRadius: 4, color: Colors.black26),
-                ],
-              ),
-              child: Text(
-                '$limiet',
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
+            label: tijdelijk
+                ? l.maximumsnelheidTijdelijk(limiet!)
+                : l.maximumsnelheid(limiet!),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFD32F2F),
+                      width: 6,
+                    ),
+                    boxShadow: const [
+                      BoxShadow(blurRadius: 4, color: Colors.black26),
+                    ],
+                  ),
+                  child: Text(
+                    '$limiet',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ),
-              ),
+                if (tijdelijk)
+                  Positioned(
+                    right: -4,
+                    bottom: -4,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF9A825),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: const Icon(
+                        Icons.construction,
+                        size: 14,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         if (kmu != null) ...[

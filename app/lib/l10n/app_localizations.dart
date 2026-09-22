@@ -794,6 +794,12 @@ abstract class AppLocalizations {
   /// **'Maximumsnelheid {kmu} km/u'**
   String maximumsnelheid(int kmu);
 
+  /// No description provided for @maximumsnelheidTijdelijk.
+  ///
+  /// In nl, this message translates to:
+  /// **'Tijdelijke maximumsnelheid {kmu} km/u'**
+  String maximumsnelheidTijdelijk(int kmu);
+
   /// No description provided for @meldingOngeval.
   ///
   /// In nl, this message translates to:

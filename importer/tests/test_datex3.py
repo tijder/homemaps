@@ -92,3 +92,37 @@ def test_geplande_afsluitingen_met_hun_vensters():
         (datetime(2026, 9, 26, 6, tzinfo=UTC), datetime(2026, 9, 27, 20, tzinfo=UTC)),
     )
     assert gepland["WEEKEND"].hele_weg
+
+
+def _snelheden(van, tot):
+    with open(FIXTURES / "snelheden.xml", "rb") as stroom:
+        return {s.id: s for s in datex3.lees_snelheden(stroom, van, tot)}
+
+
+def test_tijdelijke_snelheden_overdag():
+    middag = datetime(2026, 9, 22, 12, 0, tzinfo=UTC)
+    snelheden = _snelheden(middag, middag)
+    # Niet: NACHT (pas vanavond), VRACHT (alleen vracht), ADVIES (geen plicht),
+    # VOORBIJ (afgelopen), GEEN_SNELHEID (een rijstrookafsluiting).
+    assert set(snelheden) == {"WERK"}
+    werk = snelheden["WERK"]
+    assert werk.kmu == 30
+    assert werk.sleutel == "WERK@3"
+    assert werk.oorzaak == "roadMaintenance"
+    # Twee deellijnen: in volgorde, en als één reeks punten om te matchen.
+    assert len(werk.lijnen) == 2
+    assert werk.punten[0] == (53.29151, 6.196199) and werk.punten[-1] == (53.29539, 6.19573)
+    assert werk.geldt(middag)
+    assert not werk.geldt(datetime(2026, 10, 10, tzinfo=UTC))
+
+
+def test_tijdelijke_snelheden_vooruit_en_venster():
+    # Met twee uur vooruit (zoals de planningsfeed): de nacht telt mee, maar
+    # geldt pas vanaf acht uur.
+    van = datetime(2026, 9, 22, 19, 0, tzinfo=UTC)
+    snelheden = _snelheden(van, datetime(2026, 9, 22, 21, 0, tzinfo=UTC))
+    assert set(snelheden) == {"WERK", "NACHT"}
+    nacht = snelheden["NACHT"]
+    assert nacht.kmu == 70
+    assert not nacht.geldt(van)
+    assert nacht.geldt(datetime(2026, 9, 22, 23, 0, tzinfo=UTC))

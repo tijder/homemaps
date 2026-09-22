@@ -3,7 +3,7 @@ import json
 from datetime import UTC, datetime
 
 from homemaps_traffic import kaartlaag
-from homemaps_traffic.datex3 import Maatregel, Reistijd
+from homemaps_traffic.datex3 import Maatregel, Reistijd, TijdelijkeSnelheid
 from homemaps_traffic.matcher import Match
 
 
@@ -93,3 +93,34 @@ def test_meldingen_als_punten():
             "geometry": {"type": "Point", "coordinates": [5.1, 52.1]},
         }
     ]
+
+
+def test_tijdelijke_snelheden_over_de_routevorm():
+    nu = datetime(2026, 9, 22, 12, 0, tzinfo=UTC)
+    vorm = ("wsjjbBovqwH_qfP~s~L",)
+    snelheid = TijdelijkeSnelheid(
+        "W",
+        "1",
+        30,
+        (((52.0, 5.0), (52.1, 5.1)),),
+        "roadMaintenance",
+        (
+            (datetime(2026, 9, 1, tzinfo=UTC), datetime(2026, 9, 10, tzinfo=UTC)),
+            (datetime(2026, 9, 20, tzinfo=UTC), datetime(2026, 9, 30, 14, tzinfo=UTC)),
+        ),
+    )
+    features = kaartlaag.snelheden(
+        [(snelheid, Match(((1, 1000.0, 1),), 1000.0, vorm)), (snelheid, Match((), 0.0))],
+        nu,
+    )
+    # Zonder vorm (oude cache) kan hij niet op de route: weg.
+    assert len(features) == 1
+    assert features[0]["properties"] == {
+        "soort": "snelheid",
+        "kmu": 30,
+        "oorzaak": "roadMaintenance",
+        # Het eind van het venster van nu, niet van het eerste.
+        "tot": "2026-09-30T14:00:00Z",
+    }
+    # De routevorm, niet NDW's eigen lijn.
+    assert features[0]["geometry"]["coordinates"] == [[5.1214, 52.0907], [4.8922, 52.3731]]

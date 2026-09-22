@@ -10,6 +10,7 @@ Valhalla's `traffic.tar` en maakt er de verkeerslaag van de app van.
 | dezelfde feeds, plus `laneClosures` | `/verkeer.geojson`: de laag op de kaart |
 | `veiligheidsgerelateerde_berichten_srti` (ongeval, pechgeval, voorwerp op de weg) | punten in dezelfde laag; de app waarschuwt ervoor onderweg |
 | `planningsfeed_wegwerkzaamheden_en_evenementen` (18 MB, eens per uur) | `/verkeer-gepland.geojson`: afsluitingen van de komende 8 dagen met hun vensters, voor "later vertrekken" |
+| `tijdelijke_verkeersmaatregelen_maximum_snelheden` (vooral RWS) en de `SpeedManagement`-records uit de planningsfeed (ook provincies en gemeenten) | `soort: snelheid` in `/verkeer.geojson`: tijdelijke maximumsnelheden die nu gelden, over de routevorm; de app toont onderweg de laagste van deze en OSM. Niet op de kaart, niet in `traffic.tar` |
 
 ## Hoe het werkt
 

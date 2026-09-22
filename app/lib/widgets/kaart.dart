@@ -467,6 +467,9 @@ class _KaartState extends State<Kaart> {
     final features = [
       for (final feature in (widget.verkeer?['features'] as List? ?? const []))
         if (feature is Map<String, dynamic> &&
+            // Tijdelijke maximumsnelheden zijn voor onderweg, niet voor de
+            // kaart.
+            (feature['properties'] as Map?)?['soort'] != 'snelheid' &&
             (widget.toonVertraging ||
                 !const {
                   'traag',

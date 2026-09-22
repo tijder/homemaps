@@ -31,11 +31,12 @@ echo "CG-2 met live verkeer: ${live}s, zonder: ${zonder}s"
 python3 -c "import sys; sys.exit(0 if float('$live') > float('$zonder') * 1.5 else 'live verkeer heeft geen effect')"
 echo "live verkeer werkt"
 
-# De kaartlaag uit dezelfde ronde: de file, de afsluiting en het ongeval van de
-# nepfeed.
+# De kaartlaag uit dezelfde ronde: de file, de afsluiting, het ongeval en de
+# tijdelijke maximumsnelheid van de nepfeed. De snelheid ligt op de CG-2, één
+# rijbaan: één of twee keer (heen, en terug als die over dezelfde way loopt).
 soorten=$($K exec "$POD" -c verkeer -- python3 -c "
 import json, urllib.request
 laag = json.load(urllib.request.urlopen('http://localhost:9100/verkeer.geojson', timeout=5))
-print(' '.join(sorted(f['properties']['soort'] for f in laag['features'])))")
+print(' '.join(sorted({f['properties']['soort'] for f in laag['features']})))")
 echo "kaartlaag: $soorten"
-[ "$soorten" = "dicht file ongeval" ] || { echo "kaartlaag klopt niet"; exit 1; }
+[ "$soorten" = "dicht file ongeval snelheid" ] || { echo "kaartlaag klopt niet"; exit 1; }

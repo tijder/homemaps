@@ -976,6 +976,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                     PointerInterceptor(
                       child: SnelheidBord(
                         limiet: nav.limiet,
+                        tijdelijk: nav.limietTijdelijk,
                         snelheid: nav.fix?.snelheid,
                       ),
                     ),

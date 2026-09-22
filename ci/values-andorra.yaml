@@ -37,8 +37,9 @@ valhalla:
       limits: { memory: 2Gi }
   verkeer:
     image: { repository: homemaps-traffic, tag: ci, pullPolicy: Never }
-    # NDW kent Andorra niet; ci/nep-ndw levert dezelfde drie feeds met een file en
-    # een afsluiting op wegen die daar wel liggen.
+    # NDW kent Andorra niet; ci/nep-ndw levert dezelfde feeds met een file, een
+    # afsluiting, een ongeval en een tijdelijke maximumsnelheid op wegen die daar
+    # wel liggen.
     ndwUrl: http://nep-ndw:8080
     intervalSeconden: 60
     resources:

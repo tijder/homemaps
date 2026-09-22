@@ -16,6 +16,7 @@ import '../providers/diensten.dart';
 import '../providers/instellingen.dart';
 import '../providers/locatie.dart';
 import '../services/valhalla_service.dart';
+import '../utils/tijdelijke_snelheden.dart';
 import 'aankondiger.dart';
 import 'simulatie.dart';
 import 'stem.dart';
@@ -112,6 +113,7 @@ class NavigatieToestand {
     this.aangekomen = false,
     this.voorstel,
     this.limiet,
+    this.limietTijdelijk = false,
     this.rijstroken,
   });
 
@@ -129,6 +131,9 @@ class NavigatieToestand {
   /// De maximumsnelheid hier (km/u), of null als onbekend.
   final int? limiet;
 
+  /// [limiet] is een tijdelijke (bij werk), lager dan wat er normaal geldt.
+  final bool limietTijdelijk;
+
   /// De rijstroken bij de eerstvolgende kruising waar het ertoe doet welke je
   /// neemt, en hoe ver die nog is. Null als er niets te kiezen valt.
   final ({double over, List<Rijstrook> stroken})? rijstroken;
@@ -143,6 +148,7 @@ class NavigatieToestand {
     bool? aangekomen,
     Voorstel? Function()? voorstel,
     int? Function()? limiet,
+    bool? limietTijdelijk,
     ({double over, List<Rijstrook> stroken})? Function()? rijstroken,
   }) => NavigatieToestand(
     route: route ?? this.route,
@@ -154,6 +160,7 @@ class NavigatieToestand {
     aangekomen: aangekomen ?? this.aangekomen,
     voorstel: voorstel != null ? voorstel() : this.voorstel,
     limiet: limiet != null ? limiet() : this.limiet,
+    limietTijdelijk: limietTijdelijk ?? this.limietTijdelijk,
     rijstroken: rijstroken != null ? rijstroken() : this.rijstroken,
   );
 }
@@ -178,6 +185,10 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
   /// Maximumsnelheid per stuk van de huidige route (zie
   /// [ValhallaService.snelheidsLimieten]); leeg tot ze binnen zijn.
   List<int?> _limieten = const [];
+
+  /// Tijdelijke maximumsnelheid per stuk van de route (werk, evenement), uit
+  /// de verkeerslaag; zie [tijdelijkeSnelheden].
+  List<int?> _tijdelijk = const [];
 
   /// De kruisingen met rijstroken op de huidige route, op volgorde langs de
   /// route (zie [ValhallaService.rijstroken]); leeg tot ze binnen zijn.
@@ -241,7 +252,7 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
     // Nieuwe verkeersgegevens (elke vijf minuten): opnieuw kijken wat er op de
     // route ligt.
     _verkeer2 = ref.listen(verkeerProvider.select((v) => v.value), (_, laag) {
-      if (state case final nu?) _leesMeldingen(nu.route, laag);
+      if (state case final nu?) _leesLaag(nu.route, laag);
     });
     _fixes = ref.listen(locatieProvider.select((t) => t.fix), (_, fix) {
       if (fix != null) _bijFix(fix);
@@ -284,6 +295,7 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
   void _nieuweRoute(RouteOptie route, List<Plaats> doelen) {
     _viaVoorbij = 0;
     _limieten = const [];
+    _tijdelijk = const [];
     _haalLimieten(route);
     _rijstroken = const [];
     _haalRijstroken(route);
@@ -302,12 +314,19 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
       fix: state?.fix,
       gedempt: state?.gedempt ?? false,
     );
-    _leesMeldingen(route, ref.read(verkeerProvider).value);
+    _leesLaag(route, ref.read(verkeerProvider).value);
   }
 
   /// Welke meldingen uit de verkeerslaag op deze route liggen: binnen 30 m
   /// van de lijn, en aan jouw kant van de weg (een ongeval op de andere
   /// rijbaan van de snelweg ligt er ook vlakbij).
+  /// Wat uit de verkeerslaag voor de route telt: meldingen en tijdelijke
+  /// maximumsnelheden.
+  void _leesLaag(RouteOptie route, Map<String, dynamic>? laag) {
+    _leesMeldingen(route, laag);
+    _tijdelijk = tijdelijkeSnelheden(route.punten, laag);
+  }
+
   void _leesMeldingen(RouteOptie route, Map<String, dynamic>? laag) {
     final volger = _volger;
     if (laag == null || volger == null || !identical(volger.route, route)) {
@@ -347,6 +366,17 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
     Profiel.fiets => 500,
     Profiel.lopen => 200,
   };
+
+  /// De maximumsnelheid op stuk [segment]: de laagste van OSM en een
+  /// tijdelijke.
+  ({int? kmu, bool tijdelijk}) _limiet(int segment) {
+    final normaal = segment < _limieten.length ? _limieten[segment] : null;
+    final tijdelijk = segment < _tijdelijk.length ? _tijdelijk[segment] : null;
+    if (tijdelijk != null && (normaal == null || tijdelijk < normaal)) {
+      return (kmu: tijdelijk, tijdelijk: true);
+    }
+    return (kmu: normaal, tijdelijk: false);
+  }
 
   /// Op de achtergrond: de maximumsnelheden langs de route (alleen de auto).
   Future<void> _haalLimieten(RouteOptie route) async {
@@ -451,8 +481,8 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
       fix: fix,
       aangekomen: stand.aangekomen,
       doelen: doelen,
-      limiet: () =>
-          stand.segment < _limieten.length ? _limieten[stand.segment] : null,
+      limiet: () => _limiet(stand.segment).kmu,
+      limietTijdelijk: _limiet(stand.segment).tijdelijk,
       rijstroken: () => _rijstrookAdvies(stand, volger),
     );
     if (stand.aangekomen) {

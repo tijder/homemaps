@@ -10,6 +10,7 @@ Instellingen komen uit de omgeving (de chart zet ze):
   AFSLUITINGEN       "false" zet die feed uit        (true)
   MELDINGEN          "false" zet de SRTI-feed uit    (true)
   PLANNING_SECONDEN  hoe vaak de planningsfeed        (3600; 0 = nooit)
+  SNELHEDEN          "false" zet tijdelijke maximumsnelheden uit (true)
   METRICS_POORT      /metrics en /verkeer.geojson    (9100)
 """
 
@@ -37,6 +38,11 @@ log = logging.getLogger("homemaps_traffic")
 
 SRTI = "veiligheidsgerelateerde_berichten_srti.xml.gz"
 PLANNING = "planningsfeed_wegwerkzaamheden_en_evenementen.xml.gz"
+SNELHEDEN = "tijdelijke_verkeersmaatregelen_maximum_snelheden.xml.gz"
+# Tijdelijke maximumsnelheden uit de planningsfeed: zo ver vooruit, zodat een
+# beperking die ingaat voordat de feed weer wordt opgehaald (eens per uur) op
+# tijd meetelt.
+SNELHEID_VOORUIT = timedelta(hours=2)
 # Zo ver vooruit gaan geplande afsluitingen mee (de app laat een week kiezen).
 PLANNING_VOORUIT = timedelta(days=8)
 MAX_KPH = 160  # daarboven is het een meetfout, geen auto
@@ -92,6 +98,26 @@ def bereken_afsluitingen(
                 if afsluiting.hele_weg or way in ways:
                     dicht[graphid] = tt.afgesloten()
     return dicht
+
+
+def leg_snelheden(
+    snelheden: Iterable[datex3.TijdelijkeSnelheid], matches: dict[str, Match | None]
+) -> list[tuple[datex3.TijdelijkeSnelheid, Match]]:
+    """Elke tijdelijke maximumsnelheid met de weg waar hij op ligt. De lijn van
+    NDW loopt in één richting; de tegenrichting telt mee als hij helemaal over
+    dezelfde OSM-way(s) loopt (één rijbaan: een 30 bij werk geldt voor beide
+    kanten). Een gescheiden rijbaan heeft een eigen way en blijft erbuiten."""
+    uit = []
+    for snelheid in snelheden:
+        heen = matches.get(snelheid.sleutel)
+        if not heen:
+            continue
+        uit.append((snelheid, heen))
+        terug = matches.get(snelheid.sleutel + "#terug")
+        ways = {way for _, _, way in heen.edges}
+        if terug and all(way in ways for _, _, way in terug.edges):
+            uit.append((snelheid, terug))
+    return uit
 
 
 class Stand:
@@ -187,15 +213,20 @@ class Importer:
         afsluitingen: bool = True,
         meldingen: bool = True,
         planning_seconden: int = 3600,
+        snelheden: bool = True,
     ):
         self.tar, self.valhalla, self.ndw, self.stand = tar, valhalla, ndw.rstrip("/"), stand
         self.met_afsluitingen = afsluitingen
         self.met_meldingen = meldingen
         self.planning_seconden = planning_seconden
         self.planning_gehaald = 0.0
+        self.met_snelheden = snelheden
+        # Uit de planningsfeed, bij elke ophaalbeurt ververst.
+        self.geplande_snelheden: list[datex3.TijdelijkeSnelheid] = []
         tileset = valhalla.tileset()
         self.locaties = MatchCache(cache_dir / "meetlocaties.json", tileset)
         self.afsluitingen = MatchCache(cache_dir / "afsluitingen.json", tileset)
+        self.snelheden = MatchCache(cache_dir / "snelheden.json", tileset)
         self.geschreven: set[int] = set()
         # Wat een vorige instantie schreef is onbekend, dus alles eerst leeg.
         tar.wis_alles()
@@ -222,14 +253,51 @@ class Importer:
         self.planning_gehaald = time.time()
         nu = datetime.now(UTC)
         try:
-            feed = datex3.open_feed(haal(f"{self.ndw}/{PLANNING}"))
-            gepland = list(datex3.lees_geplande_afsluitingen(feed, nu, nu + PLANNING_VOORUIT))
+            ruw = haal(f"{self.ndw}/{PLANNING}")
+            gepland = list(
+                datex3.lees_geplande_afsluitingen(datex3.open_feed(ruw), nu, nu + PLANNING_VOORUIT)
+            )
+            if self.met_snelheden:
+                ruw.seek(0)
+                self.geplande_snelheden = list(
+                    datex3.lees_snelheden(datex3.open_feed(ruw), nu, nu + SNELHEID_VOORUIT)
+                )
         except (OSError, ValueError, ParseError) as fout:
             log.warning("planningsfeed niet opgehaald: %s", fout)
             return
         self.stand.zet_gepland(kaartlaag.geojson(kaartlaag.geplande_afsluitingen(gepland)))
         self.stand.zet(geplande_afsluitingen=len(gepland))
-        log.info("planningsfeed: %d afsluitingen in de komende dagen", len(gepland))
+        log.info(
+            "planningsfeed: %d afsluitingen in de komende dagen, %d tijdelijke snelheden",
+            len(gepland),
+            len(self.geplande_snelheden),
+        )
+
+    def _snelheden(self, nu: datetime) -> list[dict]:
+        """De tijdelijke maximumsnelheden die nu gelden, als features voor de
+        laag: uit de eigen feed (elke ronde) en uit de planningsfeed. Alleen voor
+        de app onderweg; Valhalla kent geen maximumsnelheid in traffic.tar."""
+        actueel: list[datex3.TijdelijkeSnelheid] = []
+        try:
+            feed = datex3.open_feed(haal(f"{self.ndw}/{SNELHEDEN}"))
+            actueel = list(datex3.lees_snelheden(feed, nu, nu))
+        except (OSError, ValueError, ParseError) as fout:
+            log.warning("maximumsnelheden niet opgehaald: %s", fout)
+        geldig = actueel + [s for s in self.geplande_snelheden if s.geldt(nu)]
+        items: dict[str, tuple] = {}
+        for snelheid in geldig:
+            items[snelheid.sleutel] = snelheid.punten
+            items[snelheid.sleutel + "#terug"] = snelheid.punten[::-1]
+        if self.snelheden.vul_aan(self.valhalla, items):
+            self.snelheden.bewaar()
+        gelegd = leg_snelheden(geldig, self.snelheden.matches)
+        self.stand.zet(
+            tijdelijke_snelheden=len(geldig),
+            tijdelijke_snelheden_gematcht=sum(
+                1 for s in geldig if self.snelheden.matches.get(s.sleutel)
+            ),
+        )
+        return kaartlaag.snelheden(gelegd, nu)
 
     def ronde(self) -> None:
         begin = time.time()
@@ -263,6 +331,8 @@ class Importer:
         features = kaartlaag.maatregelen(maatregelen) + kaartlaag.trage_stukken(
             reistijden, self.locaties.matches
         )
+        if self.met_snelheden:
+            features += self._snelheden(datetime.now(UTC))
         if self.met_meldingen:
             # Alleen voor de kaart en de waarschuwing onderweg: de vertraging
             # die een ongeval geeft zit al in de reistijden. Een mislukte
@@ -332,6 +402,7 @@ def main() -> None:
         omgeving.get("AFSLUITINGEN", "true").lower() != "false",
         omgeving.get("MELDINGEN", "true").lower() != "false",
         int(omgeving.get("PLANNING_SECONDEN", "3600")),
+        omgeving.get("SNELHEDEN", "true").lower() != "false",
     )
     mislukt = 0
     while True:

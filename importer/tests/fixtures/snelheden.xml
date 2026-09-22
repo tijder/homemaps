@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Naar de echte feeds (tijdelijke_verkeersmaatregelen_maximum_snelheden en de
+     planningsfeed), ingekort. -->
+<mc:messageContainer xmlns:mc="http://datex2.eu/schema/3/messageContainer" xmlns:sit="http://datex2.eu/schema/3/situation" xmlns:com="http://datex2.eu/schema/3/common" xmlns:loc="http://datex2.eu/schema/3/locationReferencing" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" modelBaseVersion="3">
+  <mc:payload xsi:type="sit:SituationPublication">
+    <sit:situation id="S1"><sit:situationRecord xsi:type="sit:SpeedManagement" id="WERK" version="3">
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-07T05:00:00Z</com:overallStartTime><com:overallEndTime>2026-10-09T14:00:00Z</com:overallEndTime></com:validityTimeSpecification></sit:validity>
+      <sit:cause><sit:causeType>roadMaintenance</sit:causeType></sit:cause>
+      <sit:locationReference xsi:type="loc:ItineraryByIndexedLocations">
+        <loc:locationContainedInItinerary index="0"><loc:location xsi:type="loc:LinearLocation"><loc:gmlLineString><loc:posList>53.29151 6.196199 53.291996 6.196087</loc:posList></loc:gmlLineString></loc:location></loc:locationContainedInItinerary>
+        <loc:locationContainedInItinerary index="1"><loc:location xsi:type="loc:LinearLocation"><loc:gmlLineString><loc:posList>53.291996 6.196087 53.29539 6.19573</loc:posList></loc:gmlLineString></loc:location></loc:locationContainedInItinerary>
+      </sit:locationReference>
+      <sit:complianceOption>mandatory</sit:complianceOption><sit:speedManagementType>speedRestrictionInOperation</sit:speedManagementType><sit:temporarySpeedLimit>30.0</sit:temporarySpeedLimit>
+    </sit:situationRecord></sit:situation>
+    <sit:situation id="S2"><sit:situationRecord xsi:type="sit:SpeedManagement" id="NACHT" version="1">
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-20T00:00:00Z</com:overallStartTime><com:overallEndTime>2026-10-01T00:00:00Z</com:overallEndTime>
+        <com:validPeriod><com:startOfPeriod>2026-09-22T20:00:00Z</com:startOfPeriod><com:endOfPeriod>2026-09-23T04:00:00Z</com:endOfPeriod></com:validPeriod>
+      </com:validityTimeSpecification></sit:validity>
+      <sit:locationReference><loc:gmlLineString><loc:posList>52.0 5.0 52.01 5.01</loc:posList></loc:gmlLineString></sit:locationReference>
+      <sit:complianceOption>mandatory</sit:complianceOption><sit:temporarySpeedLimit>70.0</sit:temporarySpeedLimit>
+    </sit:situationRecord></sit:situation>
+    <sit:situation id="S3"><sit:situationRecord xsi:type="sit:SpeedManagement" id="VRACHT" version="1">
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-01T00:00:00Z</com:overallStartTime></com:validityTimeSpecification></sit:validity>
+      <sit:forVehiclesWithCharacteristicsOf><com:vehicleType>lorry</com:vehicleType></sit:forVehiclesWithCharacteristicsOf>
+      <sit:locationReference><loc:gmlLineString><loc:posList>52.1 5.1 52.11 5.11</loc:posList></loc:gmlLineString></sit:locationReference>
+      <sit:complianceOption>mandatory</sit:complianceOption><sit:temporarySpeedLimit>50.0</sit:temporarySpeedLimit>
+    </sit:situationRecord></sit:situation>
+    <sit:situation id="S4"><sit:situationRecord xsi:type="sit:SpeedManagement" id="ADVIES" version="1">
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-01T00:00:00Z</com:overallStartTime></com:validityTimeSpecification></sit:validity>
+      <sit:locationReference><loc:gmlLineString><loc:posList>52.2 5.2 52.21 5.21</loc:posList></loc:gmlLineString></sit:locationReference>
+      <sit:complianceOption>advisory</sit:complianceOption><sit:temporarySpeedLimit>50.0</sit:temporarySpeedLimit>
+    </sit:situationRecord></sit:situation>
+    <sit:situation id="S5"><sit:situationRecord xsi:type="sit:SpeedManagement" id="VOORBIJ" version="1">
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-08-01T00:00:00Z</com:overallStartTime><com:overallEndTime>2026-08-31T00:00:00Z</com:overallEndTime></com:validityTimeSpecification></sit:validity>
+      <sit:locationReference><loc:gmlLineString><loc:posList>52.3 5.3 52.31 5.31</loc:posList></loc:gmlLineString></sit:locationReference>
+      <sit:complianceOption>mandatory</sit:complianceOption><sit:temporarySpeedLimit>30.0</sit:temporarySpeedLimit>
+    </sit:situationRecord></sit:situation>
+    <sit:situation id="S6"><sit:situationRecord xsi:type="sit:RoadOrCarriagewayOrLaneManagement" id="GEEN_SNELHEID" version="1">
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-01T00:00:00Z</com:overallStartTime></com:validityTimeSpecification></sit:validity>
+      <sit:locationReference><loc:gmlLineString><loc:posList>52.4 5.4 52.41 5.41</loc:posList></loc:gmlLineString></sit:locationReference>
+      <sit:roadOrCarriagewayOrLaneManagementType>laneClosures</sit:roadOrCarriagewayOrLaneManagementType>
+    </sit:situationRecord></sit:situation>
+  </mc:payload>
+</mc:messageContainer>

@@ -333,3 +333,67 @@ def lees_geplande_afsluitingen(
                 _tekst(record, "carriageway"),
                 tuple(vensters),
             )
+
+
+@dataclass(frozen=True)
+class TijdelijkeSnelheid:
+    """Een tijdelijke maximumsnelheid (bij werk of een evenement), met de
+    vensters waarin hij geldt."""
+
+    id: str
+    versie: str
+    kmu: int
+    lijnen: tuple[tuple[Punt, ...], ...]
+    oorzaak: str | None
+    vensters: tuple[tuple[datetime, datetime | None], ...]  # (begin, eind)
+
+    @property
+    def sleutel(self) -> str:
+        return f"{self.id}@{self.versie}"
+
+    @property
+    def punten(self) -> tuple[Punt, ...]:
+        return tuple(punt for lijn in self.lijnen for punt in lijn)
+
+    def geldt(self, nu: datetime) -> bool:
+        return any(begin <= nu and (eind is None or nu <= eind) for begin, eind in self.vensters)
+
+
+def lees_snelheden(stroom: BinaryIO, van: datetime, tot: datetime) -> Iterator[TijdelijkeSnelheid]:
+    """Tijdelijke maximumsnelheden die ergens tussen [van] en [tot] gelden, uit
+    de feed met maximumsnelheden of de planningsfeed (dezelfde records). Wat
+    alleen voor sommige voertuigen geldt, of alleen een advies is, valt af."""
+    for record in _records(stroom, "situationRecord"):
+        if not record.attrib.get(XSI_TYPE, "").endswith("SpeedManagement"):
+            continue
+        limiet = _tekst(record, "temporarySpeedLimit")
+        naleving = _tekst(record, "complianceOption")
+        if (
+            limiet is None
+            or _eerste(record, "vehicleType") is not None
+            or (naleving is not None and naleving != "mandatory")
+        ):
+            continue
+        try:
+            kmu = round(float(limiet))
+        except ValueError:
+            continue
+        if kmu <= 0:
+            continue
+        vensters = _vensters(record, van, tot)
+        if not vensters:
+            continue
+        lijnen = tuple(
+            tuple(punten)
+            for lijn in _vind(record, "posList")
+            if len(punten := _punten(lijn.text or "")) >= 2
+        )
+        if lijnen:
+            yield TijdelijkeSnelheid(
+                record.attrib["id"],
+                record.attrib.get("version", ""),
+                kmu,
+                lijnen,
+                _tekst(record, "causeType"),
+                tuple(vensters),
+            )

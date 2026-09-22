@@ -48,6 +48,13 @@ class NepValhalla extends ValhallaService {
   }) async => limieten;
 
   @override
+  Future<List<RijstrookAdvies>?> rijstroken(
+    List<LatLng> lijn,
+    Profiel profiel, {
+    CancelToken? annuleer,
+  }) async => null;
+
+  @override
   Future<double?> reistijd(
     List<LatLng> lijn,
     Profiel profiel, {
@@ -288,6 +295,56 @@ void main() {
     final nav = c.read(navigatieProvider)!;
     expect(nav.stand!.segment, greaterThanOrEqualTo(10));
     expect(nav.limiet, 80);
+  });
+
+  test('een tijdelijke maximumsnelheid wint als die lager is', () async {
+    valhalla.limieten = [for (var i = 0; i < route.punten.length - 1; i++) 50];
+    final werk = route.punten.sublist(0, 16);
+    c.dispose();
+    c = ProviderContainer(
+      overrides: [
+        locatieBronProvider.overrideWithValue(bron),
+        stemProvider.overrideWithValue(stem),
+        valhallaProvider.overrideWithValue(valhalla),
+        verkeerProvider.overrideWithValue(
+          AsyncData({
+            'type': 'FeatureCollection',
+            'features': [
+              {
+                'type': 'Feature',
+                'id': 0,
+                'properties': {'soort': 'snelheid', 'kmu': 30},
+                'geometry': {
+                  'type': 'LineString',
+                  'coordinates': [
+                    for (final p in werk) [p.longitude, p.latitude],
+                  ],
+                },
+              },
+            ],
+          }),
+        ),
+      ],
+    );
+    addTearDown(c.dispose);
+    final wacht = c.read(locatieProvider.notifier).zetAan();
+    await Future<void>.delayed(Duration.zero);
+    bron.fixes.add(fix(route.punten.first));
+    await wacht;
+    await start();
+    await Future<void>.delayed(Duration.zero);
+    await rijNaar(route.punten[2]);
+    var nav = c.read(navigatieProvider)!;
+    expect(nav.limiet, 30);
+    expect(nav.limietTijdelijk, isTrue);
+    // Voorbij het werk: weer de gewone 50.
+    for (final punt in langs(route.punten, 20).take(80)) {
+      await rijNaar(punt);
+    }
+    nav = c.read(navigatieProvider)!;
+    expect(nav.stand!.segment, greaterThanOrEqualTo(16));
+    expect(nav.limiet, 50);
+    expect(nav.limietTijdelijk, isFalse);
   });
 
   test('een ongeval vóór je op de route: één keer gewaarschuwd', () async {

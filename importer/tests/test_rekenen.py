@@ -1,6 +1,8 @@
+from datetime import UTC, datetime
+
 from homemaps_traffic import traffictile as tt
-from homemaps_traffic.datex3 import Afsluiting, Reistijd
-from homemaps_traffic.main import bereken_afsluitingen, bereken_snelheden
+from homemaps_traffic.datex3 import Afsluiting, Reistijd, TijdelijkeSnelheid
+from homemaps_traffic.main import bereken_afsluitingen, bereken_snelheden, leg_snelheden
 from homemaps_traffic.matcher import Match
 
 
@@ -50,3 +52,25 @@ def test_afsluiting_neemt_tegenrichting_alleen_mee_op_dezelfde_way():
     assert all(tt.is_afgesloten(waarde) for waarde in dicht.values())
     hele_weg = bereken_afsluitingen([Afsluiting("X", "1", ((0, 0), (1, 1)), True)], matches)
     assert set(hele_weg) == {1, 2, 3, 4}
+
+
+def test_tijdelijke_snelheid_neemt_tegenrichting_alleen_mee_op_dezelfde_way():
+    begin = datetime(2026, 9, 1, tzinfo=UTC)
+    snelheid = TijdelijkeSnelheid("W", "1", 30, (((0, 0), (1, 1)),), None, ((begin, None),))
+    anders = TijdelijkeSnelheid("G", "1", 70, (((0, 0), (1, 1)),), None, ((begin, None),))
+    matches = {
+        # Eén rijbaan: terug over dezelfde way.
+        "W@1": Match(((1, 100.0, 50), (2, 100.0, 51)), 200.0, ("a",)),
+        "W@1#terug": Match(((3, 100.0, 51), (4, 100.0, 50)), 200.0, ("b",)),
+        # Gescheiden rijbanen: terug deels over een eigen way.
+        "G@1": Match(((5, 100.0, 60),), 100.0, ("c",)),
+        "G@1#terug": Match(((6, 100.0, 60), (7, 100.0, 99)), 200.0, ("d",)),
+    }
+    gelegd = leg_snelheden([snelheid, anders], matches)
+    assert [(s.id, m.vorm) for s, m in gelegd] == [
+        ("W", ("a",)),
+        ("W", ("b",)),
+        ("G", ("c",)),
+    ]
+    # Niet gematcht: valt weg.
+    assert leg_snelheden([snelheid], {"W@1": None}) == []

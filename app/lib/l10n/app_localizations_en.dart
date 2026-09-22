@@ -440,6 +440,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String maximumsnelheidTijdelijk(int kmu) {
+    return 'Temporary speed limit $kmu km/h';
+  }
+
+  @override
   String get meldingOngeval => 'Accident';
 
   @override

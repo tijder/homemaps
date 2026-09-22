@@ -267,7 +267,15 @@
         "type": "int"
       }
     }
+  },  "maximumsnelheidTijdelijk": "Tijdelijke maximumsnelheid {kmu} km/u",
+  "@maximumsnelheidTijdelijk": {
+    "placeholders": {
+      "kmu": {
+        "type": "int"
+      }
+    }
   },
+
   "meldingOngeval": "Ongeval",
   "meldingPech": "Pechgeval",
   "meldingObstakel": "Voorwerp op de weg",

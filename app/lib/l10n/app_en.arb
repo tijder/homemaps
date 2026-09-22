@@ -133,6 +133,7 @@
   "nietGevonden": "Not found: {zoek}",
   "kmu": "km/h",
   "maximumsnelheid": "Speed limit {kmu} km/h",
+  "maximumsnelheidTijdelijk": "Temporary speed limit {kmu} km/h",
   "meldingOngeval": "Accident",
   "meldingPech": "Broken-down vehicle",
   "meldingObstakel": "Object on the road",
