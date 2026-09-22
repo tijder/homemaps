@@ -76,7 +76,7 @@
   "navigatieMeldingTekst": "HomeMaps is following your location for directions.",
   "herberekenen": "Recalculating route.",
   "herberekenenBezig": "Recalculating…",
-  "snellereRoute": "{minuten, plural, =1{Faster route found, 1 minute faster.} other{Faster route found, {minuten} minutes faster.}}",
+  "snellereRoute": "{minuten, plural, =1{There is a faster route, 1 minute faster. Choose on screen whether to take it.} other{There is a faster route, {minuten} minutes faster. Choose on screen whether to take it.}}",
   "overAfstand": "In {afstand}, {zin}",
   "gesprokenMeter": "{meter} meters",
   "gesprokenKilometer": "{km} kilometers",
@@ -95,5 +95,9 @@
   "aantalTussenpunten": "{aantal, plural, =1{via 1 stop} other{via {aantal} stops}}",
   "routeWijzigen": "Edit route",
   "eerstStoppen": "Stop navigation first.",
-  "vertraging": "delay"
+  "vertraging": "delay",
+  "voorstelSneller": "Faster route: {minuten} min faster",
+  "voorstelVia": "via {weg}",
+  "nemen": "Take it",
+  "negeren": "Ignore"
 }

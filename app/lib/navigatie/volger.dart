@@ -10,6 +10,7 @@ import '../utils/afstand.dart';
 class NavStand {
   const NavStand({
     required this.opRoute,
+    required this.segment,
     required this.langs,
     required this.afwijking,
     required this.routeKoers,
@@ -23,6 +24,10 @@ class NavStand {
 
   /// Het punt op de route dat het dichtst bij de fix ligt.
   final LatLng opRoute;
+
+  /// Het stuk van de vorm waar [opRoute] op ligt: tussen punt [segment] en het
+  /// volgende.
+  final int segment;
 
   /// Meters vanaf het begin van de route tot [opRoute].
   final double langs;
@@ -127,6 +132,7 @@ class RouteVolger {
     final rest = max(0.0, lengte - langs);
     return NavStand(
       opRoute: beste.punt,
+      segment: segment,
       langs: langs,
       afwijking: beste.afstand,
       routeKoers: koers,
@@ -138,6 +144,12 @@ class RouteVolger {
       aangekomen: rest < aankomstStraal && beste.afstand < 50,
     );
   }
+
+  /// Wat er van de route nog over is, vanaf [stand].
+  List<LatLng> rest(NavStand stand) => [
+    stand.opRoute,
+    ...route.punten.skip(stand.segment + 1),
+  ];
 
   /// De tijd van elke manoeuvre geldt voor zijn eigen stuk; van het stuk waar je
   /// nu op zit telt alleen wat er nog over is.

@@ -302,9 +302,17 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
       gevonden: nav != null ? null : planner.gevonden,
       beeldVersie: planner.beeldVersie,
       onPuntVersleept: nav != null ? (_, _) {} : _versleept,
-      routes: nav != null ? [nav.route] : planner.routes.value ?? const [],
+      // Tijdens navigatie de route, en een voorgestelde snellere grijs ernaast.
+      routes: nav != null
+          ? [nav.route, ?nav.voorstel?.route]
+          : planner.routes.value ?? const [],
       gekozen: nav != null ? 0 : planner.gekozen,
-      onRouteGekozen: ref.read(plannerProvider.notifier).kies,
+      onRouteGekozen: nav != null
+          // De grijze lijn aantikken is "Nemen".
+          ? (i) {
+              if (i == 1) ref.read(navigatieProvider.notifier).neemVoorstel();
+            }
+          : ref.read(plannerProvider.notifier).kies,
       onLangIngedrukt: _puntMenu,
       onController: (controller) => _kaart = controller,
       locatie: opWeg,
@@ -826,6 +834,16 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                   ),
                 ),
               ),
+            if (nav.voorstel case final voorstel?) ...[
+              blok(
+                VoorstelKaart(
+                  voorstel,
+                  onNemen: acties.neemVoorstel,
+                  onNegeren: acties.negeerVoorstel,
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
             blok(
               NavigatieVoet(
                 nav,

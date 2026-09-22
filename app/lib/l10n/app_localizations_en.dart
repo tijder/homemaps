@@ -269,8 +269,9 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       minuten,
       locale: localeName,
-      other: 'Faster route found, $minuten minutes faster.',
-      one: 'Faster route found, 1 minute faster.',
+      other:
+          'There is a faster route, $minuten minutes faster. Choose on screen whether to take it.',
+      one: 'There is a faster route, 1 minute faster. Choose on screen whether to take it.',
     );
     return '$_temp0';
   }
@@ -347,4 +348,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get vertraging => 'delay';
+
+  @override
+  String voorstelSneller(int minuten) {
+    return 'Faster route: $minuten min faster';
+  }
+
+  @override
+  String voorstelVia(String weg) {
+    return 'via $weg';
+  }
+
+  @override
+  String get nemen => 'Take it';
+
+  @override
+  String get negeren => 'Ignore';
 }

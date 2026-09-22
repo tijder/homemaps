@@ -9,6 +9,7 @@ import 'package:homemaps/navigatie/stem.dart';
 import 'package:homemaps/providers/diensten.dart';
 import 'package:homemaps/providers/locatie.dart';
 import 'package:homemaps/services/valhalla_service.dart';
+import 'package:homemaps/utils/afstand.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import 'hulp/nep_bron.dart' hide fix;
@@ -31,7 +32,19 @@ class NepStem implements Stem {
 class NepValhalla extends ValhallaService {
   NepValhalla(this.antwoord) : super(Dio(), 'http://nep');
 
-  final RouteOptie antwoord;
+  RouteOptie antwoord;
+
+  /// Reistijd over een lijn; standaard onbekend.
+  double? Function(List<LatLng> lijn) tijd = (_) => null;
+
+  @override
+  Future<double?> reistijd(
+    List<LatLng> lijn,
+    Profiel profiel, {
+    bool live = false,
+    DateTime? nu,
+    CancelToken? annuleer,
+  }) async => tijd(lijn);
 
   /// Wordt bij elk verzoek aangeroepen, om vast te leggen hoe het er toen voor
   /// stond.
@@ -181,5 +194,70 @@ void main() {
     expect(bron.laatsteMelding, isNull);
     c.read(navigatieProvider.notifier).stop();
     expect(c.read(navigatieProvider), isNull);
+  });
+
+  group('snellere route onderweg', () {
+    // Een "andere" route: dezelfde vorm, maar 500 m korter, zodat hij als een
+    // andere weg telt.
+    final anders = RouteOptie(
+      meters: route.meters - 500,
+      seconden: route.seconden,
+      punten: route.punten,
+      manoeuvres: route.manoeuvres,
+      hoogtes: const [],
+      hoogteInterval: 30,
+      heeftTol: false,
+      heeftVeer: false,
+    );
+
+    Future<void> onderweg() async {
+      await start();
+      for (final punt in langs(route.punten, 20).take(10)) {
+        await rijNaar(punt);
+      }
+      valhalla.antwoord = anders;
+    }
+
+    /// De rest van de huidige route duurt [huidig] s, de nieuwe [nieuw] s.
+    void tijden(double huidig, double nieuw) => valhalla.tijd = (lijn) =>
+        // De nieuwe lijn begint bij het begin van de route; de rest van de
+        // huidige waar je nu bent.
+        meters(lijn.first, route.punten.first) < 1 ? nieuw : huidig;
+
+    test('een voorstel, en pas wisselen na "Nemen"', () async {
+      await onderweg();
+      tijden(1200, 700);
+      await c.read(navigatieProvider.notifier).zoekSneller();
+      var nav = c.read(navigatieProvider)!;
+      expect(nav.voorstel?.secondenSneller, 500);
+      expect(nav.route, same(route), reason: 'nog niet gewisseld');
+      expect(stem.zinnen.last, 'Snellere route, 8 minuten');
+
+      c.read(navigatieProvider.notifier).neemVoorstel();
+      nav = c.read(navigatieProvider)!;
+      expect(nav.route, same(anders));
+      expect(nav.voorstel, isNull);
+    });
+
+    test('"Negeren": de route blijft, en dezelfde komt niet terug', () async {
+      await onderweg();
+      tijden(1200, 700);
+      await c.read(navigatieProvider.notifier).zoekSneller();
+      c.read(navigatieProvider.notifier).negeerVoorstel();
+      expect(c.read(navigatieProvider)!.voorstel, isNull);
+      expect(c.read(navigatieProvider)!.route, same(route));
+      await c.read(navigatieProvider.notifier).zoekSneller();
+      expect(c.read(navigatieProvider)!.voorstel, isNull);
+    });
+
+    test('weinig winst: geen voorstel', () async {
+      await onderweg();
+      tijden(1200, 1100); // 100 s: onder de twee minuten
+      await c.read(navigatieProvider.notifier).zoekSneller();
+      expect(c.read(navigatieProvider)!.voorstel, isNull);
+      tijden(3000, 2800); // 200 s, maar minder dan een tiende
+      await c.read(navigatieProvider.notifier).zoekSneller();
+      expect(c.read(navigatieProvider)!.voorstel, isNull);
+    });
   });
 }

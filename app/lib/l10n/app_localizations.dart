@@ -557,7 +557,7 @@ abstract class AppLocalizations {
   /// No description provided for @snellereRoute.
   ///
   /// In nl, this message translates to:
-  /// **'{minuten, plural, =1{Snellere route gevonden, 1 minuut sneller.} other{Snellere route gevonden, {minuten} minuten sneller.}}'**
+  /// **'{minuten, plural, =1{Er is een snellere route, 1 minuut sneller. Kies op het scherm of je hem neemt.} other{Er is een snellere route, {minuten} minuten sneller. Kies op het scherm of je hem neemt.}}'**
   String snellereRoute(int minuten);
 
   /// No description provided for @overAfstand.
@@ -673,6 +673,30 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'vertraging'**
   String get vertraging;
+
+  /// No description provided for @voorstelSneller.
+  ///
+  /// In nl, this message translates to:
+  /// **'Snellere route: {minuten} min sneller'**
+  String voorstelSneller(int minuten);
+
+  /// No description provided for @voorstelVia.
+  ///
+  /// In nl, this message translates to:
+  /// **'via {weg}'**
+  String voorstelVia(String weg);
+
+  /// No description provided for @nemen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Nemen'**
+  String get nemen;
+
+  /// No description provided for @negeren.
+  ///
+  /// In nl, this message translates to:
+  /// **'Negeren'**
+  String get negeren;
 }
 
 class _AppLocalizationsDelegate

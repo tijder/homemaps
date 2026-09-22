@@ -192,3 +192,89 @@ class NavigatieVoet extends StatelessWidget {
     );
   }
 }
+
+/// Een snellere route onderweg: nemen of negeren. Een balkje loopt leeg tot het
+/// voorstel vanzelf vervalt (dan blijft de huidige route).
+class VoorstelKaart extends StatelessWidget {
+  const VoorstelKaart(
+    this.voorstel, {
+    super.key,
+    required this.onNemen,
+    required this.onNegeren,
+  });
+
+  final Voorstel voorstel;
+  final VoidCallback onNemen;
+  final VoidCallback onNegeren;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final tekst = Theme.of(context).textTheme;
+    final kleuren = Theme.of(context).colorScheme;
+    final over = voorstel.verloopt.difference(DateTime.now());
+    final minuten = (voorstel.secondenSneller / 60).round();
+    final via = voorstel.via;
+    return Material(
+      elevation: 8,
+      color: kleuren.tertiaryContainer,
+      borderRadius: BorderRadius.circular(16),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Van vol naar leeg in de tijd die het voorstel nog heeft.
+          TweenAnimationBuilder<double>(
+            tween: Tween(
+              begin:
+                  over.inMilliseconds /
+                  NavigatieNotifier.voorstelDuur.inMilliseconds,
+              end: 0,
+            ),
+            duration: over.isNegative ? Duration.zero : over,
+            builder: (context, waarde, _) => LinearProgressIndicator(
+              value: waarde.clamp(0, 1),
+              minHeight: 3,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 8, 8),
+            child: Row(
+              children: [
+                Icon(Icons.alt_route, color: kleuren.onTertiaryContainer),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l.voorstelSneller(minuten),
+                        style: tekst.titleMedium?.copyWith(
+                          color: kleuren.onTertiaryContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (via != null)
+                        Text(
+                          l.voorstelVia(via),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tekst.bodyMedium?.copyWith(
+                            color: kleuren.onTertiaryContainer,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                TextButton(onPressed: onNegeren, child: Text(l.negeren)),
+                const SizedBox(width: 4),
+                FilledButton(onPressed: onNemen, child: Text(l.nemen)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -63,6 +64,30 @@ class NavTeksten {
   }
 }
 
+/// Een snellere route die het verkeer onderweg opleverde; de gebruiker kiest.
+class Voorstel {
+  const Voorstel(this.route, this.secondenSneller, this.verloopt);
+
+  final RouteOptie route;
+  final double secondenSneller;
+
+  /// Zonder keuze vervalt hij dan, en blijft de huidige route.
+  final DateTime verloopt;
+
+  /// De weg waar het verschil in zit: de langste manoeuvre met een naam, voor
+  /// "via N303".
+  String? get via {
+    Manoeuvre? langste;
+    for (final m in route.manoeuvres) {
+      if (m.straten.isNotEmpty &&
+          (langste == null || m.meters > langste.meters)) {
+        langste = m;
+      }
+    }
+    return langste?.straten.first;
+  }
+}
+
 class NavigatieToestand {
   const NavigatieToestand({
     required this.route,
@@ -72,6 +97,7 @@ class NavigatieToestand {
     this.gedempt = false,
     this.herberekent = false,
     this.aangekomen = false,
+    this.voorstel,
   });
 
   final RouteOptie route;
@@ -83,6 +109,7 @@ class NavigatieToestand {
   final bool gedempt;
   final bool herberekent;
   final bool aangekomen;
+  final Voorstel? voorstel;
 
   NavigatieToestand kopie({
     RouteOptie? route,
@@ -92,6 +119,7 @@ class NavigatieToestand {
     bool? gedempt,
     bool? herberekent,
     bool? aangekomen,
+    Voorstel? Function()? voorstel,
   }) => NavigatieToestand(
     route: route ?? this.route,
     doelen: doelen ?? this.doelen,
@@ -100,6 +128,7 @@ class NavigatieToestand {
     gedempt: gedempt ?? this.gedempt,
     herberekent: herberekent ?? this.herberekent,
     aangekomen: aangekomen ?? this.aangekomen,
+    voorstel: voorstel != null ? voorstel() : this.voorstel,
   );
 }
 
@@ -111,6 +140,14 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
   Timer? _verkeer;
   CancelToken? _lopend;
   DateTime _laatsteHerberekening = DateTime(0);
+
+  Timer? _voorstelVerloopt;
+
+  /// Afgewezen routes (op hun lengte), om niet steeds dezelfde voor te stellen.
+  final _afgewezen = <int>{};
+
+  /// Zolang staat een voorstel er zonder keuze.
+  static const voorstelDuur = Duration(seconds: 45);
 
   /// Via-punten op de huidige route die al voorbij zijn (en uit de doelen weg).
   int _viaVoorbij = 0;
@@ -146,6 +183,7 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
     required NavTeksten teksten,
   }) async {
     _ruimOp();
+    _afgewezen.clear();
     _actief = true;
     _stemBijStart = ref.read(stemProvider);
     _teksten = teksten;
@@ -162,7 +200,7 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
     }, fireImmediately: true);
     if (_profiel == Profiel.auto &&
         ref.read(instellingenProvider).liveVerkeer) {
-      _verkeer = Timer.periodic(verkeerInterval, (_) => _zoekSneller());
+      _verkeer = Timer.periodic(verkeerInterval, (_) => zoekSneller());
     }
   }
 
@@ -183,6 +221,8 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
     _fixes = null;
     _verkeer?.cancel();
     _verkeer = null;
+    _voorstelVerloopt?.cancel();
+    _voorstelVerloopt = null;
     _lopend?.cancel();
     if (!_actief) return;
     _actief = false;
@@ -222,7 +262,7 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
         DateTime.now().difference(_laatsteHerberekening) >
             _rustTussenHerberekeningen) {
       state = nu.kopie(stand: stand, fix: fix);
-      _herbereken(fix, stil: false);
+      _herbereken(fix);
       return;
     }
     if (!nu.gedempt) {
@@ -263,20 +303,115 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
         DateTime.now().difference(_laatsteHerberekening) >
             _rustTussenHerberekeningen) {
       if (!nu.gedempt) _stem.zeg(_teksten.herberekenen);
-      _herbereken(fix, stil: false);
+      _herbereken(fix);
     }
   }
 
   /// Elke paar minuten, voor de auto: is er vanaf hier nu een duidelijk snellere
-  /// weg? Dan zonder vragen over, met een zin erover.
-  void _zoekSneller() {
+  /// weg? Dan een voorstel; wisselen doet pas de gebruiker ([neemVoorstel]).
+  ///
+  /// Beide tijden komen op dezelfde manier tot stand -- de rest van de huidige
+  /// route en de nieuwe, allebei over hun lijn met het verkeer van nu -- zodat
+  /// een verschil echt aan het verkeer ligt en niet aan de rekenwijze.
+  @visibleForTesting
+  Future<void> zoekSneller() async {
     final nu = state;
-    if (nu == null || nu.herberekent || nu.aangekomen) return;
-    final fix = nu.fix;
-    if (fix != null) _herbereken(fix, stil: true);
+    final valhalla = ref.read(valhallaProvider);
+    final volger = _volger;
+    final stand = nu?.stand, fix = nu?.fix;
+    if (nu == null ||
+        valhalla == null ||
+        volger == null ||
+        stand == null ||
+        fix == null ||
+        nu.herberekent ||
+        nu.aangekomen ||
+        nu.voorstel != null) {
+      return;
+    }
+    final annuleer = _lopend = CancelToken();
+    final instellingen = ref.read(instellingenProvider);
+    try {
+      final routes = await valhalla.route(
+        [fix.punt, for (final doel in nu.doelen) doel.punt],
+        _profiel,
+        taal: _teksten.taal,
+        liveVerkeer: instellingen.liveVerkeer,
+        vermijdSnelwegen: instellingen.vermijdSnelwegen,
+        vermijdTol: instellingen.vermijdTol,
+        vermijdVeren: instellingen.vermijdVeren,
+        alternatieven: false,
+        koers: fix.koers,
+        annuleer: annuleer,
+      );
+      if (routes.isEmpty || annuleer.isCancelled) return;
+      final nieuw = routes.first;
+      if (_afgewezen.contains(_sleutel(nieuw))) return;
+      final (huidigeTijd, nieuweTijd) = await (
+        valhalla.reistijd(
+          volger.rest(stand),
+          _profiel,
+          live: true,
+          annuleer: annuleer,
+        ),
+        valhalla.reistijd(
+          nieuw.punten,
+          _profiel,
+          live: true,
+          annuleer: annuleer,
+        ),
+      ).wait;
+      final huidig = state;
+      if (huidigeTijd == null ||
+          nieuweTijd == null ||
+          huidig == null ||
+          huidig.aangekomen ||
+          annuleer.isCancelled) {
+        return;
+      }
+      final winst = huidigeTijd - nieuweTijd;
+      // Alleen bij echte winst: twee minuten, en minstens een tiende.
+      if (winst < 120 || winst < huidigeTijd * 0.1) return;
+      state = huidig.kopie(
+        voorstel: () =>
+            Voorstel(nieuw, winst, DateTime.now().add(voorstelDuur)),
+      );
+      if (!huidig.gedempt) {
+        _stem.zeg(_teksten.snellereRoute((winst / 60).round()));
+      }
+      _voorstelVerloopt?.cancel();
+      _voorstelVerloopt = Timer(voorstelDuur, negeerVoorstel);
+    } on DioException {
+      // Geen netwerk: de volgende keer opnieuw.
+    } on RouteFout {
+      // Geen route vanaf hier: de huidige blijft.
+    }
   }
 
-  Future<void> _herbereken(LocatieFix fix, {required bool stil}) async {
+  /// "Nemen": vanaf nu de voorgestelde route.
+  void neemVoorstel() {
+    final nu = state, voorstel = nu?.voorstel;
+    if (nu == null || voorstel == null) return;
+    _voorstelVerloopt?.cancel();
+    _nieuweRoute(voorstel.route, nu.doelen);
+    if (state?.fix case final laatste?) _bijFix(laatste);
+  }
+
+  /// "Negeren", of 45 seconden niets gekozen: de huidige route blijft, en deze
+  /// komt niet nog eens voorbij.
+  void negeerVoorstel() {
+    final nu = state, voorstel = nu?.voorstel;
+    if (nu == null || voorstel == null) return;
+    _voorstelVerloopt?.cancel();
+    _afgewezen.add(_sleutel(voorstel.route));
+    state = nu.kopie(voorstel: () => null);
+  }
+
+  /// Twee routes vanaf (bijna) dezelfde plek met dezelfde lengte op 100 m zijn
+  /// voor dit doel dezelfde weg.
+  static int _sleutel(RouteOptie route) => (route.meters / 100).round();
+
+  Future<void> _herbereken(LocatieFix fix) async {
     final nu = state;
     final valhalla = ref.read(valhallaProvider);
     if (nu == null || valhalla == null) return;
@@ -299,20 +434,8 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
       );
       final huidig = state;
       if (annuleer.isCancelled || huidig == null || routes.isEmpty) return;
-      final nieuw = routes.first;
-      if (stil) {
-        final rest = huidig.stand?.restSeconden ?? huidig.route.seconden;
-        final winst = rest - nieuw.seconden;
-        // Alleen bij echte winst: twee minuten, en minstens een tiende.
-        if (winst < 120 || winst < rest * 0.1) {
-          state = huidig.kopie(herberekent: false);
-          return;
-        }
-        if (!huidig.gedempt) {
-          _stem.zeg(_teksten.snellereRoute((winst / 60).round()));
-        }
-      }
-      _nieuweRoute(nieuw, huidig.doelen);
+      _voorstelVerloopt?.cancel();
+      _nieuweRoute(routes.first, huidig.doelen);
       // Meteen de laatste fix erop, anders staat er tot de volgende niets.
       if (state?.fix case final laatste?) _bijFix(laatste);
     } on DioException {

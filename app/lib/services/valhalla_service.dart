@@ -133,18 +133,27 @@ class ValhallaService {
     }
   }
 
-  /// De reistijd van precies deze weg zonder live verkeer: Valhalla legt de
-  /// vorm opnieuw op de kaart (edge_walk: exact dezelfde wegen) en rekent zonder
-  /// vertrektijd. Null als dat mislukt; dan is er gewoon geen vertraging te
-  /// melden.
+  /// De reistijd van precies deze weg zonder live verkeer: zie [reistijd].
   Future<double?> normaleTijd(
     RouteOptie route,
     Profiel profiel, [
     CancelToken? annuleer,
-  ]) async {
+  ]) => reistijd(route.punten, profiel, annuleer: annuleer);
+
+  /// De reistijd over precies deze lijn: Valhalla legt hem opnieuw op de kaart
+  /// (edge_walk: exact dezelfde wegen). [live]: met het verkeer van nu, anders
+  /// zonder. Twee lijnen met dezelfde [live] zijn zo eerlijk te vergelijken --
+  /// een tijd uit /route rekent net iets anders. Null als het mislukt.
+  Future<double?> reistijd(
+    List<LatLng> lijn,
+    Profiel profiel, {
+    bool live = false,
+    DateTime? nu,
+    CancelToken? annuleer,
+  }) async {
     // Tussen twee legs staat hetzelfde punt twee keer; eruit.
     final punten = <LatLng>[];
-    for (final punt in route.punten) {
+    for (final punt in lijn) {
       if (punten.isEmpty || punten.last != punt) punten.add(punt);
     }
     if (punten.length < 2) return null;
@@ -156,6 +165,8 @@ class ValhallaService {
           'costing': profiel.costing,
           'shape_match': 'edge_walk',
           'directions_type': 'none',
+          if (live)
+            'date_time': {'type': 3, 'value': _minuut(nu ?? DateTime.now())},
         },
         cancelToken: annuleer,
       );
