@@ -44,7 +44,11 @@ async def main(basis: str, start: str, doel: str) -> None:
         )
         pagina = await browser.new_page(viewport={"width": 1400, "height": 850}, locale="nl-NL")
         fouten = []
-        pagina.on("pageerror", lambda fout: fouten.append(str(fout)))
+        # Een Dart-fout in wasm heet in `str()` alleen "Exception"; de stack en de
+        # console (waar Flutter de echte melding zet) zeggen wat er misging.
+        pagina.on("pageerror", lambda fout: fouten.append(f"{fout}\n{fout.stack or ''}"))
+        console = []
+        pagina.on("console", lambda bericht: console.append(f"[{bericht.type}] {bericht.text}"))
         try:
             await pagina.goto(f"{basis}/?simulatie={start}&snelheid=25&naar={doel}")
             await wacht(pagina, "locatie aan", lambda s: s.get("locatie") == "aan")
@@ -73,6 +77,8 @@ async def main(basis: str, start: str, doel: str) -> None:
                 raise AssertionError(f"fouten in de pagina: {fouten}")
         except (AssertionError, PlaywrightTimeout):
             await pagina.screenshot(path=UIT / "fout.png")
+            (UIT / "console.txt").write_text("\n".join(console))
+            print("\n".join(regel for regel in console if regel.startswith("[error]"))[-4000:])
             raise
         finally:
             await browser.close()
