@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
+import 'stem_stub.dart' if (dart.library.js_interop) 'stem_web.dart';
+
 /// Spreekt de instructies uit. Een los stuk zodat tests en de simulatie een
 /// stille stem kunnen geven.
 abstract class Stem {
@@ -34,7 +36,11 @@ class TtsStem implements Stem {
   void zeg(String zin) {
     _wachtrij = _wachtrij
         // focus: muziek gaat op Android zachter zolang de zin duurt.
-        .then((_) => _tts.speak(zin, focus: _android))
+        .then(
+          (_) => _tts
+              .speak(zin, focus: _android)
+              .timeout(maxSpreekduur(zin), onTimeout: () {}),
+        )
         .catchError((Object _) {});
   }
 
@@ -45,4 +51,12 @@ class TtsStem implements Stem {
   }
 }
 
-final stemProvider = Provider<Stem>((ref) => TtsStem());
+/// Zo lang mag een zin hooguit duren. Wie op het einde van een zin wacht en het
+/// nooit hoort (een spraakfout die de plugin inslikt), blokkeert anders elke
+/// zin die erna komt. Ruim: spraak haalt zo'n 15 tekens per seconde.
+Duration maxSpreekduur(String zin) =>
+    Duration(milliseconds: 4000 + zin.length * 120);
+
+/// Op Android en iOS flutter_tts; in de browser de spraak van de browser zelf
+/// (zie stem_web.dart).
+final stemProvider = Provider<Stem>((ref) => maakStem());
