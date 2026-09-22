@@ -521,7 +521,7 @@ abstract class AppLocalizations {
   /// No description provided for @locatieNietGevonden.
   ///
   /// In nl, this message translates to:
-  /// **'Je locatie is (nog) niet gevonden.'**
+  /// **'Je apparaat kan je locatie niet bepalen; het blijft zoeken. Op een computer lukt dat vaak niet, op een telefoon wel.'**
   String get locatieNietGevonden;
 
   /// No description provided for @startNavigatie.
@@ -631,6 +631,24 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'Locatie zoeken…'**
   String get locatieZoeken;
+
+  /// No description provided for @locatieAanOmTeNavigeren.
+  ///
+  /// In nl, this message translates to:
+  /// **'Locatie aanzetten om te navigeren'**
+  String get locatieAanOmTeNavigeren;
+
+  /// No description provided for @navigerenZonderLocatie.
+  ///
+  /// In nl, this message translates to:
+  /// **'Navigeren kan pas als je locatie bekend is.'**
+  String get navigerenZonderLocatie;
+
+  /// No description provided for @opnieuwProberen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Opnieuw proberen'**
+  String get opnieuwProberen;
 }
 
 class _AppLocalizationsDelegate

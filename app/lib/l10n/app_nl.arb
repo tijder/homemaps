@@ -111,7 +111,7 @@
   "locatieNooit": "Locatie is voor HomeMaps geweigerd. Zet het aan in de instellingen van je telefoon.",
   "locatieNooitWeb": "Locatie is voor deze site geblokkeerd. Sta het toe via het slotje naast het adres.",
   "locatieDienstUit": "Locatie staat uit op je apparaat.",
-  "locatieNietGevonden": "Je locatie is (nog) niet gevonden.",
+  "locatieNietGevonden": "Je apparaat kan je locatie niet bepalen; het blijft zoeken. Op een computer lukt dat vaak niet, op een telefoon wel.",
   "startNavigatie": "Start",
   "navigatieMeldingTitel": "Navigatie naar {bestemming}",
   "@navigatieMeldingTitel": {
@@ -174,5 +174,8 @@
     }
   },
   "daarna": "Daarna",
-  "locatieZoeken": "Locatie zoeken…"
+  "locatieZoeken": "Locatie zoeken…",
+  "locatieAanOmTeNavigeren": "Locatie aanzetten om te navigeren",
+  "navigerenZonderLocatie": "Navigeren kan pas als je locatie bekend is.",
+  "opnieuwProberen": "Opnieuw proberen"
 }

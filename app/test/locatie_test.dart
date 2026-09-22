@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:homemaps/providers/instellingen.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:homemaps/providers/locatie.dart';
 
 import 'hulp/nep_bron.dart';
@@ -73,6 +74,39 @@ void main() {
       ));
       expect(bron.laatsteNauwkeurig, isTrue);
       expect(bron.laatsteMelding?.titel, 'Navigatie');
+    },
+  );
+
+  test(
+    'geen plaatsbepaling: "niet gevonden", doorzoeken, en later gewoon aan',
+    () async {
+      final bron = NepBron(Toestemming.ja);
+      final c = container(bron);
+      final wacht = c.read(locatieProvider.notifier).zetAan();
+      await Future<void>.delayed(Duration.zero);
+      bron.fixes.addError(const PositionUpdateException('binnen'));
+      expect(await wacht, isNull);
+      expect(c.read(locatieProvider).stand, LocatieStand.nietGevonden);
+      // De stroom loopt nog: een fix maakt hem gewoon aan.
+      bron.fixes.add(fix(52.1));
+      await Future<void>.delayed(Duration.zero);
+      expect(c.read(locatieProvider).stand, LocatieStand.aan);
+    },
+  );
+
+  test(
+    'toestemming onderweg ingetrokken: geweigerd, en de stroom stopt',
+    () async {
+      final bron = NepBron(Toestemming.ja);
+      final c = container(bron);
+      final wacht = c.read(locatieProvider.notifier).zetAan();
+      await Future<void>.delayed(Duration.zero);
+      bron.fixes.add(fix(52.1));
+      await wacht;
+      bron.fixes.addError(const PermissionDeniedException('weg'));
+      await Future<void>.delayed(Duration.zero);
+      expect(c.read(locatieProvider).stand, LocatieStand.geweigerd);
+      expect(bron.fixes.hasListener, isFalse);
     },
   );
 }

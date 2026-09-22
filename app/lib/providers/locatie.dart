@@ -47,6 +47,10 @@ enum LocatieStand {
 
   /// Locatievoorzieningen van het apparaat staan uit.
   dienstUit,
+
+  /// Toestemming is er, maar het apparaat komt niet tot een plaatsbepaling
+  /// (binnen, of een computer zonder locatiedienst). Er wordt doorgezocht.
+  nietGevonden,
 }
 
 @immutable
@@ -190,6 +194,11 @@ class LocatieNotifier extends Notifier<LocatieToestand> {
   /// 20 s). Null als het niet lukt; de reden staat dan in de toestand.
   Future<LocatieFix?> zetAan() async {
     if (state.fix case final fix?) return fix;
+    // Zoekt hij al (of nog), dan niet opnieuw vragen en starten: wachten.
+    if (_stroom != null) {
+      state = const LocatieToestand(LocatieStand.zoekt);
+      return eersteFix();
+    }
     state = const LocatieToestand(LocatieStand.zoekt);
     final antwoord = await ref.read(locatieBronProvider).vraag();
     if (antwoord != Toestemming.ja) {
@@ -214,13 +223,20 @@ class LocatieNotifier extends Notifier<LocatieToestand> {
   /// De huidige fix, of de eerstvolgende als die er nog niet is.
   Future<LocatieFix?> eersteFix() async {
     if (state.fix case final fix?) return fix;
-    if (state.stand != LocatieStand.zoekt) return null;
+    if (state.stand != LocatieStand.zoekt &&
+        state.stand != LocatieStand.nietGevonden) {
+      return null;
+    }
     final klaar = Completer<LocatieFix?>();
     _wachtenden.add(klaar);
     return klaar.future.timeout(
       const Duration(seconds: 20),
       onTimeout: () {
         _wachtenden.remove(klaar);
+        // Blijft zoeken, maar zegt nu eerlijk dat het nog niet lukt.
+        if (state.stand == LocatieStand.zoekt) {
+          state = const LocatieToestand(LocatieStand.nietGevonden);
+        }
         return null;
       },
     );
@@ -237,7 +253,7 @@ class LocatieNotifier extends Notifier<LocatieToestand> {
   void navigatie(({String titel, String tekst})? melding) {
     _navigeert = melding != null;
     _navigatie = melding;
-    if (state.stand == LocatieStand.aan || state.stand == LocatieStand.zoekt) {
+    if (_stroom != null) {
       _stop();
       _start();
     }
@@ -250,7 +266,10 @@ class LocatieNotifier extends Notifier<LocatieToestand> {
         if (!_navigeert) _stop();
       },
       onShow: () {
-        if (state.stand == LocatieStand.aan && _stroom == null) _start();
+        final bezig =
+            state.stand == LocatieStand.aan ||
+            state.stand == LocatieStand.nietGevonden;
+        if (bezig && _stroom == null) _start();
       },
     );
     _stroom = ref
@@ -262,6 +281,16 @@ class LocatieNotifier extends Notifier<LocatieToestand> {
             _meld(fix);
           },
           onError: (Object fout) {
+            // Geen plaatsbepaling (nog): doorzoeken, de browser of het toestel
+            // probeert het zelf opnieuw.
+            if (fout is! PermissionDeniedException &&
+                fout is! LocationServiceDisabledException) {
+              if (state.fix == null) {
+                state = const LocatieToestand(LocatieStand.nietGevonden);
+                _meld(null);
+              }
+              return;
+            }
             // Toestemming onderweg ingetrokken, of de dienst uitgezet.
             _stop();
             state = LocatieToestand(

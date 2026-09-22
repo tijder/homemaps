@@ -24,6 +24,7 @@ import '../router/app_router.dart';
 import '../utils/muis_stub.dart'
     if (dart.library.js_interop) '../utils/muis_web.dart';
 import '../widgets/kaart.dart';
+import '../widgets/locatie_reden.dart';
 import '../widgets/navigatie_balk.dart';
 import '../widgets/route_paneel.dart';
 import '../widgets/verkeer_melding.dart';
@@ -98,9 +99,8 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
   /// waar je bent.
   Future<void> _startNavigatie(RouteOptie route) async {
     final l = AppLocalizations.of(context);
-    final fix = await ref.read(locatieProvider.notifier).zetAan();
-    if (!mounted) return;
-    if (fix == null) {
+    // De knop kan alleen met een bekende plek; zie RoutePaneel.
+    if (ref.read(locatieProvider).fix == null) {
       _meldLocatieProbleem();
       return;
     }
@@ -194,6 +194,13 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
     await _kaart?.animateCamera(CameraUpdate.newLatLngZoom(fix.punt, zoom));
   }
 
+  /// Locatie aan vanuit het routepaneel (voor navigatie): zonder de kaart te
+  /// verschuiven.
+  Future<void> _zetLocatieAan() async {
+    final fix = await ref.read(locatieProvider.notifier).zetAan();
+    if (fix == null && mounted) _meldLocatieProbleem();
+  }
+
   /// "Mijn locatie" in een zoekvakje.
   Future<Plaats?> _mijnLocatieAlsPlaats() async {
     final fix = await ref.read(locatieProvider.notifier).zetAan();
@@ -210,18 +217,15 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
   void _meldLocatieProbleem() {
     final l = AppLocalizations.of(context);
     final android = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
-    final (tekst, openen) = switch (ref.read(locatieProvider).stand) {
-      LocatieStand.permanentGeweigerd => (
-        kIsWeb ? l.locatieNooitWeb : l.locatieNooit,
-        android ? Geolocator.openAppSettings : null,
-      ),
-      LocatieStand.dienstUit => (
-        l.locatieDienstUit,
-        android ? Geolocator.openLocationSettings : null,
-      ),
-      LocatieStand.geweigerd => (l.locatieGeweigerd, null),
-      _ => (l.locatieNietGevonden, null),
-    };
+    final stand = ref.read(locatieProvider).stand;
+    final tekst = locatieReden(l, stand) ?? l.locatieNietGevonden;
+    final openen = !android
+        ? null
+        : switch (stand) {
+            LocatieStand.permanentGeweigerd => Geolocator.openAppSettings,
+            LocatieStand.dienstUit => Geolocator.openLocationSettings,
+            _ => null,
+          };
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(tekst),
@@ -256,7 +260,9 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
     final instellingen = ref.watch(instellingenProvider);
     final locatieStand = ref.watch(locatieProvider.select((t) => t.stand));
     final locatieAan =
-        locatieStand == LocatieStand.aan || locatieStand == LocatieStand.zoekt;
+        locatieStand == LocatieStand.aan ||
+        locatieStand == LocatieStand.zoekt ||
+        locatieStand == LocatieStand.nietGevonden;
     final breed = MediaQuery.sizeOf(context).width >= 800;
     final hoogte = MediaQuery.sizeOf(context).height;
 
@@ -378,6 +384,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                     LocatieStand.aan => Icons.my_location,
                     LocatieStand.uit ||
                     LocatieStand.zoekt => Icons.location_searching,
+                    LocatieStand.nietGevonden => Icons.gps_not_fixed,
                     _ => Icons.location_disabled,
                   }),
                   onPressed: _naarMijnLocatie,
@@ -433,6 +440,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                       nabij: _midden,
                       mijnLocatie: _mijnLocatieAlsPlaats,
                       onNavigeer: _startNavigatie,
+                      onLocatieAan: _zetLocatieAan,
                     ),
                   ),
                 ),
@@ -468,6 +476,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                           nabij: _midden,
                           mijnLocatie: _mijnLocatieAlsPlaats,
                           onNavigeer: _startNavigatie,
+                          onLocatieAan: _zetLocatieAan,
                           scroll: scroll,
                         ),
                       ),

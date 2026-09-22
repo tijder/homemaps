@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../l10n/app_localizations.dart';
+import 'locatie_reden.dart';
 import 'manoeuvre_pictogram.dart';
 import '../models/plaats.dart';
 import '../models/profiel.dart';
 import '../models/route.dart';
 import '../providers/instellingen.dart';
+import '../providers/locatie.dart';
 import '../providers/planner.dart';
 import '../services/valhalla_service.dart';
 import '../utils/opmaak.dart';
@@ -22,6 +24,7 @@ class RoutePaneel extends ConsumerWidget {
     required this.nabij,
     this.mijnLocatie,
     this.onNavigeer,
+    this.onLocatieAan,
     this.scroll,
   });
 
@@ -32,6 +35,9 @@ class RoutePaneel extends ConsumerWidget {
 
   /// "Start": navigeer de gekozen route.
   final ValueChanged<RouteOptie>? onNavigeer;
+
+  /// Zet je locatie aan (met de toestemmingsvraag): navigeren kan pas daarna.
+  final VoidCallback? onLocatieAan;
   final ScrollController? scroll;
 
   @override
@@ -208,10 +214,9 @@ class RoutePaneel extends ConsumerWidget {
               if (planner.gekozenRoute case final route?) ...[
                 if (onNavigeer != null) ...[
                   const SizedBox(height: 8),
-                  FilledButton.icon(
-                    onPressed: () => onNavigeer!(route),
-                    icon: const Icon(Icons.navigation),
-                    label: Text(l.startNavigatie),
+                  _StartKnop(
+                    onStart: () => onNavigeer!(route),
+                    onLocatieAan: onLocatieAan,
                   ),
                 ],
                 if (route.hoogtes.length > 1) ...[
@@ -310,6 +315,88 @@ class _Foutmelding extends StatelessWidget {
           Expanded(child: Text(tekst)),
         ],
       ),
+    );
+  }
+}
+
+/// "Start" kan pas met een bekende plek. Anders staat er waarom niet, en waar
+/// het kan een knop om het te verhelpen -- nooit een knop die niets doet.
+class _StartKnop extends ConsumerWidget {
+  const _StartKnop({required this.onStart, this.onLocatieAan});
+
+  final VoidCallback onStart;
+  final VoidCallback? onLocatieAan;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final locatie = ref.watch(locatieProvider);
+    final start = FilledButton.icon(
+      onPressed: locatie.fix != null ? onStart : null,
+      icon: locatie.stand == LocatieStand.zoekt
+          ? const SizedBox.square(
+              dimension: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.navigation),
+      label: Text(
+        locatie.stand == LocatieStand.zoekt
+            ? l.locatieZoeken
+            : l.startNavigatie,
+      ),
+    );
+    if (locatie.fix != null || locatie.stand == LocatieStand.zoekt) {
+      return start;
+    }
+    if (locatie.stand == LocatieStand.uit) {
+      return FilledButton.tonalIcon(
+        onPressed: onLocatieAan,
+        icon: const Icon(Icons.my_location),
+        label: Text(l.locatieAanOmTeNavigeren),
+      );
+    }
+    final reden = locatieReden(l, locatie.stand);
+    // Eenmaal geweigerd kan de vraag nog een keer; bij "nooit" en een uitgezette
+    // dienst moet het via de instellingen.
+    final opnieuw =
+        locatie.stand == LocatieStand.geweigerd ||
+        locatie.stand == LocatieStand.nietGevonden;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        start,
+        if (reden != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '${l.navigerenZonderLocatie} $reden',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (opnieuw && onLocatieAan != null)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: onLocatieAan,
+              child: Text(l.opnieuwProberen),
+            ),
+          ),
+      ],
     );
   }
 }

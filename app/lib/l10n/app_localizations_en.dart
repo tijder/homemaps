@@ -243,7 +243,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locatieDienstUit => 'Location is turned off on your device.';
 
   @override
-  String get locatieNietGevonden => 'Your location hasn\'t been found (yet).';
+  String get locatieNietGevonden =>
+      'Your device can\'t determine your location; it keeps trying. Computers often can\'t, phones can.';
 
   @override
   String get startNavigatie => 'Start';
@@ -317,4 +318,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get locatieZoeken => 'Finding location…';
+
+  @override
+  String get locatieAanOmTeNavigeren => 'Turn on location to navigate';
+
+  @override
+  String get navigerenZonderLocatie => 'Navigation needs your location.';
+
+  @override
+  String get opnieuwProberen => 'Try again';
 }

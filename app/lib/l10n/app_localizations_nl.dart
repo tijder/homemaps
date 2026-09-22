@@ -244,7 +244,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get locatieDienstUit => 'Locatie staat uit op je apparaat.';
 
   @override
-  String get locatieNietGevonden => 'Je locatie is (nog) niet gevonden.';
+  String get locatieNietGevonden =>
+      'Je apparaat kan je locatie niet bepalen; het blijft zoeken. Op een computer lukt dat vaak niet, op een telefoon wel.';
 
   @override
   String get startNavigatie => 'Start';
@@ -318,4 +319,14 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get locatieZoeken => 'Locatie zoeken…';
+
+  @override
+  String get locatieAanOmTeNavigeren => 'Locatie aanzetten om te navigeren';
+
+  @override
+  String get navigerenZonderLocatie =>
+      'Navigeren kan pas als je locatie bekend is.';
+
+  @override
+  String get opnieuwProberen => 'Opnieuw proberen';
 }
