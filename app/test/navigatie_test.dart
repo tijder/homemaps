@@ -191,4 +191,91 @@ void main() {
     expect(auto.voorafAfstand(33), 1155);
     expect(auto.vlakVoorAfstand(0), 60);
   });
+
+  group('evenwijdige weg vlak naast de route', () {
+    // West over "Houtbeekweg", 40 m noord over "Wolweg", en dan west over
+    // "Tolnegenweg" -- evenwijdig aan de eerste, 40 m ernaast.
+    const lat = 52.19, lon = 5.70;
+    const noord = 40 / 111320;
+    const west = 600 / (111320 * 0.6122); // 600 m bij 52°
+    final bocht = LatLng(lat, lon - west);
+    final lijn = [
+      const LatLng(lat, lon),
+      bocht,
+      LatLng(lat + noord, lon - west),
+      LatLng(lat + noord, lon - 2 * west),
+    ];
+    final route = RouteOptie(
+      meters: 1240,
+      seconden: 100,
+      punten: lijn,
+      manoeuvres: [
+        const Manoeuvre(
+          instructie: 'start',
+          type: 1,
+          meters: 600,
+          seconden: 48,
+          vormIndex: 0,
+          eindVormIndex: 1,
+        ),
+        const Manoeuvre(
+          instructie: 'rechts',
+          type: 10,
+          meters: 40,
+          seconden: 4,
+          vormIndex: 1,
+          eindVormIndex: 2,
+        ),
+        const Manoeuvre(
+          instructie: 'links',
+          type: 15,
+          meters: 600,
+          seconden: 48,
+          vormIndex: 2,
+          eindVormIndex: 3,
+        ),
+        const Manoeuvre(
+          instructie: 'aan',
+          type: 4,
+          meters: 0,
+          seconden: 0,
+          vormIndex: 3,
+          eindVormIndex: 3,
+        ),
+      ],
+      hoogtes: const [],
+      hoogteInterval: 30,
+      heeftTol: false,
+      heeftVeer: false,
+    );
+
+    test('de bocht gemist en rechtdoor: snel van de route', () {
+      final volger = RouteVolger(route);
+      // Rechtdoor over de eerste weg, 15 m per fix, tot 300 m voorbij de bocht.
+      final rechtdoor = langs([
+        const LatLng(lat, lon),
+        LatLng(lat, lon - 1.5 * west),
+      ], 15);
+      var voorbijBocht = 0;
+      NavStand? stand;
+      for (final punt in rechtdoor) {
+        stand = volger.werkBij(fix(punt, snelheid: 15));
+        if (punt.longitude < bocht.longitude) voorbijBocht++;
+        if (stand.vanRoute) break;
+      }
+      expect(stand!.vanRoute, isTrue);
+      // Binnen ruim 100 m na de bocht (zonder de grens: pas na 300 m).
+      expect(voorbijBocht, lessThanOrEqualTo(8));
+    });
+
+    test('de bocht wel genomen: gewoon op de route, tot het eind', () {
+      final volger = RouteVolger(route);
+      NavStand? stand;
+      for (final punt in langs(lijn, 15)) {
+        stand = volger.werkBij(fix(punt, snelheid: 15));
+        expect(stand.vanRoute, isFalse);
+      }
+      expect(stand!.aangekomen, isTrue);
+    });
+  });
 }

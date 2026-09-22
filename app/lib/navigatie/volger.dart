@@ -62,6 +62,11 @@ class RouteVolger {
   int? _segment;
   int _teVer = 0;
 
+  /// De vorige fix en hoe ver langs de route die lag: om te weten hoe ver je
+  /// sindsdien langs de route kán zijn gekomen.
+  LatLng? _vorigePlek;
+  double _vorigeLangs = 0;
+
   /// Zo ver mag een fix van de route liggen (plus twee keer zijn onzekerheid).
   static const maxAfwijking = 35.0;
 
@@ -89,18 +94,38 @@ class RouteVolger {
     // Eerst alleen vlak om de vorige plek: iets terug (ruis) en een eind vooruit.
     // Pas als daar niets in de buurt ligt, de hele route.
     final vorige = _segment;
+    // Hoe ver je langs de route kunt zijn gekomen: niet verder dan je sinds de
+    // vorige fix hebt afgelegd, met wat speling voor ruis. Zo telt een weg die
+    // evenwijdig vlak naast de route loopt niet als "de route verderop" als je
+    // de bocht ernaartoe niet hebt gereden (Houtbeekweg/Tolnegenweg in Stroe
+    // liggen 40 m uit elkaar).
+    final vorigePlek = _vorigePlek;
+    final bereik = vorigePlek == null
+        ? double.infinity
+        : _vorigeLangs +
+              meters(vorigePlek, fix.punt) * 1.5 +
+              20 +
+              min(fix.nauwkeurigheid, 50);
     var beste = vorige == null
         ? _zoek(fix.punt, 0, punten.length - 2)
         : _zoek(
             fix.punt,
             max(0, vorige - 3),
-            _segmentNa(_tot[vorige] + 400 + (fix.snelheid ?? 0) * 10),
+            _segmentNa(bereik),
+            totLangs: bereik,
           );
     if (vorige != null && beste.afstand > maxAfwijking) {
       final overal = _zoek(fix.punt, 0, punten.length - 2);
       // Alleen verspringen als het elders duidelijk beter past; anders ben je
-      // gewoon van de route.
-      if (overal.afstand < beste.afstand / 2) beste = overal;
+      // gewoon van de route. Ook een stuk dat je niet kunt hebben bereikt telt
+      // niet: dat is de parallelle weg van hierboven.
+      final overalLangs =
+          _tot[overal.segment] +
+          overal.fractie * (_tot[overal.segment + 1] - _tot[overal.segment]);
+      if (overal.afstand < beste.afstand / 2 &&
+          (overalLangs <= bereik || _teVer >= fixesTotVanRoute)) {
+        beste = overal;
+      }
     }
     final segment = beste.segment;
 
@@ -120,6 +145,8 @@ class RouteVolger {
 
     final langs =
         _tot[segment] + beste.fractie * (_tot[segment + 1] - _tot[segment]);
+    _vorigePlek = fix.punt;
+    if (_teVer == 0) _vorigeLangs = langs;
     final manoeuvres = route.manoeuvres;
     var volgende = manoeuvres.length - 1;
     for (var i = 0; i < manoeuvres.length; i++) {
@@ -170,17 +197,20 @@ class RouteVolger {
 
   int _segmentNa(double afstand) {
     var i = _segment ?? 0;
-    while (i < _tot.length - 2 && _tot[i] < afstand) {
+    while (i < _tot.length - 2 && _tot[i + 1] < afstand) {
       i++;
     }
     return i;
   }
 
+  /// [totLangs]: niet verder langs de route zoeken dan dit (ook niet halverwege
+  /// een lang stuk).
   ({int segment, double fractie, double afstand, LatLng punt}) _zoek(
     LatLng p,
     int van,
-    int tot,
-  ) {
+    int tot, {
+    double totLangs = double.infinity,
+  }) {
     final punten = route.punten;
     var beste = (segment: van, fractie: 0.0, afstand: double.infinity, punt: p);
     // Een platte projectie rond de fix: op een paar kilometer is dat op de
@@ -194,9 +224,13 @@ class RouteVolger {
       final a = plat(punten[i]), b = plat(punten[i + 1]);
       final dx = b.x - a.x, dy = b.y - a.y;
       final kwadraat = dx * dx + dy * dy;
+      final lengte = _tot[i + 1] - _tot[i];
+      final tMax = lengte <= 0
+          ? 1.0
+          : ((totLangs - _tot[i]) / lengte).clamp(0.0, 1.0);
       final t = kwadraat == 0
           ? 0.0
-          : ((-a.x * dx - a.y * dy) / kwadraat).clamp(0.0, 1.0);
+          : ((-a.x * dx - a.y * dy) / kwadraat).clamp(0.0, tMax);
       final x = a.x + t * dx, y = a.y + t * dy;
       final afstand = sqrt(x * x + y * y);
       if (afstand < beste.afstand) {
