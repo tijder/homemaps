@@ -73,6 +73,7 @@ class NepValhalla extends ValhallaService {
     bool vermijdVeren = false,
     bool alternatieven = true,
     double? koers,
+    DateTime? vertrek,
     CancelToken? annuleer,
   }) async {
     bijVerzoek?.call();

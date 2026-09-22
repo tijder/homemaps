@@ -6,6 +6,7 @@ class AppConfig {
     required this.geocodeUrl,
     required this.tilesUrl,
     required this.verkeerUrl,
+    required this.verkeerGeplandUrl,
   });
 
   final String valhallaUrl;
@@ -14,6 +15,9 @@ class AppConfig {
 
   /// De verkeerslaag (GeoJSON) die de importer elke ronde maakt.
   final String verkeerUrl;
+
+  /// Geplande afsluitingen van de komende week, voor "later vertrekken".
+  final String verkeerGeplandUrl;
 
   /// [overschrijf] is de inhoud van `/config.json` (web) en mag elk ervan
   /// vervangen, bijvoorbeeld als de tegels op een eigen hostnaam staan.
@@ -34,6 +38,7 @@ class AppConfig {
       geocodeUrl: kies('geocodeUrl', '/geocode'),
       tilesUrl: kies('tilesUrl', '/tiles'),
       verkeerUrl: kies('verkeerUrl', '/verkeer'),
+      verkeerGeplandUrl: kies('verkeerGeplandUrl', '/verkeer-gepland'),
     );
   }
 

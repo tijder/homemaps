@@ -55,6 +55,13 @@ server {
         proxy_pass $verkeer;
     }
 
+    # Geplande afsluitingen van de komende week, voor "later vertrekken".
+    location = /verkeer-gepland {
+        set $verkeer ${VERKEER_UPSTREAM};
+        rewrite ^ /verkeer-gepland.geojson break;
+        proxy_pass $verkeer;
+    }
+
     # tileserver-gl bouwt de URL's in style.json en de TileJSON uit het verzoek:
     # Host, X-Forwarded-Proto en -- voor dit pad -- X-Forwarded-Path. Zo werkt één
     # installatie onder meerdere hostnamen (intern en publiek) zonder vaste

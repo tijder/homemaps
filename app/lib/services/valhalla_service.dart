@@ -72,7 +72,8 @@ class ValhallaService {
       // Valhalla geeft alleen alternatieven tussen precies twee punten.
       if (alternatieven && punten.length == 2) 'alternates': 2,
       // Live verkeer (snelheden én afsluitingen) telt alleen met een vertrektijd
-      // van nu, en alleen voor de auto. Niet `type: 0` ("vertrek nu"): dat gaat
+      // van nu, en alleen voor de auto. Met een latere tijd ([nu]) laat
+      // Valhalla het live verkeer zelf wegvallen naarmate het verder weg ligt. Niet `type: 0` ("vertrek nu"): dat gaat
       // langs de eenrichtingszoeker, en die geeft geen alternatieven. `type: 3`
       // (één vaste tijd voor de hele route) gaat langs de tweerichtingszoeker
       // en leest het live verkeer net zo goed -- zolang de tijd echt nu is.
@@ -98,6 +99,7 @@ class ValhallaService {
     bool vermijdVeren = false,
     bool alternatieven = true,
     double? koers,
+    DateTime? vertrek,
     CancelToken? annuleer,
   }) async {
     try {
@@ -113,11 +115,15 @@ class ValhallaService {
           vermijdVeren: vermijdVeren,
           alternatieven: alternatieven,
           koers: koers,
+          nu: vertrek,
         ),
         cancelToken: annuleer,
       );
       final routes = leesAntwoord(antwoord.data ?? const {});
-      final metVerkeer = liveVerkeer && profiel == Profiel.auto;
+      // De vertraging door het verkeer van nu; voor later vertrekken zegt die
+      // niets.
+      final metVerkeer =
+          liveVerkeer && profiel == Profiel.auto && vertrek == null;
       if (!metVerkeer) return routes;
       // Tegelijk voor elke route: hoe lang dezelfde weg zonder verkeer duurt.
       final normaal = await Future.wait([

@@ -9,6 +9,7 @@ Instellingen komen uit de omgeving (de chart zet ze):
   INTERVAL_SECONDEN  tussen twee rondes              (300)
   AFSLUITINGEN       "false" zet die feed uit        (true)
   MELDINGEN          "false" zet de SRTI-feed uit    (true)
+  PLANNING_SECONDEN  hoe vaak de planningsfeed        (3600; 0 = nooit)
   METRICS_POORT      /metrics en /verkeer.geojson    (9100)
 """
 
@@ -21,9 +22,11 @@ import time
 import urllib.request
 from collections import defaultdict
 from collections.abc import Iterable
+from datetime import UTC, datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from socket import AF_INET6
+from xml.etree.ElementTree import ParseError
 
 from . import datex3, kaartlaag
 from . import traffictile as tt
@@ -33,6 +36,9 @@ from .tarindex import TrafficTar
 log = logging.getLogger("homemaps_traffic")
 
 SRTI = "veiligheidsgerelateerde_berichten_srti.xml.gz"
+PLANNING = "planningsfeed_wegwerkzaamheden_en_evenementen.xml.gz"
+# Zo ver vooruit gaan geplande afsluitingen mee (de app laat een week kiezen).
+PLANNING_VOORUIT = timedelta(days=8)
 MAX_KPH = 160  # daarboven is het een meetfout, geen auto
 
 
@@ -96,10 +102,15 @@ class Stand:
         self.slot = threading.Lock()
         self.waarden: dict[str, float] = {}
         self.laag: tuple[bytes, bytes] | None = None  # (gewoon, gzip)
+        self.gepland: tuple[bytes, bytes] | None = None
 
     def zet_laag(self, laag: tuple[bytes, bytes]) -> None:
         with self.slot:
             self.laag = laag
+
+    def zet_gepland(self, laag: tuple[bytes, bytes]) -> None:
+        with self.slot:
+            self.gepland = laag
 
     def zet(self, **waarden: float) -> None:
         with self.slot:
@@ -121,13 +132,16 @@ class _Server(ThreadingHTTPServer):
 def start_metrics(stand: Stand, poort: int) -> None:
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
-            if self.path.split("?")[0] == "/verkeer.geojson":
-                self._laag()
+            pad = self.path.split("?")[0]
+            if pad == "/verkeer.geojson":
+                self._laag(stand.laag, 60)
+                return
+            if pad == "/verkeer-gepland.geojson":
+                self._laag(stand.gepland, 600)
                 return
             self._stuur(200, stand.tekst().encode(), "text/plain; version=0.0.4")
 
-        def _laag(self):
-            laag = stand.laag
+        def _laag(self, laag, cache):
             if laag is None:  # de eerste ronde loopt nog
                 self._stuur(503, b"nog geen ronde\n", "text/plain")
                 return
@@ -136,7 +150,7 @@ def start_metrics(stand: Stand, poort: int) -> None:
                 200,
                 laag[1] if gzip else laag[0],
                 "application/geo+json",
-                {"Cache-Control": "max-age=60", "Vary": "Accept-Encoding"}
+                {"Cache-Control": f"max-age={cache}", "Vary": "Accept-Encoding"}
                 | ({"Content-Encoding": "gzip"} if gzip else {}),
             )
 
@@ -172,10 +186,13 @@ class Importer:
         stand: Stand,
         afsluitingen: bool = True,
         meldingen: bool = True,
+        planning_seconden: int = 3600,
     ):
         self.tar, self.valhalla, self.ndw, self.stand = tar, valhalla, ndw.rstrip("/"), stand
         self.met_afsluitingen = afsluitingen
         self.met_meldingen = meldingen
+        self.planning_seconden = planning_seconden
+        self.planning_gehaald = 0.0
         tileset = valhalla.tileset()
         self.locaties = MatchCache(cache_dir / "meetlocaties.json", tileset)
         self.afsluitingen = MatchCache(cache_dir / "afsluitingen.json", tileset)
@@ -193,6 +210,26 @@ class Importer:
         items = {locatie.sleutel: locatie.punten for locatie in datex3.lees_meetlocaties(feed)}
         if self.locaties.vul_aan(self.valhalla, items):
             self.locaties.bewaar()
+
+    def _planning(self) -> None:
+        """Eens per uur: de planningsfeed (18 MB) voor "later vertrekken". Hij
+        verandert traag, en een mislukte beurt laat de vorige staan."""
+        if (
+            not self.planning_seconden
+            or time.time() - self.planning_gehaald < self.planning_seconden
+        ):
+            return
+        self.planning_gehaald = time.time()
+        nu = datetime.now(UTC)
+        try:
+            feed = datex3.open_feed(haal(f"{self.ndw}/{PLANNING}"))
+            gepland = list(datex3.lees_geplande_afsluitingen(feed, nu, nu + PLANNING_VOORUIT))
+        except (OSError, ValueError, ParseError) as fout:
+            log.warning("planningsfeed niet opgehaald: %s", fout)
+            return
+        self.stand.zet_gepland(kaartlaag.geojson(kaartlaag.geplande_afsluitingen(gepland)))
+        self.stand.zet(geplande_afsluitingen=len(gepland))
+        log.info("planningsfeed: %d afsluitingen in de komende dagen", len(gepland))
 
     def ronde(self) -> None:
         begin = time.time()
@@ -219,6 +256,7 @@ class Importer:
             dicht = bereken_afsluitingen(actief, self.afsluitingen.matches)
             records.update(dicht)  # dicht wint van een gemeten snelheid
 
+        self._planning()
         geschreven, gewist, onbekend = self.tar.werk_bij(records, self.geschreven)
         self.geschreven = set(records)
 
@@ -293,6 +331,7 @@ def main() -> None:
         stand,
         omgeving.get("AFSLUITINGEN", "true").lower() != "false",
         omgeving.get("MELDINGEN", "true").lower() != "false",
+        int(omgeving.get("PLANNING_SECONDEN", "3600")),
     )
     mislukt = 0
     while True:

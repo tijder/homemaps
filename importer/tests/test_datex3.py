@@ -74,3 +74,21 @@ def test_meldingen_ongeval_en_pech_geldig_nu():
     assert meldingen["ONGEVAL"].koers == 141
     assert meldingen["PECH"].soort == "pech"
     assert meldingen["PECH"].koers is None
+
+
+def test_geplande_afsluitingen_met_hun_vensters():
+    van = datetime(2026, 9, 22, 12, 0, tzinfo=UTC)
+    tot = datetime(2026, 9, 30, 12, 0, tzinfo=UTC)
+    with open(FIXTURES / "planning.xml", "rb") as stroom:
+        gepland = {a.id: a for a in datex3.lees_geplande_afsluitingen(stroom, van, tot)}
+    # VOLGEND_JAAR valt buiten de week.
+    assert set(gepland) == {"NACHTEN", "WEEKEND"}
+    # Van de drie nachten telt alleen die in de week; de vorige is voorbij.
+    assert gepland["NACHTEN"].vensters == (
+        (datetime(2026, 9, 23, 20, tzinfo=UTC), datetime(2026, 9, 24, 4, tzinfo=UTC)),
+    )
+    # Zonder validPeriods: één venster van begin tot eind.
+    assert gepland["WEEKEND"].vensters == (
+        (datetime(2026, 9, 26, 6, tzinfo=UTC), datetime(2026, 9, 27, 20, tzinfo=UTC)),
+    )
+    assert gepland["WEEKEND"].hele_weg

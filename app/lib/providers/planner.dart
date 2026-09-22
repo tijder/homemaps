@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/plaats.dart';
 import '../models/route.dart';
 import '../services/valhalla_service.dart';
+import '../utils/geplande_afsluitingen.dart';
 import 'diensten.dart';
 import 'instellingen.dart';
 import 'locatie.dart';
@@ -25,6 +26,7 @@ class PlannerState {
     this.routes = const AsyncData([]),
     this.gekozen = 0,
     this.beeldVersie = 0,
+    this.vertrek,
   });
 
   /// Onwaar: het zoekscherm (één zoekbalk, eventueel een gevonden plaats).
@@ -43,6 +45,10 @@ class PlannerState {
   /// wel, na het verslepen van een punt juist niet.
   final int beeldVersie;
 
+  /// Later vertrekken: dan rekent Valhalla voor die tijd (zonder het verkeer
+  /// van nu) en waarschuwt de app voor geplande afsluitingen. Null = nu.
+  final DateTime? vertrek;
+
   bool get compleet => punten.every((p) => p.plaats != null);
 
   RouteOptie? get gekozenRoute {
@@ -58,6 +64,7 @@ class PlannerState {
     AsyncValue<List<RouteOptie>>? routes,
     int? gekozen,
     int? beeldVersie,
+    DateTime? Function()? vertrek,
   }) => PlannerState(
     routeModus: routeModus ?? this.routeModus,
     gevonden: gevonden != null ? gevonden() : this.gevonden,
@@ -65,6 +72,7 @@ class PlannerState {
     routes: routes ?? this.routes,
     gekozen: gekozen ?? this.gekozen,
     beeldVersie: beeldVersie ?? this.beeldVersie,
+    vertrek: vertrek != null ? vertrek() : this.vertrek,
   );
 }
 
@@ -197,6 +205,12 @@ class PlannerNotifier extends Notifier<PlannerState> {
 
   void kies(int index) => state = state.kopie(gekozen: index);
 
+  /// Null = nu vertrekken.
+  void zetVertrek(DateTime? vertrek) {
+    state = state.kopie(vertrek: () => vertrek);
+    _bereken(volgBeeld: false);
+  }
+
   Future<void> _bereken({required bool volgBeeld}) async {
     _lopend?.cancel();
     final valhalla = ref.read(valhallaProvider);
@@ -216,6 +230,7 @@ class PlannerNotifier extends Notifier<PlannerState> {
         vermijdSnelwegen: instellingen.vermijdSnelwegen,
         vermijdTol: instellingen.vermijdTol,
         vermijdVeren: instellingen.vermijdVeren,
+        vertrek: state.vertrek,
         annuleer: annuleer,
       );
       if (annuleer.isCancelled) return;
@@ -240,3 +255,19 @@ class PlannerNotifier extends Notifier<PlannerState> {
 final plannerProvider = NotifierProvider<PlannerNotifier, PlannerState>(
   PlannerNotifier.new,
 );
+
+/// Per route (in de volgorde van [PlannerState.routes]) de geplande afsluitingen
+/// die erop liggen als je later vertrekt; null als je nu vertrekt of de
+/// planning er (nog) niet is.
+final afsluitingenOpRoutesProvider = Provider<List<List<AfsluitingOpRoute>>?>((
+  ref,
+) {
+  final vertrek = ref.watch(plannerProvider.select((p) => p.vertrek));
+  if (vertrek == null) return null;
+  final routes = ref.watch(plannerProvider.select((p) => p.routes.value));
+  final laag = ref.watch(geplandProvider).value;
+  if (routes == null || laag == null) return null;
+  return [
+    for (final route in routes) afsluitingenOpRoute(route, laag, vertrek),
+  ];
+});

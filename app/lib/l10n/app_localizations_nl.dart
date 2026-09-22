@@ -443,4 +443,24 @@ class AppLocalizationsNl extends AppLocalizations {
   String waarschuwingOpRoute(String melding, String afstand) {
     return 'Let op: $melding over $afstand.';
   }
+
+  @override
+  String get vertrek => 'Vertrek';
+
+  @override
+  String get vertrekNu => 'Nu';
+
+  @override
+  String get vertrekLater => 'Later…';
+
+  @override
+  String afsluitingOpRoute(String venster, int aantal) {
+    String _temp0 = intl.Intl.pluralLogic(
+      aantal,
+      locale: localeName,
+      other: '$aantal geplande afsluitingen op deze route, de eerste: $venster',
+      one: 'Geplande afsluiting op deze route: $venster',
+    );
+    return '$_temp0';
+  }
 }

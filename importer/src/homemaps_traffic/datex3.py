@@ -272,3 +272,64 @@ def lees_meldingen(stroom: BinaryIO, nu: datetime | None = None) -> Iterator[Mel
             float(koers) if koers else None,
             _tijd(_tekst(specificatie, "overallStartTime")) if specificatie is not None else None,
         )
+
+
+@dataclass(frozen=True)
+class GeplandeAfsluiting:
+    """Een afsluiting uit de planningsfeed, met de vensters waarin hij geldt."""
+
+    id: str
+    lijnen: tuple[tuple[Punt, ...], ...]
+    hele_weg: bool
+    rijbaan: str | None
+    vensters: tuple[tuple[datetime, datetime | None], ...]  # (begin, eind)
+
+
+def _vensters(
+    record: Element, van: datetime, tot: datetime
+) -> list[tuple[datetime, datetime | None]]:
+    """De geldigheidsvensters die [van, tot] raken. Zonder validPeriods is het
+    één venster van begin tot eind."""
+    specificatie = _eerste(record, "validityTimeSpecification")
+    if specificatie is None:
+        return []
+    begin = _tijd(_tekst(specificatie, "overallStartTime"))
+    eind = _tijd(_tekst(specificatie, "overallEndTime"))
+    perioden = [
+        (_tijd(_tekst(p, "startOfPeriod")), _tijd(_tekst(p, "endOfPeriod")))
+        for p in _vind(specificatie, "validPeriod")
+    ] or [(begin, eind)]
+    uit = []
+    for start, stop in perioden:
+        start = start or begin
+        stop = stop or eind
+        if start is None or start > tot or (stop is not None and stop < van):
+            continue
+        uit.append((start, stop))
+    return uit
+
+
+def lees_geplande_afsluitingen(
+    stroom: BinaryIO, van: datetime, tot: datetime
+) -> Iterator[GeplandeAfsluiting]:
+    """Afsluitingen (voor auto's) die ergens tussen [van] en [tot] gelden."""
+    for record in _records(stroom, "situationRecord"):
+        soort = _tekst(record, "roadOrCarriagewayOrLaneManagementType")
+        if soort not in AFSLUITTYPES or _eerste(record, "vehicleType") is not None:
+            continue
+        vensters = _vensters(record, van, tot)
+        if not vensters:
+            continue
+        lijnen = tuple(
+            tuple(punten)
+            for lijn in _vind(record, "posList")
+            if len(punten := _punten(lijn.text or "")) >= 2
+        )
+        if lijnen:
+            yield GeplandeAfsluiting(
+                record.attrib["id"],
+                lijnen,
+                soort == "roadClosed",
+                _tekst(record, "carriageway"),
+                tuple(vensters),
+            )

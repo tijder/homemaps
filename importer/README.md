@@ -9,6 +9,7 @@ Valhalla's `traffic.tar` en maakt er de verkeerslaag van de app van.
 | `tijdelijke_verkeersmaatregelen_afsluitingen` (`carriagewayClosures`, `roadClosed`, nu geldig, niet alleen voor vracht) | afgesloten edges |
 | dezelfde feeds, plus `laneClosures` | `/verkeer.geojson`: de laag op de kaart |
 | `veiligheidsgerelateerde_berichten_srti` (ongeval, pechgeval, voorwerp op de weg) | punten in dezelfde laag; de app waarschuwt ervoor onderweg |
+| `planningsfeed_wegwerkzaamheden_en_evenementen` (18 MB, eens per uur) | `/verkeer-gepland.geojson`: afsluitingen van de komende 8 dagen met hun vensters, voor "later vertrekken" |
 
 ## Hoe het werkt
 

@@ -10,7 +10,7 @@ import json
 from collections.abc import Iterable
 from datetime import UTC
 
-from .datex3 import Maatregel, Melding, Punt, Reistijd
+from .datex3 import GeplandeAfsluiting, Maatregel, Melding, Punt, Reistijd
 from .matcher import Match
 
 # Een stuk is traag onder dit deel van zijn normale snelheid, en file daaronder.
@@ -124,6 +124,31 @@ def meldingen(items: Iterable[Melding]) -> list[dict]:
                 "type": "Feature",
                 "properties": {k: v for k, v in eigenschappen.items() if v is not None},
                 "geometry": {"type": "Point", "coordinates": [round(lon, 5), round(lat, 5)]},
+            }
+        )
+    return uit
+
+
+def _iso(tijd):
+    return tijd.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ") if tijd else None
+
+
+def geplande_afsluitingen(items: Iterable[GeplandeAfsluiting]) -> list[dict]:
+    """Voor "later vertrekken": afsluitingen met hun vensters, zodat de app kan
+    zien of er op je vertrektijd een op de route ligt."""
+    uit = []
+    for afsluiting in items:
+        eigenschappen = {
+            "soort": "gepland",
+            "hele_weg": afsluiting.hele_weg,
+            "rijbaan": afsluiting.rijbaan,
+            "vensters": [[_iso(begin), _iso(eind)] for begin, eind in afsluiting.vensters],
+        }
+        uit.append(
+            {
+                "type": "Feature",
+                "properties": {k: v for k, v in eigenschappen.items() if v is not None},
+                "geometry": _geometrie([list(lijn) for lijn in afsluiting.lijnen]),
             }
         )
     return uit

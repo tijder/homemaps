@@ -88,3 +88,17 @@ final verkeerProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
       .get<Map<String, dynamic>>(config.verkeerUrl);
   return antwoord.data;
 });
+
+/// De geplande afsluitingen (GeoJSON met per afsluiting zijn vensters). Pas
+/// opgehaald als iemand later wil vertrekken; elk uur ververst, zoals de
+/// importer.
+final geplandProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
+  final config = ref.watch(appConfigProvider);
+  if (config == null) return null;
+  final ververs = Timer(const Duration(hours: 1), ref.invalidateSelf);
+  ref.onDispose(ververs.cancel);
+  final antwoord = await ref
+      .watch(dioProvider)
+      .get<Map<String, dynamic>>(config.verkeerGeplandUrl);
+  return antwoord.data;
+});

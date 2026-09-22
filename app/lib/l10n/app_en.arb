@@ -118,5 +118,9 @@
   "meldingPech": "Broken-down vehicle",
   "meldingObstakel": "Object on the road",
   "meldingSinds": "Since {tijd}",
-  "waarschuwingOpRoute": "Caution: {melding} in {afstand}."
+  "waarschuwingOpRoute": "Caution: {melding} in {afstand}.",
+  "vertrek": "Depart",
+  "vertrekNu": "Now",
+  "vertrekLater": "Later…",
+  "afsluitingOpRoute": "{aantal, plural, =1{Planned closure on this route: {venster}} other{{aantal} planned closures on this route, first: {venster}}}"
 }

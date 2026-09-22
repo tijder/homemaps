@@ -270,5 +270,19 @@
         "type": "String"
       }
     }
+  },
+  "vertrek": "Vertrek",
+  "vertrekNu": "Nu",
+  "vertrekLater": "Later…",
+  "afsluitingOpRoute": "{aantal, plural, =1{Geplande afsluiting op deze route: {venster}} other{{aantal} geplande afsluitingen op deze route, de eerste: {venster}}}",
+  "@afsluitingOpRoute": {
+    "placeholders": {
+      "venster": {
+        "type": "String"
+      },
+      "aantal": {
+        "type": "int"
+      }
+    }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../l10n/app_localizations.dart';
@@ -13,6 +14,7 @@ import '../providers/instellingen.dart';
 import '../providers/locatie.dart';
 import '../providers/planner.dart';
 import '../services/valhalla_service.dart';
+import '../utils/geplande_afsluitingen.dart';
 import '../utils/opmaak.dart';
 import 'hoogteprofiel.dart';
 import 'zoekveld.dart';
@@ -86,6 +88,7 @@ class _RoutePaneelState extends ConsumerState<RoutePaneel> {
               _uitkomst(planner),
               const Divider(height: 24),
               _profiel(),
+              _vertrek(planner),
               _opties(),
               _details(planner),
             ]
@@ -93,7 +96,8 @@ class _RoutePaneelState extends ConsumerState<RoutePaneel> {
               _kop(planner),
               const SizedBox(height: 4),
               _profiel(),
-              const SizedBox(height: 12),
+              _vertrek(planner),
+              const SizedBox(height: 4),
               _velden(planner),
               _viaRij(),
               _opties(),
@@ -204,6 +208,67 @@ class _RoutePaneelState extends ConsumerState<RoutePaneel> {
       selected: {instellingen.profiel},
       onSelectionChanged: (keuze) =>
           zet(instellingen.kopie(profiel: keuze.first)),
+    );
+  }
+
+  /// "Nu" of "Later": een dag in de komende week en een tijd.
+  Widget _vertrek(PlannerState planner) {
+    final l = AppLocalizations.of(context);
+    final taal = Localizations.localeOf(context).languageCode;
+    final later = planner.vertrek;
+    Widget metInterceptor(BuildContext _, Widget? kind) =>
+        PointerInterceptor(child: kind!);
+    Future<void> kies() async {
+      final nu = DateTime.now();
+      final dag = await showDatePicker(
+        context: context,
+        firstDate: DateUtils.dateOnly(nu),
+        lastDate: nu.add(const Duration(days: 7)),
+        initialDate: later ?? nu,
+        builder: metInterceptor,
+      );
+      if (dag == null || !mounted) return;
+      final tijd = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(
+          later ?? nu.add(const Duration(hours: 1)),
+        ),
+        builder: metInterceptor,
+      );
+      if (tijd == null || !mounted) return;
+      ref
+          .read(plannerProvider.notifier)
+          .zetVertrek(
+            DateTime(dag.year, dag.month, dag.day, tijd.hour, tijd.minute),
+          );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          const Icon(Icons.schedule, size: 20),
+          const SizedBox(width: 8),
+          Text(l.vertrek),
+          const SizedBox(width: 12),
+          ChoiceChip(
+            label: Text(l.vertrekNu),
+            selected: later == null,
+            onSelected: (_) =>
+                ref.read(plannerProvider.notifier).zetVertrek(null),
+          ),
+          const SizedBox(width: 8),
+          ChoiceChip(
+            label: Text(
+              later == null
+                  ? l.vertrekLater
+                  : DateFormat('EEE d MMM HH:mm', taal).format(later),
+            ),
+            selected: later != null,
+            onSelected: (_) => kies(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -322,6 +387,7 @@ class _RoutePaneelState extends ConsumerState<RoutePaneel> {
   /// De routes (of wat er misging) en Start.
   Widget _uitkomst(PlannerState planner) {
     final l = AppLocalizations.of(context);
+    final afsluitingen = ref.watch(afsluitingenOpRoutesProvider);
     final acties = ref.read(plannerProvider.notifier);
     return planner.routes.when(
       loading: () => Padding(
@@ -347,6 +413,9 @@ class _RoutePaneelState extends ConsumerState<RoutePaneel> {
               titel: i == 0 ? l.snelste : l.alternatief(i),
               gekozen: i == planner.gekozen,
               onTap: () => acties.kies(i),
+              afsluitingen: afsluitingen != null && i < afsluitingen.length
+                  ? afsluitingen[i]
+                  : const [],
             ),
           if (planner.gekozenRoute case final route?
               when widget.onNavigeer != null) ...[
@@ -398,9 +467,13 @@ class _RouteKaartje extends StatelessWidget {
     required this.titel,
     required this.gekozen,
     required this.onTap,
+    this.afsluitingen = const [],
   });
 
   final RouteOptie route;
+
+  /// Geplande afsluitingen op deze route (alleen bij later vertrekken).
+  final List<AfsluitingOpRoute> afsluitingen;
   final String titel;
   final bool gekozen;
   final VoidCallback onTap;
@@ -425,14 +498,48 @@ class _RouteKaartje extends StatelessWidget {
       color: gekozen
           ? kleuren.primaryContainer
           : kleuren.surfaceContainerHighest,
-      child: ListTile(
-        onTap: onTap,
-        title: Text('${duur(route.seconden)} · ${afstand(route.meters)}'),
-        subtitle: Text([titel, ...extra].join(' · ')),
-        selected: gekozen,
-        trailing: _vertraging(context, route),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ListTile(
+            onTap: onTap,
+            title: Text('${duur(route.seconden)} · ${afstand(route.meters)}'),
+            subtitle: Text([titel, ...extra].join(' · ')),
+            selected: gekozen,
+            trailing: _vertraging(context, route),
+          ),
+          if (afsluitingen.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.warning_amber, size: 18, color: kleuren.error),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      l.afsluitingOpRoute(
+                        _venster(context, afsluitingen.first),
+                        afsluitingen.length,
+                      ),
+                      style: Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(color: kleuren.error),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
+  }
+
+  static String _venster(BuildContext context, AfsluitingOpRoute venster) {
+    final taal = Localizations.localeOf(context).languageCode;
+    final formaat = DateFormat('EEE HH:mm', taal);
+    final van = formaat.format(venster.van.toLocal());
+    final tot = venster.tot;
+    return tot == null ? van : '$van – ${formaat.format(tot.toLocal())}';
   }
 }
 

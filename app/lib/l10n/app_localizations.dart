@@ -811,6 +811,30 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'Let op: {melding} over {afstand}.'**
   String waarschuwingOpRoute(String melding, String afstand);
+
+  /// No description provided for @vertrek.
+  ///
+  /// In nl, this message translates to:
+  /// **'Vertrek'**
+  String get vertrek;
+
+  /// No description provided for @vertrekNu.
+  ///
+  /// In nl, this message translates to:
+  /// **'Nu'**
+  String get vertrekNu;
+
+  /// No description provided for @vertrekLater.
+  ///
+  /// In nl, this message translates to:
+  /// **'Later…'**
+  String get vertrekLater;
+
+  /// No description provided for @afsluitingOpRoute.
+  ///
+  /// In nl, this message translates to:
+  /// **'{aantal, plural, =1{Geplande afsluiting op deze route: {venster}} other{{aantal} geplande afsluitingen op deze route, de eerste: {venster}}}'**
+  String afsluitingOpRoute(String venster, int aantal);
 }
 
 class _AppLocalizationsDelegate
