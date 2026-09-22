@@ -111,5 +111,68 @@
   "locatieNooit": "Locatie is voor HomeMaps geweigerd. Zet het aan in de instellingen van je telefoon.",
   "locatieNooitWeb": "Locatie is voor deze site geblokkeerd. Sta het toe via het slotje naast het adres.",
   "locatieDienstUit": "Locatie staat uit op je apparaat.",
-  "locatieNietGevonden": "Je locatie is (nog) niet gevonden."
+  "locatieNietGevonden": "Je locatie is (nog) niet gevonden.",
+  "startNavigatie": "Start",
+  "navigatieMeldingTitel": "Navigatie naar {bestemming}",
+  "@navigatieMeldingTitel": {
+    "placeholders": {
+      "bestemming": {
+        "type": "String"
+      }
+    }
+  },
+  "navigatieMeldingTekst": "HomeMaps volgt je locatie voor de route.",
+  "herberekenen": "Route wordt herberekend.",
+  "herberekenenBezig": "Route herberekenen…",
+  "snellereRoute": "{minuten, plural, =1{Snellere route gevonden, 1 minuut sneller.} other{Snellere route gevonden, {minuten} minuten sneller.}}",
+  "@snellereRoute": {
+    "placeholders": {
+      "minuten": {
+        "type": "int"
+      }
+    }
+  },
+  "overAfstand": "Over {afstand} {zin}",
+  "@overAfstand": {
+    "placeholders": {
+      "afstand": {
+        "type": "String"
+      },
+      "zin": {
+        "type": "String"
+      }
+    }
+  },
+  "gesprokenMeter": "{meter} meter",
+  "@gesprokenMeter": {
+    "placeholders": {
+      "meter": {
+        "type": "int"
+      }
+    }
+  },
+  "gesprokenKilometer": "{km} kilometer",
+  "@gesprokenKilometer": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "aangekomen": "Je bent er",
+  "klaar": "Klaar",
+  "hervatten": "Hervatten",
+  "stopNavigatie": "Stop",
+  "stemUit": "Stem uit",
+  "stemAan": "Stem aan",
+  "aankomst": "Aankomst {tijd}",
+  "@aankomst": {
+    "placeholders": {
+      "tijd": {
+        "type": "String"
+      }
+    }
+  },
+  "daarna": "Daarna",
+  "locatieZoeken": "Locatie zoeken…"
 }

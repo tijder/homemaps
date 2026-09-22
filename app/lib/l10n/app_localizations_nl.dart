@@ -245,4 +245,77 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get locatieNietGevonden => 'Je locatie is (nog) niet gevonden.';
+
+  @override
+  String get startNavigatie => 'Start';
+
+  @override
+  String navigatieMeldingTitel(String bestemming) {
+    return 'Navigatie naar $bestemming';
+  }
+
+  @override
+  String get navigatieMeldingTekst =>
+      'HomeMaps volgt je locatie voor de route.';
+
+  @override
+  String get herberekenen => 'Route wordt herberekend.';
+
+  @override
+  String get herberekenenBezig => 'Route herberekenen…';
+
+  @override
+  String snellereRoute(int minuten) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minuten,
+      locale: localeName,
+      other: 'Snellere route gevonden, $minuten minuten sneller.',
+      one: 'Snellere route gevonden, 1 minuut sneller.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String overAfstand(String afstand, String zin) {
+    return 'Over $afstand $zin';
+  }
+
+  @override
+  String gesprokenMeter(int meter) {
+    return '$meter meter';
+  }
+
+  @override
+  String gesprokenKilometer(String km) {
+    return '$km kilometer';
+  }
+
+  @override
+  String get aangekomen => 'Je bent er';
+
+  @override
+  String get klaar => 'Klaar';
+
+  @override
+  String get hervatten => 'Hervatten';
+
+  @override
+  String get stopNavigatie => 'Stop';
+
+  @override
+  String get stemUit => 'Stem uit';
+
+  @override
+  String get stemAan => 'Stem aan';
+
+  @override
+  String aankomst(String tijd) {
+    return 'Aankomst $tijd';
+  }
+
+  @override
+  String get daarna => 'Daarna';
+
+  @override
+  String get locatieZoeken => 'Locatie zoeken…';
 }

@@ -5,10 +5,10 @@ cluster, en tijdens het gebruik gaat er niets naar buiten.
 
 | map | wat |
 |---|---|
-| `app/` | Flutter-app (web en Android): kaart, zoeken, routes plannen |
+| `app/` | Flutter-app (web en Android): kaart, zoeken, routes plannen, je locatie, navigatie met stem en verkeerslaag |
 | `chart/homemaps/` | Helm chart: tiles (planetiler + tileserver-gl), routing (Valhalla), zoeken (Photon), de web-app, en de verkeersimporter |
 | `importer/` | Python-sidecar die live snelheden en afsluitingen van NDW in Valhalla's `traffic.tar` schrijft ([README](importer/README.md)) |
-| `docker/web/` | nginx-image rond de web-build; proxyt `/valhalla`, `/geocode` en `/tiles` |
+| `docker/web/` | nginx-image rond de web-build; proxyt `/valhalla`, `/geocode`, `/tiles` en `/verkeer` |
 | `ci/` | kind-testbed (`up.sh`) met Andorra en een nagemaakte NDW-feed |
 
 ## Installeren
@@ -36,6 +36,11 @@ ci/up.sh --weg
 cd importer && pip install -e '.[dev]' && pytest && ruff check .
 ```
 
+Navigatie testen zonder te rijden: open de web-app met
+`?simulatie=52.186,5.7035` (het startpunt), eventueel `&snelheid=20` (m/s) en
+`&mis=2` (bij manoeuvre 2 rechtdoor, zodat hij herberekent). Een nagemaakte GPS
+rijdt dan de route af.
+
 Het app-icoon is code: `python3 app/tool/maak_icoon.py` tekent het, daarna maakt
 `dart run flutter_launcher_icons` er de Android- en web-iconen van.
 
@@ -52,12 +57,17 @@ Na een wijziging aan routes of vertalingen: `flutter gen-l10n` en
 | NDW op echte schaal | 96,3% van 67.227 segmenten gematcht, 77% van de afsluitingen; eerste ronde 67 s, daarna 2,4 s |
 | de chart | `ci/up.sh` groen in kind: bouwjobs, `helm test`, live verkeer uit de nagemaakte feed |
 | de app tegen de chart | headless Chromium, breed en smal: zoeken, route, hoogteprofiel, instructies |
+| navigatie | unittests op een echte Valhalla-route (volgen, aankondigen, herberekenen) en de simulatie in headless Chromium; nog niet onderweg op een toestel |
 
 ## Nog open
 
 - **De APK is alleen gebouwd, niet op een toestel gedraaid**, en wordt met de
   debug-sleutel ondertekend. Voor een installeerbare release: een keystore als
   secret en een `signingConfig` in `app/android/app/build.gradle.kts`.
+- **Navigatie op Android** is niet op een toestel gereden: stem, voorgronddienst
+  met het scherm uit en de GPS van een echte telefoon zijn alleen in code en
+  tests gedekt. De toestemming voor meldingen (Android 13+) wordt niet gevraagd;
+  de dienst draait dan zonder zichtbare melding.
 - **NDW-voorwaarden**: de repo bevat geen NDW-data (de testfeed is nagemaakt), maar
   wie de importer draait gebruikt NDW's open data onder hun voorwaarden
   (ndw.nu/copyright).

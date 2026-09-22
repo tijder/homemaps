@@ -26,6 +26,9 @@ class Kaart extends StatefulWidget {
     required this.onLangIngedrukt,
     required this.rand,
     this.locatie,
+    this.volg,
+    this.navigeert = false,
+    this.onZelfBewogen,
     this.verkeer,
     this.toonVertraging = true,
     this.onVerkeerGetikt,
@@ -55,6 +58,18 @@ class Kaart extends StatefulWidget {
 
   /// Je eigen plek (het blauwe puntje), of null als de locatie uit staat.
   final LocatieFix? locatie;
+
+  /// Tijdens navigatie: de camera rijdt mee, gekanteld en in de rijrichting,
+  /// met je plek in het onderste deel van het beeld. Null = de kaart is vrij.
+  final ({LatLng punt, double koers, double snelheid})? volg;
+
+  /// Tijdens navigatie ligt het midden van de kaart lager (zie [volg]), ook
+  /// als je even zelf rondkijkt; daarna gaat de kaart weer plat en noord-boven.
+  final bool navigeert;
+
+  /// De gebruiker raakt de kaart zelf aan (schuiven, knijpen, scrollen): dan
+  /// moet het meerijden even stoppen.
+  final VoidCallback? onZelfBewogen;
 
   /// De verkeerslaag (GeoJSON van `/verkeer`), of null als hij uit staat.
   final Map<String, dynamic>? verkeer;
@@ -102,6 +117,8 @@ class _KaartState extends State<Kaart> {
     }
     if (!_stijlKlaar) return;
     if (oud.locatie != widget.locatie) _toonLocatie();
+    if (oud.navigeert != widget.navigeert) _zetRand();
+    if (widget.volg != null && oud.volg != widget.volg) _volg();
     if (oud.verkeer != widget.verkeer ||
         oud.toonVertraging != widget.toonVertraging) {
       _tekenVerkeer();
@@ -195,6 +212,51 @@ class _KaartState extends State<Kaart> {
     await _tekenVerkeer();
     await _toonLocatie();
     await _teken();
+  }
+
+  /// Meerijden: je plek op ongeveer tweederde van de hoogte, zodat je ziet wat
+  /// er vóór je ligt.
+  Future<void> _zetRand() async {
+    final c = _controller;
+    if (c == null) return;
+    final hoogte = MediaQuery.sizeOf(context).height;
+    await c.updateContentInsets(
+      widget.navigeert ? EdgeInsets.only(top: hoogte * 0.35) : EdgeInsets.zero,
+      // Niet geanimeerd: de eerstvolgende easeCamera zou die animatie meteen
+      // afbreken, en dan blijft de rand op nul hangen.
+      false,
+    );
+    if (!widget.navigeert) {
+      final nu = c.cameraPosition;
+      if (nu != null) {
+        await c.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(target: nu.target, zoom: nu.zoom),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _volg() async {
+    final volg = widget.volg, c = _controller;
+    if (volg == null || c == null) return;
+    // Langzaam dichtbij, op de snelweg verder vooruit kijken.
+    final zoom = (17.5 - volg.snelheid * 0.1).clamp(14.5, 17.0);
+    await c.easeCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: volg.punt,
+          zoom: zoom,
+          bearing: volg.koers,
+          tilt: 50,
+        ),
+      ),
+      // Ongeveer de tijd tot de volgende fix, en lineair: zo glijdt de kaart
+      // zonder bij elke fix op te trekken en af te remmen.
+      duration: const Duration(milliseconds: 1000),
+      interpolation: CameraAnimationInterpolation.linear,
+    );
   }
 
   /// Het puntje komt van onze eigen bron (ManualLocationSource), niet van de
@@ -502,7 +564,14 @@ class _KaartState extends State<Kaart> {
   }
 
   @override
-  Widget build(BuildContext context) => MapLibreMap(
+  Widget build(BuildContext context) => Listener(
+    // Op Android komen aanrakingen van de kaart hier langs; op het web gaan ze
+    // naar het HTML-element van de kaart, daar vangt muis_web.dart ze.
+    onPointerDown: (_) => widget.onZelfBewogen?.call(),
+    child: _kaart(),
+  );
+
+  Widget _kaart() => MapLibreMap(
     styleString: widget.stijlUrl,
     initialCameraPosition: widget.start,
     trackCameraPosition: true,

@@ -37,6 +37,8 @@ class ValhallaService {
     bool vermijdSnelwegen = false,
     bool vermijdTol = false,
     bool vermijdVeren = false,
+    bool alternatieven = true,
+    double? koers,
     DateTime? nu,
   }) {
     final opties = <String, dynamic>{
@@ -53,6 +55,12 @@ class ValhallaService {
             // Een via-punt is een plek waar je langs wilt, geen tussenstop:
             // `through` staat geen keren op de weg toe.
             'type': i == 0 || i == punten.length - 1 ? 'break' : 'through',
+            // Onderweg herberekend: vertrek in de richting waarin je rijdt, niet
+            // met een U-bocht omdat het andersom een paar meter korter is.
+            if (i == 0 && koers != null) ...{
+              'heading': koers.round() % 360,
+              'heading_tolerance': 45,
+            },
           },
       ],
       'costing': profiel.costing,
@@ -61,7 +69,7 @@ class ValhallaService {
       'language': taal,
       'elevation_interval': hoogteInterval,
       // Valhalla geeft alleen alternatieven tussen precies twee punten.
-      if (punten.length == 2) 'alternates': 2,
+      if (alternatieven && punten.length == 2) 'alternates': 2,
       // Live verkeer (snelheden én afsluitingen) telt alleen met een vertrektijd
       // van nu, en alleen voor de auto. Niet `type: 0` ("vertrek nu"): dat gaat
       // langs de eenrichtingszoeker, en die geeft geen alternatieven. `type: 3`
@@ -87,6 +95,8 @@ class ValhallaService {
     bool vermijdSnelwegen = false,
     bool vermijdTol = false,
     bool vermijdVeren = false,
+    bool alternatieven = true,
+    double? koers,
     CancelToken? annuleer,
   }) async {
     try {
@@ -100,6 +110,8 @@ class ValhallaService {
           vermijdSnelwegen: vermijdSnelwegen,
           vermijdTol: vermijdTol,
           vermijdVeren: vermijdVeren,
+          alternatieven: alternatieven,
+          koers: koers,
         ),
         cancelToken: annuleer,
       );

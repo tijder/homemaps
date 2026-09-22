@@ -9,7 +9,13 @@ class Manoeuvre {
     required this.meters,
     required this.seconden,
     required this.vormIndex,
-  });
+    int? eindVormIndex,
+    this.straten = const [],
+    this.stemVooraf,
+    this.stemVlakVoor,
+    this.stemNa,
+    this.metVolgende = false,
+  }) : eindVormIndex = eindVormIndex ?? vormIndex;
 
   final String instructie;
 
@@ -18,8 +24,25 @@ class Manoeuvre {
   final double meters;
   final double seconden;
 
-  /// Waar in [RouteOptie.punten] deze manoeuvre begint.
+  /// Waar in [RouteOptie.punten] deze manoeuvre begint en eindigt.
   final int vormIndex;
+  final int eindVormIndex;
+
+  /// De straat (of wegnummers) waar je na de manoeuvre op rijdt.
+  final List<String> straten;
+
+  /// Valhalla's gesproken zinnen, al in de taal van het verzoek: ruim van
+  /// tevoren ("Links afslaan naar X."), vlak ervoor (met "Daarna ..." als de
+  /// volgende dichtbij is) en erna ("400 meter doorgaan.").
+  final String? stemVooraf;
+  final String? stemVlakVoor;
+  final String? stemNa;
+
+  /// [stemVlakVoor] noemt de manoeuvre hierna al ("Daarna, over 400 meter, ...").
+  final bool metVolgende;
+
+  /// Bestemming (4) of een via-punt onderweg (ook 4, of 5/6 rechts/links).
+  bool get isBestemming => type >= 4 && type <= 6;
 }
 
 class RouteOptie {
@@ -81,6 +104,16 @@ class RouteOptie {
             seconden: (m['time'] as num?)?.toDouble() ?? 0,
             vormIndex:
                 verschuiving + ((m['begin_shape_index'] as num?)?.toInt() ?? 0),
+            eindVormIndex:
+                verschuiving + ((m['end_shape_index'] as num?)?.toInt() ?? 0),
+            straten: [
+              for (final naam in (m['street_names'] as List? ?? const []))
+                naam as String,
+            ],
+            stemVooraf: m['verbal_transition_alert_instruction'] as String?,
+            stemVlakVoor: m['verbal_pre_transition_instruction'] as String?,
+            stemNa: m['verbal_post_transition_instruction'] as String?,
+            metVolgende: m['verbal_multi_cue'] == true,
           ),
         );
       }

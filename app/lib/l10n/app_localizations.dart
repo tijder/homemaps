@@ -523,6 +523,114 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'Je locatie is (nog) niet gevonden.'**
   String get locatieNietGevonden;
+
+  /// No description provided for @startNavigatie.
+  ///
+  /// In nl, this message translates to:
+  /// **'Start'**
+  String get startNavigatie;
+
+  /// No description provided for @navigatieMeldingTitel.
+  ///
+  /// In nl, this message translates to:
+  /// **'Navigatie naar {bestemming}'**
+  String navigatieMeldingTitel(String bestemming);
+
+  /// No description provided for @navigatieMeldingTekst.
+  ///
+  /// In nl, this message translates to:
+  /// **'HomeMaps volgt je locatie voor de route.'**
+  String get navigatieMeldingTekst;
+
+  /// No description provided for @herberekenen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Route wordt herberekend.'**
+  String get herberekenen;
+
+  /// No description provided for @herberekenenBezig.
+  ///
+  /// In nl, this message translates to:
+  /// **'Route herberekenen…'**
+  String get herberekenenBezig;
+
+  /// No description provided for @snellereRoute.
+  ///
+  /// In nl, this message translates to:
+  /// **'{minuten, plural, =1{Snellere route gevonden, 1 minuut sneller.} other{Snellere route gevonden, {minuten} minuten sneller.}}'**
+  String snellereRoute(int minuten);
+
+  /// No description provided for @overAfstand.
+  ///
+  /// In nl, this message translates to:
+  /// **'Over {afstand} {zin}'**
+  String overAfstand(String afstand, String zin);
+
+  /// No description provided for @gesprokenMeter.
+  ///
+  /// In nl, this message translates to:
+  /// **'{meter} meter'**
+  String gesprokenMeter(int meter);
+
+  /// No description provided for @gesprokenKilometer.
+  ///
+  /// In nl, this message translates to:
+  /// **'{km} kilometer'**
+  String gesprokenKilometer(String km);
+
+  /// No description provided for @aangekomen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Je bent er'**
+  String get aangekomen;
+
+  /// No description provided for @klaar.
+  ///
+  /// In nl, this message translates to:
+  /// **'Klaar'**
+  String get klaar;
+
+  /// No description provided for @hervatten.
+  ///
+  /// In nl, this message translates to:
+  /// **'Hervatten'**
+  String get hervatten;
+
+  /// No description provided for @stopNavigatie.
+  ///
+  /// In nl, this message translates to:
+  /// **'Stop'**
+  String get stopNavigatie;
+
+  /// No description provided for @stemUit.
+  ///
+  /// In nl, this message translates to:
+  /// **'Stem uit'**
+  String get stemUit;
+
+  /// No description provided for @stemAan.
+  ///
+  /// In nl, this message translates to:
+  /// **'Stem aan'**
+  String get stemAan;
+
+  /// No description provided for @aankomst.
+  ///
+  /// In nl, this message translates to:
+  /// **'Aankomst {tijd}'**
+  String aankomst(String tijd);
+
+  /// No description provided for @daarna.
+  ///
+  /// In nl, this message translates to:
+  /// **'Daarna'**
+  String get daarna;
+
+  /// No description provided for @locatieZoeken.
+  ///
+  /// In nl, this message translates to:
+  /// **'Locatie zoeken…'**
+  String get locatieZoeken;
 }
 
 class _AppLocalizationsDelegate

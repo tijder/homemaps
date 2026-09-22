@@ -15,10 +15,14 @@ import 'package:web/web.dart' as web;
 ///   en een middelsleep wordt als rechtersleep doorgegeven: dezelfde gebeurtenis,
 ///   nagemaakt met andere knopnummers.
 ///
+/// Daarnaast meldt [bijAanraking] elke aanraking van de kaart (muis, vinger,
+/// scrollwiel), zodat de navigatie weet dat je zelf aan het rondkijken bent.
+///
 /// Geeft een functie terug die alles weer loskoppelt.
 void Function() koppelMuis(
-  void Function(Point<double> opKaart, Point<double> opScherm) bijRechtsklik,
-) {
+  void Function(Point<double> opKaart, Point<double> opScherm) bijRechtsklik, {
+  void Function()? bijAanraking,
+}) {
   web.Element? kaartVan(web.Event gebeurtenis) {
     final doel = gebeurtenis.target;
     if (doel == null || !doel.isA<web.Element>()) return null;
@@ -101,7 +105,14 @@ void Function() koppelMuis(
     sleepDoel = null;
   }
 
+  void aangeraakt(web.Event gebeurtenis) {
+    if (bezig || bijAanraking == null) return;
+    if (kaartVan(gebeurtenis) != null) bijAanraking();
+  }
+
   final luisteraars = <String, JSFunction>{
+    'pointerdown': aangeraakt.toJS,
+    'wheel': aangeraakt.toJS,
     'contextmenu': rechtsklik.toJS,
     'mousedown': omlaag.toJS,
     'mousemove': beweeg.toJS,

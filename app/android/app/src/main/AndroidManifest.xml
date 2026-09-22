@@ -4,6 +4,15 @@
     <!-- Je eigen plek op de kaart; pas gevraagd als je op "Mijn locatie" tikt. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- Navigatie met het scherm uit: geolocators voorgronddienst (type location)
+         met een blijvende melding. Die start terwijl de app voorop staat, dus
+         "tijdens gebruik" is genoeg; ACCESS_BACKGROUND_LOCATION is niet nodig. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <!-- Zonder deze toestemming (Android 13+) draait de dienst ook, alleen zonder
+         zichtbare melding. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="HomeMaps"
         android:name="${applicationName}"
@@ -45,6 +54,11 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Gesproken instructies: vanaf Android 11 ziet de app de spraakengine
+             anders niet. -->
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE"/>
         </intent>
     </queries>
 </manifest>

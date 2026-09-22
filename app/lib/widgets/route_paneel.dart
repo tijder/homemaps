@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../l10n/app_localizations.dart';
+import 'manoeuvre_pictogram.dart';
 import '../models/plaats.dart';
 import '../models/profiel.dart';
 import '../models/route.dart';
@@ -20,6 +21,7 @@ class RoutePaneel extends ConsumerWidget {
     super.key,
     required this.nabij,
     this.mijnLocatie,
+    this.onNavigeer,
     this.scroll,
   });
 
@@ -27,6 +29,9 @@ class RoutePaneel extends ConsumerWidget {
 
   /// Zie [Zoekveld.mijnLocatie].
   final Future<Plaats?> Function()? mijnLocatie;
+
+  /// "Start": navigeer de gekozen route.
+  final ValueChanged<RouteOptie>? onNavigeer;
   final ScrollController? scroll;
 
   @override
@@ -201,6 +206,14 @@ class RoutePaneel extends ConsumerWidget {
                   onTap: () => acties.kies(i),
                 ),
               if (planner.gekozenRoute case final route?) ...[
+                if (onNavigeer != null) ...[
+                  const SizedBox(height: 8),
+                  FilledButton.icon(
+                    onPressed: () => onNavigeer!(route),
+                    icon: const Icon(Icons.navigation),
+                    label: Text(l.startNavigatie),
+                  ),
+                ],
                 if (route.hoogtes.length > 1) ...[
                   const SizedBox(height: 8),
                   Text(
@@ -219,7 +232,7 @@ class RoutePaneel extends ConsumerWidget {
                   ListTile(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
-                    leading: Icon(_pictogram(manoeuvre.type)),
+                    leading: Icon(manoeuvrePictogram(manoeuvre.type)),
                     title: Text(manoeuvre.instructie),
                     trailing: manoeuvre.meters > 0
                         ? Text(afstand(manoeuvre.meters))
@@ -234,16 +247,6 @@ class RoutePaneel extends ConsumerWidget {
   }
 
   /// Valhalla's manoeuvretypes, gegroepeerd naar wat de pijl moet tonen.
-  static IconData _pictogram(int type) => switch (type) {
-    1 || 2 || 3 => Icons.trip_origin,
-    4 || 5 || 6 => Icons.place,
-    9 || 10 || 11 || 18 || 20 || 23 => Icons.turn_right,
-    14 || 15 || 16 || 19 || 21 || 24 => Icons.turn_left,
-    12 || 13 => Icons.u_turn_left,
-    26 || 27 => Icons.roundabout_right,
-    28 || 29 => Icons.directions_boat,
-    _ => Icons.straight,
-  };
 }
 
 class _RouteKaartje extends StatelessWidget {

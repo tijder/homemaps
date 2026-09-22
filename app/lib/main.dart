@@ -6,8 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import 'l10n/app_localizations.dart';
+import 'navigatie/simulatie.dart';
 import 'providers/diensten.dart';
 import 'providers/instellingen.dart';
+import 'providers/locatie.dart';
 import 'router/app_router.dart';
 
 Future<void> main() async {
@@ -27,11 +29,14 @@ Future<void> main() async {
     await BrowserContextMenu.disableContextMenu();
   }
   final doos = await openInstellingen();
+  // Navigatie testen zonder te rijden: ?simulatie=lat,lon (zie SimulatieBron).
+  final simulatie = kIsWeb ? SimulatieBron.uitUrl(Uri.base) : null;
   runApp(
     ProviderScope(
       overrides: [
         instellingenDoosProvider.overrideWithValue(doos),
         webConfigProvider.overrideWithValue(webConfig),
+        if (simulatie != null) locatieBronProvider.overrideWithValue(simulatie),
       ],
       child: const HomeMapsApp(),
     ),

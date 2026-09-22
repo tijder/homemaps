@@ -2,6 +2,9 @@ import 'dart:math';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
+
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -11,6 +14,8 @@ import 'package:pointer_interceptor/pointer_interceptor.dart';
 import '../l10n/app_localizations.dart';
 import '../models/plaats.dart';
 import '../models/profiel.dart';
+import '../models/route.dart';
+import '../navigatie/navigatie_provider.dart';
 import '../providers/diensten.dart';
 import '../providers/instellingen.dart';
 import '../providers/locatie.dart';
@@ -19,6 +24,7 @@ import '../router/app_router.dart';
 import '../utils/muis_stub.dart'
     if (dart.library.js_interop) '../utils/muis_web.dart';
 import '../widgets/kaart.dart';
+import '../widgets/navigatie_balk.dart';
 import '../widgets/route_paneel.dart';
 import '../widgets/verkeer_melding.dart';
 import '../widgets/zoekveld.dart';
@@ -45,6 +51,16 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
   ({Offset plek, Map<String, dynamic> info})? _melding;
   late final void Function() _stopMuis;
 
+  /// Tijdens navigatie: rijdt de camera mee? Even niet als je zelf aan de kaart
+  /// zit; na [_hervatNa] zonder aanraking weer wel.
+  bool _volgt = true;
+  Timer? _hervat;
+  static const _hervatNa = Duration(seconds: 10);
+
+  /// Met het scherm uit (navigatie loopt door) heeft meedraaien geen zin.
+  bool _zichtbaar = true;
+  late final AppLifecycleListener _levensloop;
+
   LatLng? _midden() => _kaart?.cameraPosition?.target;
 
   @override
@@ -53,13 +69,57 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
     _stopMuis = koppelMuis((opKaart, opScherm) async {
       final punt = await _kaart?.toLatLng(opKaart);
       if (punt != null && mounted) _puntMenu(opScherm, punt);
-    });
+    }, bijAanraking: _zelfBewogen);
+    _levensloop = AppLifecycleListener(
+      onHide: () => setState(() => _zichtbaar = false),
+      onShow: () => setState(() => _zichtbaar = true),
+    );
   }
 
   @override
   void dispose() {
     _stopMuis();
+    _hervat?.cancel();
+    _levensloop.dispose();
     super.dispose();
+  }
+
+  void _zelfBewogen() {
+    if (ref.read(navigatieProvider) == null) return;
+    _hervat?.cancel();
+    _hervat = Timer(_hervatNa, () {
+      if (mounted) setState(() => _volgt = true);
+    });
+    if (_volgt) setState(() => _volgt = false);
+  }
+
+  /// "Start": locatie zo nodig aan, dan navigeren naar de punten na "van". Staat
+  /// "van" ergens anders dan jij, dan rekent de navigatie vanzelf opnieuw vanaf
+  /// waar je bent.
+  Future<void> _startNavigatie(RouteOptie route) async {
+    final l = AppLocalizations.of(context);
+    final fix = await ref.read(locatieProvider.notifier).zetAan();
+    if (!mounted) return;
+    if (fix == null) {
+      _meldLocatieProbleem();
+      return;
+    }
+    final doelen = [
+      for (final punt in ref.read(plannerProvider).punten.skip(1)) ?punt.plaats,
+    ];
+    if (doelen.isEmpty) return;
+    setState(() => _volgt = true);
+    await ref
+        .read(navigatieProvider.notifier)
+        .start(
+          route: route,
+          doelen: doelen,
+          teksten: NavTeksten.uit(
+            l,
+            ref.read(plannerProvider.notifier).taal,
+            doelen.last.weergave(l),
+          ),
+        );
   }
 
   @override
@@ -200,19 +260,51 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
     final breed = MediaQuery.sizeOf(context).width >= 800;
     final hoogte = MediaQuery.sizeOf(context).height;
 
+    final nav = ref.watch(navigatieProvider);
+    final fix = ref.watch(locatieProvider.select((t) => t.fix));
+    // Tijdens navigatie staat het puntje op de weg zolang je op de route rijdt,
+    // zoals je dat van een navigatiesysteem gewend bent.
+    final stand = nav?.stand;
+    final opWeg =
+        nav != null && stand != null && fix != null && stand.afwijking < 30
+        ? LocatieFix(
+            punt: stand.opRoute,
+            tijd: fix.tijd,
+            nauwkeurigheid: fix.nauwkeurigheid,
+            koers: stand.routeKoers,
+            snelheid: fix.snelheid,
+          )
+        : fix;
+
     final kaart = Kaart(
       stijlUrl: config.stijlUrl(instellingen.stijl),
       start: start,
-      punten: [for (final punt in planner.punten) punt.plaats],
-      gevonden: planner.gevonden,
+      punten: nav != null
+          ? [null, ...nav.doelen]
+          : [for (final punt in planner.punten) punt.plaats],
+      gevonden: nav != null ? null : planner.gevonden,
       beeldVersie: planner.beeldVersie,
-      onPuntVersleept: _versleept,
-      routes: planner.routes.value ?? const [],
-      gekozen: planner.gekozen,
+      onPuntVersleept: nav != null ? (_, _) {} : _versleept,
+      routes: nav != null ? [nav.route] : planner.routes.value ?? const [],
+      gekozen: nav != null ? 0 : planner.gekozen,
       onRouteGekozen: ref.read(plannerProvider.notifier).kies,
       onLangIngedrukt: _puntMenu,
       onController: (controller) => _kaart = controller,
-      locatie: ref.watch(locatieProvider.select((t) => t.fix)),
+      locatie: opWeg,
+      volg:
+          nav != null &&
+              _volgt &&
+              _zichtbaar &&
+              opWeg != null &&
+              !nav.aangekomen
+          ? (
+              punt: opWeg.punt,
+              koers: opWeg.koers ?? stand?.routeKoers ?? 0,
+              snelheid: opWeg.snelheid ?? 0,
+            )
+          : null,
+      navigeert: nav != null && !nav.aangekomen,
+      onZelfBewogen: _zelfBewogen,
       verkeer: ref.watch(verkeerProvider).value,
       // Een file zegt de fietser en de wandelaar niets; een dichte weg wel.
       toonVertraging: instellingen.profiel == Profiel.auto,
@@ -313,6 +405,12 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
         ? null
         : _meldingLaag(context, _melding!.plek, _melding!.info);
 
+    if (nav != null) {
+      return Scaffold(
+        body: Stack(children: [kaart, _navigatieLaag(nav, breed), ?melding]),
+      );
+    }
+
     return Scaffold(
       body: Stack(
         children: [
@@ -334,6 +432,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                     child: RoutePaneel(
                       nabij: _midden,
                       mijnLocatie: _mijnLocatieAlsPlaats,
+                      onNavigeer: _startNavigatie,
                     ),
                   ),
                 ),
@@ -368,6 +467,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                         child: RoutePaneel(
                           nabij: _midden,
                           mijnLocatie: _mijnLocatieAlsPlaats,
+                          onNavigeer: _startNavigatie,
                           scroll: scroll,
                         ),
                       ),
@@ -531,6 +631,59 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Boven de instructie, onder aankomst en stop; daartussen blijft de kaart
+  /// vrij. Elk blok een eigen interceptor: één over het hele scherm zou de kaart
+  /// op het web onbedienbaar maken.
+  Widget _navigatieLaag(NavigatieToestand nav, bool breed) {
+    final l = AppLocalizations.of(context);
+    final acties = ref.read(navigatieProvider.notifier);
+    Widget blok(Widget kind) => ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 460),
+      child: PointerInterceptor(child: kind),
+    );
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: breed
+              ? CrossAxisAlignment.start
+              : CrossAxisAlignment.stretch,
+          children: [
+            blok(NavigatieKop(nav)),
+            const Spacer(),
+            if (!_volgt && !nav.aangekomen)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: PointerInterceptor(
+                    child: FloatingActionButton.extended(
+                      onPressed: () {
+                        _hervat?.cancel();
+                        setState(() => _volgt = true);
+                      },
+                      icon: const Icon(Icons.navigation),
+                      label: Text(l.hervatten),
+                    ),
+                  ),
+                ),
+              ),
+            blok(
+              NavigatieVoet(
+                nav,
+                onStop: () {
+                  acties.stop();
+                  _hervat?.cancel();
+                },
+                onDempen: acties.dempen,
+              ),
+            ),
+          ],
         ),
       ),
     );
