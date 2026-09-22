@@ -649,6 +649,18 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'Opnieuw proberen'**
   String get opnieuwProberen;
+
+  /// No description provided for @aantalTussenpunten.
+  ///
+  /// In nl, this message translates to:
+  /// **'{aantal, plural, =1{via 1 tussenpunt} other{via {aantal} tussenpunten}}'**
+  String aantalTussenpunten(int aantal);
+
+  /// No description provided for @routeWijzigen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Route wijzigen'**
+  String get routeWijzigen;
 }
 
 class _AppLocalizationsDelegate

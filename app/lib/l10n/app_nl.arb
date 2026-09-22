@@ -177,5 +177,14 @@
   "locatieZoeken": "Locatie zoeken…",
   "locatieAanOmTeNavigeren": "Locatie aanzetten om te navigeren",
   "navigerenZonderLocatie": "Navigeren kan pas als je locatie bekend is.",
-  "opnieuwProberen": "Opnieuw proberen"
+  "opnieuwProberen": "Opnieuw proberen",
+  "aantalTussenpunten": "{aantal, plural, =1{via 1 tussenpunt} other{via {aantal} tussenpunten}}",
+  "@aantalTussenpunten": {
+    "placeholders": {
+      "aantal": {
+        "type": "int"
+      }
+    }
+  },
+  "routeWijzigen": "Route wijzigen"
 }

@@ -18,7 +18,12 @@ import 'zoekveld.dart';
 
 /// Het paneel naast (breed scherm) of onder (smal scherm) de kaart: de punten,
 /// de vervoerswijze, de opties en de uitkomst.
-class RoutePaneel extends ConsumerWidget {
+///
+/// Smal ([compact]) en met een complete route staat de uitkomst voorop: één
+/// regel "van → naar" (tik om te wijzigen), dan de routes en Start. De velden
+/// komen pas terug als je gaat wijzigen, en klappen weer in zodra de route rond
+/// is.
+class RoutePaneel extends ConsumerStatefulWidget {
   const RoutePaneel({
     super.key,
     required this.nabij,
@@ -26,6 +31,7 @@ class RoutePaneel extends ConsumerWidget {
     this.onNavigeer,
     this.onLocatieAan,
     this.scroll,
+    this.compact = false,
   });
 
   final LatLng? Function() nabij;
@@ -40,218 +46,349 @@ class RoutePaneel extends ConsumerWidget {
   final VoidCallback? onLocatieAan;
   final ScrollController? scroll;
 
+  /// In het bottomsheet van een smal scherm.
+  final bool compact;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l = AppLocalizations.of(context);
+  ConsumerState<RoutePaneel> createState() => _RoutePaneelState();
+}
+
+class _RoutePaneelState extends ConsumerState<RoutePaneel> {
+  /// Smal: de velden staan open. Vanzelf zolang de route niet rond is.
+  late bool _bewerken = !ref.read(plannerProvider).compleet;
+
+  void _zetBewerken(bool aan) {
+    setState(() => _bewerken = aan);
+    // Terug naar boven: anders staat de samenvatting of het eerste veld
+    // buiten beeld.
+    final scroll = widget.scroll;
+    if (scroll != null && scroll.hasClients) scroll.jumpTo(0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Rond geworden (het laatste punt gekozen): inklappen. Weer onvolledig
+    // (een punt gewist): open.
+    ref.listen(plannerProvider.select((p) => p.compleet), (oud, nieuw) {
+      if (nieuw != oud) _zetBewerken(!nieuw);
+    });
     final planner = ref.watch(plannerProvider);
-    final acties = ref.read(plannerProvider.notifier);
-    final instellingen = ref.watch(instellingenProvider);
-    final zet = ref.read(instellingenProvider.notifier).wijzig;
-    final laatste = planner.punten.length - 1;
+    final samengevat = widget.compact && planner.compleet && !_bewerken;
 
     return ListView(
-      controller: scroll,
-      padding: const EdgeInsets.all(12),
+      controller: widget.scroll,
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+      children: samengevat
+          ? [
+              _samenvatting(planner),
+              const SizedBox(height: 4),
+              _uitkomst(planner),
+              const Divider(height: 24),
+              _profiel(),
+              _opties(),
+              _details(planner),
+            ]
+          : [
+              _kop(planner),
+              const SizedBox(height: 4),
+              _profiel(),
+              const SizedBox(height: 12),
+              _velden(planner),
+              _viaRij(),
+              _opties(),
+              const Divider(),
+              _uitkomst(planner),
+              _details(planner),
+            ],
+    );
+  }
+
+  Widget _kop(PlannerState planner) {
+    final l = AppLocalizations.of(context);
+    return Row(
       children: [
-        Row(
-          children: [
-            IconButton(
-              tooltip: l.terugNaarZoeken,
-              onPressed: acties.naarZoeken,
-              icon: const Icon(Icons.arrow_back),
-            ),
-            Text(l.route, style: Theme.of(context).textTheme.titleMedium),
-          ],
+        IconButton(
+          tooltip: l.terugNaarZoeken,
+          onPressed: ref.read(plannerProvider.notifier).naarZoeken,
+          icon: const Icon(Icons.arrow_back),
         ),
-        const SizedBox(height: 4),
-        SegmentedButton<Profiel>(
-          showSelectedIcon: false,
-          segments: [
-            ButtonSegment(
-              value: Profiel.auto,
-              icon: const Icon(Icons.directions_car),
-              label: Text(l.profielAuto),
-            ),
-            ButtonSegment(
-              value: Profiel.fiets,
-              icon: const Icon(Icons.directions_bike),
-              label: Text(l.profielFiets),
-            ),
-            ButtonSegment(
-              value: Profiel.lopen,
-              icon: const Icon(Icons.directions_walk),
-              label: Text(l.profielLopen),
-            ),
-          ],
-          selected: {instellingen.profiel},
-          onSelectionChanged: (keuze) =>
-              zet(instellingen.kopie(profiel: keuze.first)),
+        Expanded(
+          child: Text(l.route, style: Theme.of(context).textTheme.titleMedium),
         ),
-        const SizedBox(height: 12),
-        // Verslepen aan de greep wisselt de volgorde. De sleutel is het id van het
-        // punt, zodat elk vakje zijn eigen tekst en suggesties meeneemt.
-        ReorderableListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          buildDefaultDragHandles: false,
-          itemCount: planner.punten.length,
-          onReorderItem: acties.verplaats,
-          itemBuilder: (context, i) {
-            final punt = planner.punten[i];
-            return Padding(
-              key: ValueKey(punt.id),
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Zoekveld(
-                label: i == 0 ? l.van : (i == laatste ? l.naar : l.via),
-                pictogram: i == 0
-                    ? Icons.trip_origin
-                    : (i == laatste ? Icons.place : Icons.more_vert),
-                plaats: punt.plaats,
-                nabij: nabij,
-                mijnLocatie: mijnLocatie,
-                onGekozen: (gekozen) => acties.zetPunt(i, gekozen),
-                onGewist: () => acties.verwijder(i),
-                voor: ReorderableDragStartListener(
-                  index: i,
-                  child: Tooltip(
-                    message: l.sleepOmTeVerplaatsen,
-                    child: const MouseRegion(
-                      cursor: SystemMouseCursors.grab,
-                      child: Padding(
-                        padding: EdgeInsets.only(right: 4),
-                        child: Icon(Icons.drag_indicator),
-                      ),
+        if (widget.compact && planner.compleet)
+          TextButton(
+            onPressed: () => _zetBewerken(false),
+            child: Text(l.klaar),
+          ),
+      ],
+    );
+  }
+
+  /// Eén regel: van → naar (en hoeveel tussenpunten), tik om te wijzigen.
+  Widget _samenvatting(PlannerState planner) {
+    final l = AppLocalizations.of(context);
+    final tekst = Theme.of(context).textTheme;
+    final punten = [for (final p in planner.punten) p.plaats!];
+    final vias = punten.length - 2;
+    return Row(
+      children: [
+        IconButton(
+          tooltip: l.terugNaarZoeken,
+          onPressed: ref.read(plannerProvider.notifier).naarZoeken,
+          icon: const Icon(Icons.arrow_back),
+        ),
+        Expanded(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => _zetBewerken(true),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${punten.first.weergave(l)} → '
+                          '${punten.last.weergave(l)}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tekst.titleMedium,
+                        ),
+                        if (vias > 0)
+                          Text(
+                            l.aantalTussenpunten(vias),
+                            style: tekst.bodySmall,
+                          ),
+                      ],
                     ),
                   ),
-                ),
-              ),
-            );
-          },
-        ),
-        Row(
-          children: [
-            TextButton.icon(
-              onPressed: acties.voegViaToe,
-              icon: const Icon(Icons.add),
-              label: Text(l.viaToevoegen),
-            ),
-            const Spacer(),
-            IconButton(
-              tooltip: l.omdraaien,
-              onPressed: acties.draaiOm,
-              icon: const Icon(Icons.swap_vert),
-            ),
-            IconButton(
-              tooltip: l.wissen,
-              onPressed: acties.naarZoeken,
-              icon: const Icon(Icons.delete_outline),
-            ),
-          ],
-        ),
-        ExpansionTile(
-          title: Text(l.opties),
-          tilePadding: EdgeInsets.zero,
-          childrenPadding: EdgeInsets.zero,
-          shape: const Border(),
-          children: [
-            if (instellingen.profiel == Profiel.auto)
-              SwitchListTile(
-                dense: true,
-                title: Text(l.liveVerkeer),
-                subtitle: Text(l.liveVerkeerUitleg),
-                value: instellingen.liveVerkeer,
-                onChanged: (aan) => zet(instellingen.kopie(liveVerkeer: aan)),
-              ),
-            if (instellingen.profiel == Profiel.auto) ...[
-              SwitchListTile(
-                dense: true,
-                title: Text(l.vermijdSnelwegen),
-                value: instellingen.vermijdSnelwegen,
-                onChanged: (aan) =>
-                    zet(instellingen.kopie(vermijdSnelwegen: aan)),
-              ),
-              SwitchListTile(
-                dense: true,
-                title: Text(l.vermijdTol),
-                value: instellingen.vermijdTol,
-                onChanged: (aan) => zet(instellingen.kopie(vermijdTol: aan)),
-              ),
-            ],
-            SwitchListTile(
-              dense: true,
-              title: Text(l.vermijdVeren),
-              value: instellingen.vermijdVeren,
-              onChanged: (aan) => zet(instellingen.kopie(vermijdVeren: aan)),
-            ),
-          ],
-        ),
-        const Divider(),
-        planner.routes.when(
-          loading: () => Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                const SizedBox.square(
-                  dimension: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                const SizedBox(width: 12),
-                Text(l.routeBezig),
-              ],
-            ),
-          ),
-          error: (fout, _) => _Foutmelding(fout: fout),
-          data: (routes) => Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (final (i, route) in routes.indexed)
-                _RouteKaartje(
-                  route: route,
-                  titel: i == 0 ? l.snelste : l.alternatief(i),
-                  gekozen: i == planner.gekozen,
-                  onTap: () => acties.kies(i),
-                ),
-              if (planner.gekozenRoute case final route?) ...[
-                if (onNavigeer != null) ...[
-                  const SizedBox(height: 8),
-                  _StartKnop(
-                    onStart: () => onNavigeer!(route),
-                    onLocatieAan: onLocatieAan,
+                  Tooltip(
+                    message: l.routeWijzigen,
+                    child: const Icon(Icons.edit_outlined, size: 20),
                   ),
                 ],
-                if (route.hoogtes.length > 1) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    l.hoogteprofiel,
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 4),
-                  Hoogteprofiel(hoogtes: route.hoogtes),
-                ],
-                const SizedBox(height: 12),
-                Text(
-                  l.instructies,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                for (final manoeuvre in route.manoeuvres)
-                  ListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(manoeuvrePictogram(manoeuvre.type)),
-                    title: Text(manoeuvre.instructie),
-                    trailing: manoeuvre.meters > 0
-                        ? Text(afstand(manoeuvre.meters))
-                        : null,
-                  ),
-              ],
-            ],
+              ),
+            ),
           ),
         ),
       ],
     );
   }
 
-  /// Valhalla's manoeuvretypes, gegroepeerd naar wat de pijl moet tonen.
+  Widget _profiel() {
+    final l = AppLocalizations.of(context);
+    final instellingen = ref.watch(instellingenProvider);
+    final zet = ref.read(instellingenProvider.notifier).wijzig;
+    return SegmentedButton<Profiel>(
+      showSelectedIcon: false,
+      segments: [
+        ButtonSegment(
+          value: Profiel.auto,
+          icon: const Icon(Icons.directions_car),
+          label: Text(l.profielAuto),
+        ),
+        ButtonSegment(
+          value: Profiel.fiets,
+          icon: const Icon(Icons.directions_bike),
+          label: Text(l.profielFiets),
+        ),
+        ButtonSegment(
+          value: Profiel.lopen,
+          icon: const Icon(Icons.directions_walk),
+          label: Text(l.profielLopen),
+        ),
+      ],
+      selected: {instellingen.profiel},
+      onSelectionChanged: (keuze) =>
+          zet(instellingen.kopie(profiel: keuze.first)),
+    );
+  }
+
+  Widget _velden(PlannerState planner) {
+    final l = AppLocalizations.of(context);
+    final acties = ref.read(plannerProvider.notifier);
+    final laatste = planner.punten.length - 1;
+    // Verslepen aan de greep wisselt de volgorde. De sleutel is het id van het
+    // punt, zodat elk vakje zijn eigen tekst en suggesties meeneemt.
+    return ReorderableListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      buildDefaultDragHandles: false,
+      itemCount: planner.punten.length,
+      onReorderItem: acties.verplaats,
+      itemBuilder: (context, i) {
+        final punt = planner.punten[i];
+        return Padding(
+          key: ValueKey(punt.id),
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Zoekveld(
+            label: i == 0 ? l.van : (i == laatste ? l.naar : l.via),
+            pictogram: i == 0
+                ? Icons.trip_origin
+                : (i == laatste ? Icons.place : Icons.more_vert),
+            plaats: punt.plaats,
+            nabij: widget.nabij,
+            mijnLocatie: widget.mijnLocatie,
+            onGekozen: (gekozen) => acties.zetPunt(i, gekozen),
+            onGewist: () => acties.verwijder(i),
+            voor: ReorderableDragStartListener(
+              index: i,
+              child: Tooltip(
+                message: l.sleepOmTeVerplaatsen,
+                child: const MouseRegion(
+                  cursor: SystemMouseCursors.grab,
+                  child: Padding(
+                    padding: EdgeInsets.only(right: 4),
+                    child: Icon(Icons.drag_indicator),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _viaRij() {
+    final l = AppLocalizations.of(context);
+    final acties = ref.read(plannerProvider.notifier);
+    return Row(
+      children: [
+        TextButton.icon(
+          onPressed: acties.voegViaToe,
+          icon: const Icon(Icons.add),
+          label: Text(l.viaToevoegen),
+        ),
+        const Spacer(),
+        IconButton(
+          tooltip: l.omdraaien,
+          onPressed: acties.draaiOm,
+          icon: const Icon(Icons.swap_vert),
+        ),
+        IconButton(
+          tooltip: l.wissen,
+          onPressed: acties.naarZoeken,
+          icon: const Icon(Icons.delete_outline),
+        ),
+      ],
+    );
+  }
+
+  Widget _opties() {
+    final l = AppLocalizations.of(context);
+    final instellingen = ref.watch(instellingenProvider);
+    final zet = ref.read(instellingenProvider.notifier).wijzig;
+    return ExpansionTile(
+      title: Text(l.opties),
+      tilePadding: EdgeInsets.zero,
+      childrenPadding: EdgeInsets.zero,
+      shape: const Border(),
+      children: [
+        if (instellingen.profiel == Profiel.auto) ...[
+          SwitchListTile(
+            dense: true,
+            title: Text(l.liveVerkeer),
+            subtitle: Text(l.liveVerkeerUitleg),
+            value: instellingen.liveVerkeer,
+            onChanged: (aan) => zet(instellingen.kopie(liveVerkeer: aan)),
+          ),
+          SwitchListTile(
+            dense: true,
+            title: Text(l.vermijdSnelwegen),
+            value: instellingen.vermijdSnelwegen,
+            onChanged: (aan) => zet(instellingen.kopie(vermijdSnelwegen: aan)),
+          ),
+          SwitchListTile(
+            dense: true,
+            title: Text(l.vermijdTol),
+            value: instellingen.vermijdTol,
+            onChanged: (aan) => zet(instellingen.kopie(vermijdTol: aan)),
+          ),
+        ],
+        SwitchListTile(
+          dense: true,
+          title: Text(l.vermijdVeren),
+          value: instellingen.vermijdVeren,
+          onChanged: (aan) => zet(instellingen.kopie(vermijdVeren: aan)),
+        ),
+      ],
+    );
+  }
+
+  /// De routes (of wat er misging) en Start.
+  Widget _uitkomst(PlannerState planner) {
+    final l = AppLocalizations.of(context);
+    final acties = ref.read(plannerProvider.notifier);
+    return planner.routes.when(
+      loading: () => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            const SizedBox.square(
+              dimension: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: 12),
+            Text(l.routeBezig),
+          ],
+        ),
+      ),
+      error: (fout, _) => _Foutmelding(fout: fout),
+      data: (routes) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final (i, route) in routes.indexed)
+            _RouteKaartje(
+              route: route,
+              titel: i == 0 ? l.snelste : l.alternatief(i),
+              gekozen: i == planner.gekozen,
+              onTap: () => acties.kies(i),
+            ),
+          if (planner.gekozenRoute case final route?
+              when widget.onNavigeer != null) ...[
+            const SizedBox(height: 8),
+            _StartKnop(
+              onStart: () => widget.onNavigeer!(route),
+              onLocatieAan: widget.onLocatieAan,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Hoogteprofiel en routebeschrijving van de gekozen route.
+  Widget _details(PlannerState planner) {
+    final l = AppLocalizations.of(context);
+    final route = planner.routes.value == null ? null : planner.gekozenRoute;
+    if (route == null) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (route.hoogtes.length > 1) ...[
+          const SizedBox(height: 8),
+          Text(l.hoogteprofiel, style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 4),
+          Hoogteprofiel(hoogtes: route.hoogtes),
+        ],
+        const SizedBox(height: 12),
+        Text(l.instructies, style: Theme.of(context).textTheme.titleSmall),
+        for (final manoeuvre in route.manoeuvres)
+          ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(manoeuvrePictogram(manoeuvre.type)),
+            title: Text(manoeuvre.instructie),
+            trailing: manoeuvre.meters > 0
+                ? Text(afstand(manoeuvre.meters))
+                : null,
+          ),
+      ],
+    );
+  }
 }
 
 class _RouteKaartje extends StatelessWidget {

@@ -329,4 +329,18 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get opnieuwProberen => 'Opnieuw proberen';
+
+  @override
+  String aantalTussenpunten(int aantal) {
+    String _temp0 = intl.Intl.pluralLogic(
+      aantal,
+      locale: localeName,
+      other: 'via $aantal tussenpunten',
+      one: 'via 1 tussenpunt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get routeWijzigen => 'Route wijzigen';
 }

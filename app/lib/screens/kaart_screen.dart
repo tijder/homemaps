@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -58,6 +59,15 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
   Timer? _hervat;
   static const _hervatNa = Duration(seconds: 10);
 
+  /// Het bottomsheet op een smal scherm: laag (alleen de samenvatting en de
+  /// gekozen route), half (alle routes en Start) of bijna vol.
+  final _sheet = DraggableScrollableController();
+  static const _sheetHalf = 0.45, _sheetVol = 0.92;
+  double _sheetFractie = _sheetHalf;
+
+  /// Hoog genoeg voor het greepje, de samenvattingsregel en één route.
+  double _sheetLaag(double hoogte) => (170 / hoogte).clamp(0.12, 0.3);
+
   /// Met het scherm uit (navigatie loopt door) heeft meedraaien geen zin.
   bool _zichtbaar = true;
   late final AppLifecycleListener _levensloop;
@@ -82,6 +92,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
     _stopMuis();
     _hervat?.cancel();
     _levensloop.dispose();
+    _sheet.dispose();
     super.dispose();
   }
 
@@ -321,7 +332,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
           ? const EdgeInsets.only(left: _paneelBreedte)
           : EdgeInsets.only(
               top: planner.routeModus ? 0 : 72,
-              bottom: planner.routeModus ? hoogte * 0.35 : 0,
+              bottom: planner.routeModus ? hoogte * _sheetFractie : 0,
             ),
     );
 
@@ -422,6 +433,15 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
       body: Stack(
         children: [
           kaart,
+          // Op een smal scherm staat de zoekbalk bovenaan; de knoppen schuiven
+          // eronder. Vóór de panelen in de stapel: de suggesties van de
+          // zoekbalk en het opgetrokken sheet gaan eroverheen, niet eronder.
+          Padding(
+            padding: EdgeInsets.only(
+              top: !breed && !planner.routeModus ? 64 : 0,
+            ),
+            child: knoppen,
+          ),
           if (!planner.routeModus)
             _zoekscherm(context, planner, breed)
           else if (breed)
@@ -447,52 +467,56 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
               ),
             )
           else
-            DraggableScrollableSheet(
-              initialChildSize: 0.35,
-              minChildSize: 0.12,
-              maxChildSize: 0.92,
-              snap: true,
-              builder: (context, scroll) => PointerInterceptor(
-                child: Material(
-                  elevation: 8,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    children: [
-                      // Het greepje: laat zien dat het paneel te verslepen is.
-                      Container(
-                        width: 36,
-                        height: 4,
-                        margin: const EdgeInsets.only(top: 8),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.outlineVariant,
-                          borderRadius: BorderRadius.circular(2),
+            NotificationListener<DraggableScrollableNotification>(
+              onNotification: (melding) {
+                // Voor het in beeld brengen van de route: boven het sheet.
+                _sheetFractie = melding.extent;
+                return false;
+              },
+              child: DraggableScrollableSheet(
+                controller: _sheet,
+                initialChildSize: _sheetHalf,
+                minChildSize: _sheetLaag(hoogte),
+                maxChildSize: _sheetVol,
+                snap: true,
+                snapSizes: const [_sheetHalf],
+                builder: (context, scroll) => PointerInterceptor(
+                  child: Material(
+                    elevation: 8,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      children: [
+                        _greep(hoogte),
+                        Expanded(
+                          // Ook met de muis te slepen (een smal browservenster);
+                          // Flutter staat dat standaard alleen met een vinger
+                          // toe.
+                          child: ScrollConfiguration(
+                            behavior: ScrollConfiguration.of(context).copyWith(
+                              dragDevices: {
+                                ...ScrollConfiguration.of(context).dragDevices,
+                                PointerDeviceKind.mouse,
+                              },
+                            ),
+                            child: RoutePaneel(
+                              nabij: _midden,
+                              mijnLocatie: _mijnLocatieAlsPlaats,
+                              onNavigeer: _startNavigatie,
+                              onLocatieAan: _zetLocatieAan,
+                              scroll: scroll,
+                              compact: true,
+                            ),
+                          ),
                         ),
-                      ),
-                      Expanded(
-                        child: RoutePaneel(
-                          nabij: _midden,
-                          mijnLocatie: _mijnLocatieAlsPlaats,
-                          onNavigeer: _startNavigatie,
-                          onLocatieAan: _zetLocatieAan,
-                          scroll: scroll,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          // Op een smal scherm staat de zoekbalk bovenaan; de knoppen schuiven
-          // eronder.
-          Padding(
-            padding: EdgeInsets.only(
-              top: !breed && !planner.routeModus ? 64 : 0,
-            ),
-            child: knoppen,
-          ),
           ?melding,
           ?menu,
         ],
@@ -639,6 +663,63 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Het greepje van het sheet. Het sheet zelf schuift alleen mee met zijn
+  /// lijst; het greepje zit daarbuiten, dus slepen gaat hier met de hand. Een
+  /// tik wisselt tussen half en vol.
+  Widget _greep(double hoogte) {
+    final lagen = [_sheetLaag(hoogte), _sheetHalf, _sheetVol];
+    void naar(double doel) => _sheet.animateTo(
+      doel,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
+    );
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => naar(_sheet.size < 0.6 ? _sheetVol : _sheetHalf),
+      onVerticalDragUpdate: (details) => _sheet.jumpTo(
+        (_sheet.size - details.primaryDelta! / hoogte).clamp(
+          lagen.first,
+          lagen.last,
+        ),
+      ),
+      onVerticalDragEnd: (details) {
+        // Een flinke veeg gaat door naar de volgende stand; anders de
+        // dichtstbijzijnde.
+        final snelheid = -(details.primaryVelocity ?? 0) / hoogte;
+        final nu = _sheet.size;
+        final doel = snelheid.abs() > 0.8
+            ? (snelheid > 0
+                  ? lagen.firstWhere(
+                      (l) => l > nu + 0.01,
+                      orElse: () => lagen.last,
+                    )
+                  : lagen.lastWhere(
+                      (l) => l < nu - 0.01,
+                      orElse: () => lagen.first,
+                    ))
+            : lagen.reduce((a, b) => (a - nu).abs() < (b - nu).abs() ? a : b);
+        naar(doel);
+      },
+      child: MouseRegion(
+        cursor: SystemMouseCursors.resizeUpDown,
+        child: SizedBox(
+          height: 22,
+          width: double.infinity,
+          child: Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
           ),
         ),
       ),

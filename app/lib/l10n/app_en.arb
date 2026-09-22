@@ -91,5 +91,7 @@
   "locatieZoeken": "Finding location…",
   "locatieAanOmTeNavigeren": "Turn on location to navigate",
   "navigerenZonderLocatie": "Navigation needs your location.",
-  "opnieuwProberen": "Try again"
+  "opnieuwProberen": "Try again",
+  "aantalTussenpunten": "{aantal, plural, =1{via 1 stop} other{via {aantal} stops}}",
+  "routeWijzigen": "Edit route"
 }
