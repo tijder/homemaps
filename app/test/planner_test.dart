@@ -1,8 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:homemaps/models/plaats.dart';
+import 'package:homemaps/providers/locatie.dart';
 import 'package:homemaps/providers/planner.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
+
+import 'hulp/nep_bron.dart';
 
 Plaats plaats(String naam, double lat) =>
     Plaats(naam: naam, punt: LatLng(lat, 5));
@@ -76,4 +79,36 @@ void main() {
     expect(namen(), ['Domplein 1', null]);
     expect(state().punten.first.id, id);
   });
+
+  test(
+    'met je locatie aan vertrekt een nieuwe route vanaf "Mijn locatie"',
+    () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      final bron = NepBron(Toestemming.ja);
+      final metLocatie = ProviderContainer(
+        overrides: [locatieBronProvider.overrideWithValue(bron)],
+      );
+      addTearDown(metLocatie.dispose);
+      final wacht = metLocatie.read(locatieProvider.notifier).zetAan();
+      await Future<void>.delayed(Duration.zero);
+      bron.fixes.add(
+        LocatieFix(punt: const LatLng(52.19, 5.7), tijd: DateTime(2026)),
+      );
+      await wacht;
+
+      final p = metLocatie.read(plannerProvider.notifier);
+      p.toonPlaats(plaats('Dom', 52.09));
+      p.startRoute();
+      final punten = metLocatie.read(plannerProvider).punten;
+      expect(punten.first.plaats?.mijnLocatie, isTrue);
+      expect(punten.first.plaats?.punt, const LatLng(52.19, 5.7));
+      expect(punten.last.plaats?.naam, 'Dom');
+
+      // Zocht je "Mijn locatie" zelf, dan is dat de bestemming en blijft van leeg.
+      p.naarZoeken();
+      p.toonPlaats(Plaats.hier(const LatLng(52.19, 5.7)));
+      p.startRoute();
+      expect(metLocatie.read(plannerProvider).punten.first.plaats, isNull);
+    },
+  );
 }

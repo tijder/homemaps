@@ -1,16 +1,28 @@
 import 'package:maplibre_gl/maplibre_gl.dart';
 
+import '../l10n/app_localizations.dart';
+
 /// Een zoekresultaat van Photon, of een punt dat op de kaart is aangewezen.
 class Plaats {
   const Plaats({
     required this.naam,
     required this.punt,
     this.omschrijving = '',
+    this.mijnLocatie = false,
   });
 
   final String naam;
   final String omschrijving;
   final LatLng punt;
+
+  /// Je eigen plek op het moment van kiezen. De naam komt dan uit de vertaling
+  /// (zie [weergave]); navigatie gebruikt onderweg toch de live positie.
+  final bool mijnLocatie;
+
+  factory Plaats.hier(LatLng punt) =>
+      Plaats(naam: '', punt: punt, mijnLocatie: true);
+
+  String weergave(AppLocalizations l) => mijnLocatie ? l.mijnLocatie : naam;
 
   /// Een los punt zonder adres: de coördinaten zijn dan de naam.
   factory Plaats.vanPunt(LatLng punt) => Plaats(

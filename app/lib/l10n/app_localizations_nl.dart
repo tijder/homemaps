@@ -224,4 +224,25 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get oorzaakEvenement => 'Evenement';
+
+  @override
+  String get mijnLocatie => 'Mijn locatie';
+
+  @override
+  String get locatieGeweigerd =>
+      'Zonder toestemming kan de app je locatie niet tonen.';
+
+  @override
+  String get locatieNooit =>
+      'Locatie is voor HomeMaps geweigerd. Zet het aan in de instellingen van je telefoon.';
+
+  @override
+  String get locatieNooitWeb =>
+      'Locatie is voor deze site geblokkeerd. Sta het toe via het slotje naast het adres.';
+
+  @override
+  String get locatieDienstUit => 'Locatie staat uit op je apparaat.';
+
+  @override
+  String get locatieNietGevonden => 'Je locatie is (nog) niet gevonden.';
 }

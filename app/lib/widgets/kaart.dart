@@ -6,6 +6,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../models/plaats.dart';
 import '../models/route.dart';
+import '../providers/locatie.dart';
 import '../utils/afstand.dart';
 
 /// De kaart met de routes en de punten erop. Weet niets van de planner: krijgt
@@ -24,6 +25,7 @@ class Kaart extends StatefulWidget {
     required this.onRouteGekozen,
     required this.onLangIngedrukt,
     required this.rand,
+    this.locatie,
     this.verkeer,
     this.toonVertraging = true,
     this.onVerkeerGetikt,
@@ -50,6 +52,9 @@ class Kaart extends StatefulWidget {
   /// De ruimte die het paneel over de kaart legt; de route wordt daarbuiten
   /// in beeld gebracht.
   final EdgeInsets rand;
+
+  /// Je eigen plek (het blauwe puntje), of null als de locatie uit staat.
+  final LocatieFix? locatie;
 
   /// De verkeerslaag (GeoJSON van `/verkeer`), of null als hij uit staat.
   final Map<String, dynamic>? verkeer;
@@ -96,6 +101,7 @@ class _KaartState extends State<Kaart> {
       return;
     }
     if (!_stijlKlaar) return;
+    if (oud.locatie != widget.locatie) _toonLocatie();
     if (oud.verkeer != widget.verkeer ||
         oud.toonVertraging != widget.toonVertraging) {
       _tekenVerkeer();
@@ -187,7 +193,25 @@ class _KaartState extends State<Kaart> {
     _cirkelIndex.clear();
     _ingepast = 0;
     await _tekenVerkeer();
+    await _toonLocatie();
     await _teken();
+  }
+
+  /// Het puntje komt van onze eigen bron (ManualLocationSource), niet van de
+  /// plugin: zo is het op het web en op Android hetzelfde, en kan de navigatie
+  /// er later dezelfde fixes voor gebruiken.
+  Future<void> _toonLocatie() async {
+    final c = _controller, fix = widget.locatie;
+    if (c == null || fix == null) return;
+    await c.updateManualLocation(
+      ManualLocationUpdate(
+        target: fix.punt,
+        horizontalAccuracy: fix.nauwkeurigheid,
+        bearing: fix.koers,
+        speed: fix.snelheid,
+        timestamp: fix.tijd,
+      ),
+    );
   }
 
   /// Onder de routes, zodat een route over een file heen leesbaar blijft. Een
@@ -485,6 +509,8 @@ class _KaartState extends State<Kaart> {
     // Het kompas van de plugin staat rechtsboven, precies onder onze eigen knoppen;
     // het scherm heeft er een eigen knop voor.
     compassEnabled: false,
+    myLocationEnabled: widget.locatie != null,
+    locationSource: const ManualLocationSource(),
     attributionButtonPosition: AttributionButtonPosition.bottomRight,
     onMapCreated: (controller) {
       _controller = controller;

@@ -1,8 +1,10 @@
 import 'dart:math';
 
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 
@@ -11,6 +13,7 @@ import '../models/plaats.dart';
 import '../models/profiel.dart';
 import '../providers/diensten.dart';
 import '../providers/instellingen.dart';
+import '../providers/locatie.dart';
 import '../providers/planner.dart';
 import '../router/app_router.dart';
 import '../utils/muis_stub.dart'
@@ -32,8 +35,10 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
   static const _paneelBreedte = 380.0;
   static const _stijlen = ['osm-bright', 'positron', 'dark-matter'];
 
-  /// De keuze in het lagenmenu die de verkeerslaag aan- of uitzet.
+  /// De keuzes in het lagenmenu die de verkeerslaag en je locatie aan- of
+  /// uitzetten.
   static const _verkeer = 'verkeer';
+  static const _locatie = 'locatie';
 
   MapLibreMapController? _kaart;
   ({Offset plek, LatLng punt})? _menu;
@@ -117,6 +122,56 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
     );
   }
 
+  /// De knop "Mijn locatie": vraagt zo nodig toestemming en vliegt erheen.
+  Future<void> _naarMijnLocatie() async {
+    final fix = await ref.read(locatieProvider.notifier).zetAan();
+    if (!mounted) return;
+    if (fix == null) {
+      _meldLocatieProbleem();
+      return;
+    }
+    final zoom = max(_kaart?.cameraPosition?.zoom ?? 0, 15.0);
+    await _kaart?.animateCamera(CameraUpdate.newLatLngZoom(fix.punt, zoom));
+  }
+
+  /// "Mijn locatie" in een zoekvakje.
+  Future<Plaats?> _mijnLocatieAlsPlaats() async {
+    final fix = await ref.read(locatieProvider.notifier).zetAan();
+    if (!mounted) return null;
+    if (fix == null) {
+      _meldLocatieProbleem();
+      return null;
+    }
+    return Plaats.hier(fix.punt);
+  }
+
+  /// Waarom er geen locatie is, en waar je dat verhelpt. Op het web kan de app
+  /// de instellingen van de browser niet openen; dan alleen de uitleg.
+  void _meldLocatieProbleem() {
+    final l = AppLocalizations.of(context);
+    final android = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+    final (tekst, openen) = switch (ref.read(locatieProvider).stand) {
+      LocatieStand.permanentGeweigerd => (
+        kIsWeb ? l.locatieNooitWeb : l.locatieNooit,
+        android ? Geolocator.openAppSettings : null,
+      ),
+      LocatieStand.dienstUit => (
+        l.locatieDienstUit,
+        android ? Geolocator.openLocationSettings : null,
+      ),
+      LocatieStand.geweigerd => (l.locatieGeweigerd, null),
+      _ => (l.locatieNietGevonden, null),
+    };
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(tekst),
+        action: openen == null
+            ? null
+            : SnackBarAction(label: l.instellingen, onPressed: openen),
+      ),
+    );
+  }
+
   void _versleept(int index, LatLng punt) {
     ref
         .read(plannerProvider.notifier)
@@ -139,6 +194,9 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
 
     final planner = ref.watch(plannerProvider);
     final instellingen = ref.watch(instellingenProvider);
+    final locatieStand = ref.watch(locatieProvider.select((t) => t.stand));
+    final locatieAan =
+        locatieStand == LocatieStand.aan || locatieStand == LocatieStand.zoekt;
     final breed = MediaQuery.sizeOf(context).width >= 800;
     final hoogte = MediaQuery.sizeOf(context).height;
 
@@ -154,6 +212,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
       onRouteGekozen: ref.read(plannerProvider.notifier).kies,
       onLangIngedrukt: _puntMenu,
       onController: (controller) => _kaart = controller,
+      locatie: ref.watch(locatieProvider.select((t) => t.fix)),
       verkeer: ref.watch(verkeerProvider).value,
       // Een file zegt de fietser en de wandelaar niets; een dichte weg wel.
       toonVertraging: instellingen.profiel == Profiel.auto,
@@ -181,15 +240,23 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                   tooltip: l.kaartstijl,
                   icon: const _Rondje(Icons.layers_outlined),
                   initialValue: instellingen.stijl,
-                  onSelected: (keuze) => ref
-                      .read(instellingenProvider.notifier)
-                      .wijzig(
-                        keuze == _verkeer
-                            ? instellingen.kopie(
-                                verkeerOpKaart: !instellingen.verkeerOpKaart,
-                              )
-                            : instellingen.kopie(stijl: keuze),
-                      ),
+                  onSelected: (keuze) {
+                    if (keuze == _locatie) {
+                      locatieAan
+                          ? ref.read(locatieProvider.notifier).zetUit()
+                          : _naarMijnLocatie();
+                      return;
+                    }
+                    ref
+                        .read(instellingenProvider.notifier)
+                        .wijzig(
+                          keuze == _verkeer
+                              ? instellingen.kopie(
+                                  verkeerOpKaart: !instellingen.verkeerOpKaart,
+                                )
+                              : instellingen.kopie(stijl: keuze),
+                        );
+                  },
                   itemBuilder: (_) => [
                     for (final (stijl, naam) in [
                       (_stijlen[0], l.stijlKaart),
@@ -206,7 +273,22 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                       checked: instellingen.verkeerOpKaart,
                       child: PointerInterceptor(child: Text(l.verkeerOpKaart)),
                     ),
+                    CheckedPopupMenuItem(
+                      value: _locatie,
+                      checked: locatieAan,
+                      child: PointerInterceptor(child: Text(l.mijnLocatie)),
+                    ),
                   ],
+                ),
+                IconButton(
+                  tooltip: l.mijnLocatie,
+                  icon: _Rondje(switch (locatieStand) {
+                    LocatieStand.aan => Icons.my_location,
+                    LocatieStand.uit ||
+                    LocatieStand.zoekt => Icons.location_searching,
+                    _ => Icons.location_disabled,
+                  }),
+                  onPressed: _naarMijnLocatie,
                 ),
                 IconButton(
                   tooltip: l.noordBoven,
@@ -248,7 +330,12 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
               child: PointerInterceptor(
                 child: Material(
                   elevation: 4,
-                  child: SafeArea(child: RoutePaneel(nabij: _midden)),
+                  child: SafeArea(
+                    child: RoutePaneel(
+                      nabij: _midden,
+                      mijnLocatie: _mijnLocatieAlsPlaats,
+                    ),
+                  ),
                 ),
               ),
             )
@@ -278,7 +365,11 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                         ),
                       ),
                       Expanded(
-                        child: RoutePaneel(nabij: _midden, scroll: scroll),
+                        child: RoutePaneel(
+                          nabij: _midden,
+                          mijnLocatie: _mijnLocatieAlsPlaats,
+                          scroll: scroll,
+                        ),
                       ),
                     ],
                   ),
@@ -320,6 +411,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
             plaats: gevonden,
             nabij: _midden,
             onGekozen: acties.toonPlaats,
+            mijnLocatie: _mijnLocatieAlsPlaats,
             onGewist: acties.sluitPlaats,
           ),
         ),
@@ -341,7 +433,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      gevonden.naam,
+                      gevonden.weergave(l),
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     if (gevonden.omschrijving.isNotEmpty) ...[

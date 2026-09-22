@@ -223,4 +223,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get oorzaakEvenement => 'Event';
+
+  @override
+  String get mijnLocatie => 'My location';
+
+  @override
+  String get locatieGeweigerd =>
+      'Without permission the app can\'t show your location.';
+
+  @override
+  String get locatieNooit =>
+      'Location is denied for HomeMaps. Turn it on in your phone\'s settings.';
+
+  @override
+  String get locatieNooitWeb =>
+      'Location is blocked for this site. Allow it via the padlock next to the address.';
+
+  @override
+  String get locatieDienstUit => 'Location is turned off on your device.';
+
+  @override
+  String get locatieNietGevonden => 'Your location hasn\'t been found (yet).';
 }

@@ -487,6 +487,42 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'Evenement'**
   String get oorzaakEvenement;
+
+  /// No description provided for @mijnLocatie.
+  ///
+  /// In nl, this message translates to:
+  /// **'Mijn locatie'**
+  String get mijnLocatie;
+
+  /// No description provided for @locatieGeweigerd.
+  ///
+  /// In nl, this message translates to:
+  /// **'Zonder toestemming kan de app je locatie niet tonen.'**
+  String get locatieGeweigerd;
+
+  /// No description provided for @locatieNooit.
+  ///
+  /// In nl, this message translates to:
+  /// **'Locatie is voor HomeMaps geweigerd. Zet het aan in de instellingen van je telefoon.'**
+  String get locatieNooit;
+
+  /// No description provided for @locatieNooitWeb.
+  ///
+  /// In nl, this message translates to:
+  /// **'Locatie is voor deze site geblokkeerd. Sta het toe via het slotje naast het adres.'**
+  String get locatieNooitWeb;
+
+  /// No description provided for @locatieDienstUit.
+  ///
+  /// In nl, this message translates to:
+  /// **'Locatie staat uit op je apparaat.'**
+  String get locatieDienstUit;
+
+  /// No description provided for @locatieNietGevonden.
+  ///
+  /// In nl, this message translates to:
+  /// **'Je locatie is (nog) niet gevonden.'**
+  String get locatieNietGevonden;
 }
 
 class _AppLocalizationsDelegate

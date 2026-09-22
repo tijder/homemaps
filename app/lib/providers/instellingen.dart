@@ -14,6 +14,7 @@ class Instellingen {
     this.vermijdTol = false,
     this.vermijdVeren = false,
     this.verkeerOpKaart = true,
+    this.locatieAan = false,
   });
 
   /// Alleen op Android nodig: op het web is de server de eigen origin.
@@ -28,6 +29,10 @@ class Instellingen {
   /// Afsluitingen, werk op de weg en files als laag over de kaart.
   final bool verkeerOpKaart;
 
+  /// De gebruiker zette zijn locatie aan: bij de volgende start weer, als de
+  /// toestemming er dan nog is.
+  final bool locatieAan;
+
   Instellingen kopie({
     String? server,
     String? stijl,
@@ -37,6 +42,7 @@ class Instellingen {
     bool? vermijdTol,
     bool? vermijdVeren,
     bool? verkeerOpKaart,
+    bool? locatieAan,
   }) => Instellingen(
     server: server ?? this.server,
     stijl: stijl ?? this.stijl,
@@ -46,6 +52,7 @@ class Instellingen {
     vermijdTol: vermijdTol ?? this.vermijdTol,
     vermijdVeren: vermijdVeren ?? this.vermijdVeren,
     verkeerOpKaart: verkeerOpKaart ?? this.verkeerOpKaart,
+    locatieAan: locatieAan ?? this.locatieAan,
   );
 }
 
@@ -78,6 +85,7 @@ class InstellingenNotifier extends Notifier<Instellingen> {
       vermijdTol: doos.get('vermijdTol', defaultValue: false) as bool,
       vermijdVeren: doos.get('vermijdVeren', defaultValue: false) as bool,
       verkeerOpKaart: doos.get('verkeerOpKaart', defaultValue: true) as bool,
+      locatieAan: doos.get('locatieAan', defaultValue: false) as bool,
     );
   }
 
@@ -92,6 +100,7 @@ class InstellingenNotifier extends Notifier<Instellingen> {
       'vermijdTol': nieuw.vermijdTol,
       'vermijdVeren': nieuw.vermijdVeren,
       'verkeerOpKaart': nieuw.verkeerOpKaart,
+      'locatieAan': nieuw.locatieAan,
     });
   }
 }

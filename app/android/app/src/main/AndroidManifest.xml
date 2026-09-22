@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Zonder deze permissie heeft een release-build geen netwerk (debug krijgt hem vanzelf). -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Je eigen plek op de kaart; pas gevraagd als je op "Mijn locatie" tikt. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <application
         android:label="HomeMaps"
         android:name="${applicationName}"

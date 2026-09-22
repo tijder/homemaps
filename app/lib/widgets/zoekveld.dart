@@ -21,6 +21,7 @@ class Zoekveld extends ConsumerStatefulWidget {
     this.pictogram = Icons.place_outlined,
     this.zwevend = false,
     this.voor,
+    this.mijnLocatie,
   });
 
   final String label;
@@ -39,6 +40,11 @@ class Zoekveld extends ConsumerStatefulWidget {
   /// Vóór het tekstvak, bijvoorbeeld de sleepgreep van de routelijst.
   final Widget? voor;
 
+  /// Levert je eigen plek (en vraagt zo nodig toestemming). Null als het niet
+  /// lukte; de aanroeper heeft dan al gezegd waarom. Zonder deze functie staat
+  /// "Mijn locatie" niet in de suggesties.
+  final Future<Plaats?> Function()? mijnLocatie;
+
   @override
   ConsumerState<Zoekveld> createState() => _ZoekveldState();
 }
@@ -51,34 +57,58 @@ class _ZoekveldState extends ConsumerState<Zoekveld> {
   CancelToken? _lopend;
   List<Plaats> _resultaten = const [];
 
+  /// De suggesties zijn open: het vakje heeft de focus, of had die net (zie de
+  /// focus-listener).
+  bool _open = false;
+
   /// Wat er in het vakje hoort te staan als er niet getypt wordt. Een eigen veld
   /// en niet `widget.plaats`: bij het kiezen verliest het vakje de focus vóórdat
   /// de planner de nieuwe plaats heeft teruggegeven, en dan zou de keuze meteen
   /// weer worden weggepoetst.
   String _naam = '';
 
+  String _weergave(Plaats? plaats) =>
+      plaats?.weergave(AppLocalizations.of(context)) ?? '';
+
   @override
   void initState() {
     super.initState();
-    _tekst.text = _naam = widget.plaats?.naam ?? '';
     _focus.addListener(() {
-      if (_focus.hasFocus) return;
+      if (_focus.hasFocus) {
+        _sluit?.cancel();
+        setState(() => _open = true);
+        return;
+      }
       // Verlaten zonder te kiezen: terug naar wat er stond. De suggesties gaan pas
       // even later weg -- een klik óp een suggestie haalt in sommige browsers eerst
       // de focus weg, en dan was de lijst verdwenen voordat de klik aankwam.
       _tekst.text = _naam;
       _sluit?.cancel();
       _sluit = Timer(const Duration(milliseconds: 250), () {
-        if (mounted && !_focus.hasFocus) setState(() => _resultaten = const []);
+        if (mounted && !_focus.hasFocus) {
+          setState(() {
+            _resultaten = const [];
+            _open = false;
+          });
+        }
       });
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Hier en niet in initState: de naam van "Mijn locatie" komt uit de
+    // vertaling, en die is in initState nog niet te lezen.
+    _naam = _weergave(widget.plaats);
+    if (!_focus.hasFocus) _tekst.text = _naam;
   }
 
   @override
   void didUpdateWidget(Zoekveld oud) {
     super.didUpdateWidget(oud);
     if (oud.plaats != widget.plaats) {
-      _naam = widget.plaats?.naam ?? '';
+      _naam = _weergave(widget.plaats);
       if (!_focus.hasFocus) _tekst.text = _naam;
     }
   }
@@ -94,6 +124,8 @@ class _ZoekveldState extends ConsumerState<Zoekveld> {
   }
 
   void _getypt(String tekst) {
+    // "Mijn locatie" hangt af van wat er getypt is.
+    setState(() {});
     _wacht?.cancel();
     // Niet bij elke toets een verzoek: pas na een korte pauze.
     _wacht = Timer(const Duration(milliseconds: 250), () => _zoek(tekst));
@@ -123,15 +155,32 @@ class _ZoekveldState extends ConsumerState<Zoekveld> {
 
   void _kies(Plaats plaats) {
     _sluit?.cancel();
-    _tekst.text = _naam = plaats.naam;
-    setState(() => _resultaten = const []);
+    _tekst.text = _naam = _weergave(plaats);
+    setState(() {
+      _resultaten = const [];
+      _open = false;
+    });
     widget.onGekozen(plaats);
     _focus.unfocus();
+  }
+
+  Future<void> _kiesMijnLocatie() async {
+    final plaats = await widget.mijnLocatie!();
+    if (plaats != null && mounted) _kies(plaats);
   }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    // Bovenaan zolang er niets of het begin van "Mijn locatie" getypt is.
+    final getypt = _tekst.text.trim().toLowerCase();
+    final metMijnLocatie =
+        widget.mijnLocatie != null &&
+        _open &&
+        (getypt.isEmpty ||
+            getypt == _naam.toLowerCase() ||
+            l.mijnLocatie.toLowerCase().startsWith(getypt));
+    final suggesties = _resultaten.isNotEmpty || metMijnLocatie;
     final veld = TextField(
       controller: _tekst,
       focusNode: _focus,
@@ -176,13 +225,23 @@ class _ZoekveldState extends ConsumerState<Zoekveld> {
               Expanded(child: veld),
             ],
           ),
-        if (widget.zwevend && _resultaten.isNotEmpty) const Divider(height: 1),
+        if (widget.zwevend && suggesties) const Divider(height: 1),
+        if (metMijnLocatie)
+          ListTile(
+            dense: true,
+            leading: Icon(
+              Icons.my_location,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            title: Text(l.mijnLocatie),
+            onTap: _kiesMijnLocatie,
+          ),
         for (final plaats in _resultaten)
           ListTile(
             dense: true,
             leading: const Icon(Icons.place_outlined),
             title: Text(
-              plaats.naam,
+              _weergave(plaats),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

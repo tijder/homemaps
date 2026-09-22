@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/plaats.dart';
 import '../models/profiel.dart';
 import '../models/route.dart';
 import '../providers/instellingen.dart';
@@ -15,9 +16,17 @@ import 'zoekveld.dart';
 /// Het paneel naast (breed scherm) of onder (smal scherm) de kaart: de punten,
 /// de vervoerswijze, de opties en de uitkomst.
 class RoutePaneel extends ConsumerWidget {
-  const RoutePaneel({super.key, required this.nabij, this.scroll});
+  const RoutePaneel({
+    super.key,
+    required this.nabij,
+    this.mijnLocatie,
+    this.scroll,
+  });
 
   final LatLng? Function() nabij;
+
+  /// Zie [Zoekveld.mijnLocatie].
+  final Future<Plaats?> Function()? mijnLocatie;
   final ScrollController? scroll;
 
   @override
@@ -88,6 +97,7 @@ class RoutePaneel extends ConsumerWidget {
                     : (i == laatste ? Icons.place : Icons.more_vert),
                 plaats: punt.plaats,
                 nabij: nabij,
+                mijnLocatie: mijnLocatie,
                 onGekozen: (gekozen) => acties.zetPunt(i, gekozen),
                 onGewist: () => acties.verwijder(i),
                 voor: ReorderableDragStartListener(

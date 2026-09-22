@@ -105,5 +105,11 @@
   },
   "oorzaakWerk": "Werkzaamheden",
   "oorzaakOngeval": "Ongeval",
-  "oorzaakEvenement": "Evenement"
+  "oorzaakEvenement": "Evenement",
+  "mijnLocatie": "Mijn locatie",
+  "locatieGeweigerd": "Zonder toestemming kan de app je locatie niet tonen.",
+  "locatieNooit": "Locatie is voor HomeMaps geweigerd. Zet het aan in de instellingen van je telefoon.",
+  "locatieNooitWeb": "Locatie is voor deze site geblokkeerd. Sta het toe via het slotje naast het adres.",
+  "locatieDienstUit": "Locatie staat uit op je apparaat.",
+  "locatieNietGevonden": "Je locatie is (nog) niet gevonden."
 }

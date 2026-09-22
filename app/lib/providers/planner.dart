@@ -6,6 +6,7 @@ import '../models/route.dart';
 import '../services/valhalla_service.dart';
 import 'diensten.dart';
 import 'instellingen.dart';
+import 'locatie.dart';
 
 /// Eén vakje van de route. Het [id] blijft bij het vakje als de volgorde
 /// verandert, zodat slepen in de lijst en op de kaart hetzelfde punt bedoelen.
@@ -76,8 +77,20 @@ class PlannerNotifier extends Notifier<PlannerState> {
 
   @override
   PlannerState build() {
-    // Een andere vervoerswijze of optie is een andere route.
-    ref.listen(instellingenProvider, (_, _) => _bereken(volgBeeld: false));
+    // Een andere vervoerswijze of optie is een andere route; een kaartlaag of de
+    // locatie niet.
+    ref.listen(
+      instellingenProvider.select(
+        (i) => (
+          i.profiel,
+          i.liveVerkeer,
+          i.vermijdSnelwegen,
+          i.vermijdTol,
+          i.vermijdVeren,
+        ),
+      ),
+      (_, _) => _bereken(volgBeeld: false),
+    );
     ref.onDispose(() => _lopend?.cancel());
     return const PlannerState();
   }
@@ -91,15 +104,21 @@ class PlannerNotifier extends Notifier<PlannerState> {
 
   void sluitPlaats() => state = state.kopie(gevonden: () => null);
 
-  /// "Route" op de gevonden plaats: die wordt de bestemming.
+  /// "Route" op de gevonden plaats: die wordt de bestemming. Staat je locatie
+  /// aan, dan vertrek je vanaf daar.
   void startRoute() {
     final doel = state.gevonden;
+    final hier = ref.read(locatieProvider).fix;
+    final van = hier == null || (doel?.mijnLocatie ?? false)
+        ? null
+        : Plaats.hier(hier.punt);
     state = PlannerState(
       routeModus: true,
       gevonden: doel,
-      punten: [Routepunt(_volgendId++), Routepunt(_volgendId++, doel)],
-      beeldVersie: state.beeldVersie,
+      punten: [Routepunt(_volgendId++, van), Routepunt(_volgendId++, doel)],
+      beeldVersie: state.beeldVersie + (van == null ? 0 : 1),
     );
+    if (van != null) _bereken(volgBeeld: true);
   }
 
   /// Terug naar het zoekscherm; de route is weg, de gevonden plaats blijft.
