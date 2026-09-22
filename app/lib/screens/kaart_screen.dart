@@ -399,6 +399,9 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
             )
           : null,
       navigeert: nav != null && !nav.aangekomen,
+      gereden: nav != null && stand != null
+          ? [...nav.route.punten.take(stand.segment + 1), stand.opRoute]
+          : null,
       onZelfBewogen: _zelfBewogen,
       verkeer: ref.watch(verkeerProvider).value,
       // Een file zegt de fietser en de wandelaar niets; een dichte weg wel.

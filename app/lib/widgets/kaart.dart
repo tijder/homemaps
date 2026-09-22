@@ -27,6 +27,7 @@ class Kaart extends StatefulWidget {
     required this.rand,
     this.locatie,
     this.volg,
+    this.gereden,
     this.navigeert = false,
     this.onZelfBewogen,
     this.verkeer,
@@ -63,6 +64,10 @@ class Kaart extends StatefulWidget {
   /// met je plek in het onderste deel van het beeld. Null = de kaart is vrij.
   final ({LatLng punt, double koers, double snelheid})? volg;
 
+  /// Tijdens navigatie: het stuk van de route dat al achter je ligt, grijs over
+  /// de blauwe lijn heen.
+  final List<LatLng>? gereden;
+
   /// Tijdens navigatie ligt het midden van de kaart lager (zie [volg]), ook
   /// als je even zelf rondkijkt; daarna gaat de kaart weer plat en noord-boven.
   final bool navigeert;
@@ -90,6 +95,7 @@ class _KaartState extends State<Kaart> {
   static const _routeBron = 'routes';
   static const _aansluitBron = 'aansluiting';
   static const _verkeerBron = 'verkeer';
+  static const _geredenBron = 'gereden';
 
   /// Kleiner dan dit is het gat tussen een punt en de weg niet het tonen waard.
   static const _minAansluiting = 15.0;
@@ -117,6 +123,7 @@ class _KaartState extends State<Kaart> {
     }
     if (!_stijlKlaar) return;
     if (oud.locatie != widget.locatie) _toonLocatie();
+    if (oud.gereden != widget.gereden) _tekenGereden();
     if (oud.navigeert != widget.navigeert) _zetRand();
     if (widget.volg != null && oud.volg != widget.volg) _volg();
     if (oud.verkeer != widget.verkeer ||
@@ -191,6 +198,18 @@ class _KaartState extends State<Kaart> {
         true,
       ],
     );
+    await c.addGeoJsonSource(_geredenBron, _leeg);
+    await c.addLineLayer(
+      _geredenBron,
+      'gereden',
+      const LineLayerProperties(
+        lineColor: '#9e9e9e',
+        lineWidth: 6,
+        lineCap: 'round',
+        lineJoin: 'round',
+      ),
+      enableInteraction: false,
+    );
     // Van waar je klikte naar waar de route de weg oppakt: Valhalla legt een punt
     // naast de weg op de dichtstbijzijnde weg, en zonder dit lijntje lijkt de
     // route dan zomaar ergens anders te beginnen.
@@ -210,8 +229,31 @@ class _KaartState extends State<Kaart> {
     _cirkelIndex.clear();
     _ingepast = 0;
     await _tekenVerkeer();
+    await _tekenGereden();
     await _toonLocatie();
     await _teken();
+  }
+
+  Future<void> _tekenGereden() async {
+    final c = _controller;
+    if (c == null || !_stijlKlaar) return;
+    final lijn = widget.gereden;
+    await c.setGeoJsonSource(_geredenBron, {
+      'type': 'FeatureCollection',
+      'features': [
+        if (lijn != null && lijn.length > 1)
+          {
+            'type': 'Feature',
+            'properties': <String, dynamic>{},
+            'geometry': {
+              'type': 'LineString',
+              'coordinates': [
+                for (final p in lijn) [p.longitude, p.latitude],
+              ],
+            },
+          },
+      ],
+    });
   }
 
   /// Meerijden: je plek op ongeveer tweederde van de hoogte, zodat je ziet wat
