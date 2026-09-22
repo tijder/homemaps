@@ -113,6 +113,8 @@ valhalla:
       pullPolicy: IfNotPresent
     intervalSeconden: 300
     afsluitingen: true
+    # -- Hoe vaak de matrixborden boven de snelweg (MSI); 0 zet ze uit.
+    msiSeconden: 60
     ndwUrl: https://opendata.ndw.nu
     resources:
       requests: { cpu: 20m, memory: 256Mi }

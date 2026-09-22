@@ -10,8 +10,9 @@ import json
 from collections.abc import Iterable
 from datetime import UTC, datetime
 
-from .datex3 import GeplandeAfsluiting, Maatregel, Melding, Punt, Reistijd, TijdelijkeSnelheid
+from .datex3 import Brug, GeplandeAfsluiting, Maatregel, Melding, Punt, Reistijd, TijdelijkeSnelheid
 from .matcher import Match
+from .msi import Portaal
 
 # Een stuk is traag onder dit deel van zijn normale snelheid, en file daaronder.
 TRAAG = 0.6
@@ -161,6 +162,35 @@ def snelheden(items: Iterable[tuple[TijdelijkeSnelheid, Match]], nu: datetime) -
     return uit
 
 
+def _punt(lat: float, lon: float) -> dict:
+    return {"type": "Point", "coordinates": [round(lon, 5), round(lat, 5)]}
+
+
+def msi(portalen: Iterable[Portaal]) -> list[dict]:
+    """Matrixborden per portaal, met de rijrichting en per strook (van links
+    naar rechts) wat erop staat. Voor onderweg, niet op de kaart."""
+    return [
+        {
+            "type": "Feature",
+            "properties": {
+                "soort": "msi",
+                "koers": round(portaal.koers),
+                "stroken": list(portaal.stroken),
+            },
+            "geometry": _punt(portaal.lat, portaal.lon),
+        }
+        for portaal in portalen
+    ]
+
+
+def bruggen(items: Iterable[Brug]) -> list[dict]:
+    """Bruggen die nu open staan. Voor de waarschuwing onderweg."""
+    return [
+        {"type": "Feature", "properties": {"soort": "brug"}, "geometry": _punt(*brug.punt)}
+        for brug in items
+    ]
+
+
 def _iso(tijd):
     return tijd.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ") if tijd else None
 
@@ -191,7 +221,10 @@ def geojson(features: list[dict]) -> tuple[bytes, bytes]:
     # Een oplopend id per feature: MapLibre meldt een tik met het id.
     for nummer, feature in enumerate(features):
         feature["id"] = nummer
-    ruw = json.dumps(
-        {"type": "FeatureCollection", "features": features}, separators=(",", ":")
-    ).encode()
+    return comprimeer({"type": "FeatureCollection", "features": features})
+
+
+def comprimeer(inhoud) -> tuple[bytes, bytes]:
+    """JSON, gewoon en gzip."""
+    ruw = json.dumps(inhoud, separators=(",", ":")).encode()
     return ruw, gzip.compress(ruw, 6)

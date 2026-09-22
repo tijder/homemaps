@@ -800,6 +800,12 @@ abstract class AppLocalizations {
   /// **'Tijdelijke maximumsnelheid {kmu} km/u'**
   String maximumsnelheidTijdelijk(int kmu);
 
+  /// No description provided for @maximumsnelheidMatrix.
+  ///
+  /// In nl, this message translates to:
+  /// **'Maximumsnelheid {kmu} km/u op de matrixborden'**
+  String maximumsnelheidMatrix(int kmu);
+
   /// No description provided for @meldingOngeval.
   ///
   /// In nl, this message translates to:
@@ -817,6 +823,18 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'Voorwerp op de weg'**
   String get meldingObstakel;
+
+  /// No description provided for @meldingBrug.
+  ///
+  /// In nl, this message translates to:
+  /// **'Open brug'**
+  String get meldingBrug;
+
+  /// No description provided for @matrixborden.
+  ///
+  /// In nl, this message translates to:
+  /// **'Matrixborden'**
+  String get matrixborden;
 
   /// No description provided for @meldingSinds.
   ///

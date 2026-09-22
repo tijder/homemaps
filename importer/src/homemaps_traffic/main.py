@@ -11,6 +11,9 @@ Instellingen komen uit de omgeving (de chart zet ze):
   MELDINGEN          "false" zet de SRTI-feed uit    (true)
   PLANNING_SECONDEN  hoe vaak de planningsfeed        (3600; 0 = nooit)
   SNELHEDEN          "false" zet tijdelijke maximumsnelheden uit (true)
+  OSM_PBF            het OSM-bestand van de tileset    (/data/bron/gebied.osm.pbf)
+  MSI_SECONDEN       hoe vaak de matrixborden          (60; 0 = nooit)
+  BRUGGEN            "false" zet open bruggen uit      (true)
   METRICS_POORT      /metrics en /verkeer.geojson    (9100)
 """
 
@@ -21,6 +24,8 @@ import sys
 import threading
 import time
 import urllib.request
+import zipfile
+import zlib
 from collections import defaultdict
 from collections.abc import Iterable
 from datetime import UTC, datetime, timedelta
@@ -29,7 +34,7 @@ from pathlib import Path
 from socket import AF_INET6
 from xml.etree.ElementTree import ParseError
 
-from . import datex3, kaartlaag
+from . import datex3, kaartlaag, msi, osmregels
 from . import traffictile as tt
 from .matcher import Match, MatchCache, Valhalla
 from .tarindex import TrafficTar
@@ -39,6 +44,11 @@ log = logging.getLogger("homemaps_traffic")
 SRTI = "veiligheidsgerelateerde_berichten_srti.xml.gz"
 PLANNING = "planningsfeed_wegwerkzaamheden_en_evenementen.xml.gz"
 SNELHEDEN = "tijdelijke_verkeersmaatregelen_maximum_snelheden.xml.gz"
+ACTUEEL = "actueel_beeld.xml.gz"
+MSI_BEELDEN = "Matrixsignaalinformatie.xml.gz"
+MSI_LOCATIES = "ndw_msi_shapefiles_latest.zip"
+# De plekken van de borden veranderen zelden.
+MSI_LOCATIES_SECONDEN = 24 * 3600
 # Tijdelijke maximumsnelheden uit de planningsfeed: zo ver vooruit, zodat een
 # beperking die ingaat voordat de feed weer wordt opgehaald (eens per uur) op
 # tijd meetelt.
@@ -121,18 +131,31 @@ def leg_snelheden(
 
 
 class Stand:
-    """Wat /metrics en /verkeer.geojson laten zien. Eén ronde per keer, dus een
-    lock volstaat."""
+    """Wat /metrics en de lagen laten zien. De verkeerslaag bestaat uit delen die
+    elk hun eigen draad bijwerkt (de ronde, de matrixborden); bij elke wijziging
+    wordt hij opnieuw samengesteld."""
 
     def __init__(self):
         self.slot = threading.Lock()
         self.waarden: dict[str, float] = {}
         self.laag: tuple[bytes, bytes] | None = None  # (gewoon, gzip)
+        self.delen: dict[str, list[dict]] = {}
         self.gepland: tuple[bytes, bytes] | None = None
+        self.tijden: tuple[bytes, bytes] | None = None
 
-    def zet_laag(self, laag: tuple[bytes, bytes]) -> None:
+    def zet_deel(self, naam: str, features: list[dict]) -> None:
+        """Het deel [naam] van de verkeerslaag. De laag komt pas beschikbaar als
+        de ronde er is: die is de kern (afsluitingen, files)."""
         with self.slot:
-            self.laag = laag
+            self.delen[naam] = features
+            if "ronde" in self.delen:
+                self.laag = kaartlaag.geojson(
+                    [feature for deel in self.delen.values() for feature in deel]
+                )
+
+    def zet_tijden(self, inhoud: tuple[bytes, bytes]) -> None:
+        with self.slot:
+            self.tijden = inhoud
 
     def zet_gepland(self, laag: tuple[bytes, bytes]) -> None:
         with self.slot:
@@ -165,9 +188,12 @@ def start_metrics(stand: Stand, poort: int) -> None:
             if pad == "/verkeer-gepland.geojson":
                 self._laag(stand.gepland, 600)
                 return
+            if pad == "/snelheid-tijden.json":
+                self._laag(stand.tijden, 3600, "application/json")
+                return
             self._stuur(200, stand.tekst().encode(), "text/plain; version=0.0.4")
 
-        def _laag(self, laag, cache):
+        def _laag(self, laag, cache, soort="application/geo+json"):
             if laag is None:  # de eerste ronde loopt nog
                 self._stuur(503, b"nog geen ronde\n", "text/plain")
                 return
@@ -175,7 +201,7 @@ def start_metrics(stand: Stand, poort: int) -> None:
             self._stuur(
                 200,
                 laag[1] if gzip else laag[0],
-                "application/geo+json",
+                soort,
                 {"Cache-Control": f"max-age={cache}", "Vary": "Accept-Encoding"}
                 | ({"Content-Encoding": "gzip"} if gzip else {}),
             )
@@ -214,6 +240,8 @@ class Importer:
         meldingen: bool = True,
         planning_seconden: int = 3600,
         snelheden: bool = True,
+        osm_pbf: Path | None = None,
+        bruggen: bool = True,
     ):
         self.tar, self.valhalla, self.ndw, self.stand = tar, valhalla, ndw.rstrip("/"), stand
         self.met_afsluitingen = afsluitingen
@@ -223,6 +251,9 @@ class Importer:
         self.met_snelheden = snelheden
         # Uit de planningsfeed, bij elke ophaalbeurt ververst.
         self.geplande_snelheden: list[datex3.TijdelijkeSnelheid] = []
+        self.osm_pbf = osm_pbf
+        self.met_bruggen = bruggen
+        self.pbf_gelezen: float | None = None  # mtime van de laatst gelezen PBF
         tileset = valhalla.tileset()
         self.locaties = MatchCache(cache_dir / "meetlocaties.json", tileset)
         self.afsluitingen = MatchCache(cache_dir / "afsluitingen.json", tileset)
@@ -299,8 +330,35 @@ class Importer:
         )
         return kaartlaag.snelheden(gelegd, nu)
 
+    def _snelheid_tijden(self) -> None:
+        """Maximumsnelheden naar tijdstip uit het OSM-bestand van de tileset:
+        bij de start, en opnieuw als de bouwjob een nieuw bestand neerzet."""
+        if self.osm_pbf is None:
+            return
+        try:
+            gewijzigd = self.osm_pbf.stat().st_mtime
+        except OSError:
+            if self.pbf_gelezen is None:
+                log.warning("geen OSM-bestand op %s: geen snelheden naar tijdstip", self.osm_pbf)
+                self.pbf_gelezen = 0.0
+            return
+        if gewijzigd == self.pbf_gelezen:
+            return
+        begin = time.time()
+        try:
+            with open(self.osm_pbf, "rb") as stroom:
+                ways = osmregels.snelheid_tijden(stroom)
+        except (OSError, ValueError, KeyError, zlib.error) as fout:
+            log.warning("OSM-bestand niet gelezen: %s", fout)
+            return
+        self.pbf_gelezen = gewijzigd
+        self.stand.zet_tijden(kaartlaag.comprimeer({"ways": ways}))
+        self.stand.zet(snelheid_tijden_ways=len(ways))
+        log.info("snelheden naar tijdstip: %d ways (%.1f s)", len(ways), time.time() - begin)
+
     def ronde(self) -> None:
         begin = time.time()
+        self._snelheid_tijden()
         feed = datex3.open_feed(haal(f"{self.ndw}/reistijden_meetgegevens.xml.gz"))
         reistijden = list(datex3.lees_reistijden(feed))
         self._ververs_locaties({reistijd.sleutel for reistijd in reistijden})
@@ -344,7 +402,17 @@ class Importer:
                 features += kaartlaag.meldingen(datex3.lees_meldingen(feed))
             except (OSError, ValueError) as fout:
                 log.warning("meldingen niet opgehaald: %s", fout)
-        self.stand.zet_laag(kaartlaag.geojson(features))
+        if self.met_bruggen:
+            # Een open brug: alleen de waarschuwing onderweg. Hij gaat na een
+            # paar minuten weer dicht, dus Valhalla hoeft er niet omheen.
+            try:
+                feed = datex3.open_feed(haal(f"{self.ndw}/{ACTUEEL}"))
+                open_bruggen = list(datex3.lees_bruggen(feed))
+                features += kaartlaag.bruggen(open_bruggen)
+                self.stand.zet(bruggen_open=len(open_bruggen))
+            except (OSError, ValueError, ParseError) as fout:
+                log.warning("actueel beeld niet opgehaald: %s", fout)
+        self.stand.zet_deel("ronde", features)
         gematcht = sum(1 for match in self.locaties.matches.values() if match)
         self.stand.zet(
             laatste_ronde_timestamp_seconds=time.time(),
@@ -366,6 +434,42 @@ class Importer:
             gewist,
             time.time() - begin,
         )
+
+
+class Matrixborden:
+    """Elke minuut wat de matrixborden tonen, in een eigen draad: de ronde duurt
+    vijf minuten, en een 70 boven de weg staat er soms maar een paar minuten."""
+
+    def __init__(self, ndw: str, stand: Stand, seconden: int):
+        self.ndw, self.stand, self.seconden = ndw.rstrip("/"), stand, seconden
+        self.locaties: dict[str, msi.Bordplek] = {}
+        self.locaties_gehaald = 0.0
+
+    def ververs(self) -> None:
+        if not self.locaties or time.time() - self.locaties_gehaald > MSI_LOCATIES_SECONDEN:
+            try:
+                self.locaties = msi.lees_locaties(haal(f"{self.ndw}/{MSI_LOCATIES}"))
+                self.locaties_gehaald = time.time()
+                log.info("matrixborden: %d plekken", len(self.locaties))
+            except (OSError, ValueError, KeyError, StopIteration, zipfile.BadZipFile) as fout:
+                log.warning("plekken van de matrixborden niet opgehaald: %s", fout)
+                if not self.locaties:
+                    return
+        beelden = msi.lees_beelden(datex3.open_feed(haal(f"{self.ndw}/{MSI_BEELDEN}")))
+        portalen = msi.portalen(self.locaties, beelden)
+        self.stand.zet_deel("msi", kaartlaag.msi(portalen))
+        self.stand.zet(
+            msi_portalen=len(portalen),
+            msi_timestamp_seconds=time.time(),
+        )
+
+    def lus(self) -> None:
+        while True:
+            try:
+                self.ververs()
+            except (OSError, ValueError, ParseError) as fout:
+                log.warning("matrixborden niet opgehaald: %s", fout)
+            time.sleep(self.seconden)
 
 
 def main() -> None:
@@ -403,7 +507,15 @@ def main() -> None:
         omgeving.get("MELDINGEN", "true").lower() != "false",
         int(omgeving.get("PLANNING_SECONDEN", "3600")),
         omgeving.get("SNELHEDEN", "true").lower() != "false",
+        Path(omgeving.get("OSM_PBF", "/data/bron/gebied.osm.pbf")),
+        omgeving.get("BRUGGEN", "true").lower() != "false",
     )
+    msi_seconden = int(omgeving.get("MSI_SECONDEN", "60"))
+    if msi_seconden:
+        borden = Matrixborden(
+            omgeving.get("NDW_URL", "https://opendata.ndw.nu"), stand, msi_seconden
+        )
+        threading.Thread(target=borden.lus, daemon=True).start()
     mislukt = 0
     while True:
         try:

@@ -1,13 +1,16 @@
 """Maakt de NDW-feeds na, voor Andorra: één reistijdsegment met file op de
-CG-2, één afsluiting in Andorra la Vella, één ongeval (SRTI) en één tijdelijke
-maximumsnelheid op de CG-2. Zelfde structuur als de echte
+CG-2, één afsluiting in Andorra la Vella, één ongeval (SRTI), één tijdelijke
+maximumsnelheid, één matrixbord-portaal en één open brug op de CG-2. Zelfde structuur als de echte
 DATEX II v3-feeds, zodat de importer ongewijzigd draait.
 
 Gebruik: maak.py <uitvoermap>
 """
 
 import gzip
+import io
+import struct
 import sys
+import zipfile
 from pathlib import Path
 
 NS = (
@@ -52,7 +55,45 @@ FEEDS = {
 <sit:locationReference><loc:gmlLineString><loc:posList>{FILE}</loc:posList></loc:gmlLineString></sit:locationReference>
 <sit:complianceOption>mandatory</sit:complianceOption><sit:temporarySpeedLimit>30.0</sit:temporarySpeedLimit>
 </sit:situationRecord></sit:situation></mc:payload></mc:messageContainer>""",
+    "Matrixsignaalinformatie": """<SOAP:Envelope xmlns:SOAP="http://schemas.xmlsoap.org/soap/envelope/"><SOAP:Body>
+<variable_message_sign_events xmlns="http://variable_message_sign.trafficmanagementinfo.publicatie.hwn.rws.nl/1.1">
+<event><sign_id><uuid>NEP_MSI_1</uuid></sign_id><display><speedlimit flashing="false" red_ring="true">50</speedlimit></display></event>
+<event><sign_id><uuid>NEP_MSI_2</uuid></sign_id><display><lane_closed/></display></event>
+</variable_message_sign_events></SOAP:Body></SOAP:Envelope>""",
+    "actueel_beeld": f"""<mc:messageContainer {NS}><mc:payload>
+<sit:situation id="B"><sit:situationRecord xsi:type="sit:GeneralNetworkManagement" id="NEP_BRUG" version="1">
+<sit:validity><com:validityTimeSpecification><com:overallStartTime>2020-01-01T00:00:00Z</com:overallStartTime></com:validityTimeSpecification></sit:validity>
+<sit:locationReference xsi:type="loc:PointLocation"><loc:pointByCoordinates><loc:pointCoordinates><loc:latitude>42.54</loc:latitude><loc:longitude>1.585</loc:longitude></loc:pointCoordinates></loc:pointByCoordinates></sit:locationReference>
+<sit:operatorActionStatus>implemented</sit:operatorActionStatus><sit:generalNetworkManagementType>bridgeSwingInOperation</sit:generalNetworkManagementType>
+</sit:situationRecord></sit:situation></mc:payload></mc:messageContainer>""",
 }
+
+
+def msi_plekken() -> bytes:
+    """NDW's shapefile-zip met de plekken van de borden: één portaal met twee
+    stroken op de CG-2 richting Canillo."""
+    borden = [("NEP_MSI_1", 1), ("NEP_MSI_2", 2)]
+    shp = bytearray(100)
+    for nummer, _ in enumerate(borden, 1):
+        shp += struct.pack(">II", nummer, 10) + struct.pack("<idd", 1, 1.585, 42.545)
+    velden = [("uuid", 20), ("road", 5), ("carriagew0", 2), ("lane", 3), ("km", 8), ("bearing", 8)]
+    lengte = 1 + sum(breedte for _, breedte in velden)
+    dbf = bytearray(struct.pack("<BBBBIHH", 3, 126, 9, 22, len(borden), 0, lengte) + bytes(20))
+    for naam, breedte in velden:
+        dbf += naam.encode().ljust(11, b"\0") + b"C" + bytes(4) + bytes([breedte]) + bytes(15)
+    dbf += b"\r"
+    struct.pack_into("<H", dbf, 8, len(dbf))
+    for uuid, strook in borden:
+        waarden = [uuid, "CG2", "R", str(strook), "5.0", "20"]
+        dbf += b" " + b"".join(
+            w.encode().ljust(b) for w, (_, b) in zip(waarden, velden, strict=True)
+        )
+    uit = io.BytesIO()
+    with zipfile.ZipFile(uit, "w") as archief:
+        archief.writestr("MSI/shapes.shp", bytes(shp))
+        archief.writestr("MSI/shapes.dbf", bytes(dbf))
+    return uit.getvalue()
+
 
 uit = Path(sys.argv[1])
 uit.mkdir(parents=True, exist_ok=True)
@@ -60,3 +101,5 @@ for naam, xml in FEEDS.items():
     with gzip.open(uit / f"{naam}.xml.gz", "wt", encoding="utf-8") as bestand:
         bestand.write('<?xml version="1.0" encoding="UTF-8"?>\n' + xml)
     print(uit / f"{naam}.xml.gz")
+(uit / "ndw_msi_shapefiles_latest.zip").write_bytes(msi_plekken())
+print(uit / "ndw_msi_shapefiles_latest.zip")

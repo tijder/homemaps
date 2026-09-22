@@ -7,6 +7,7 @@ class AppConfig {
     required this.tilesUrl,
     required this.verkeerUrl,
     required this.verkeerGeplandUrl,
+    required this.snelheidTijdenUrl,
   });
 
   final String valhallaUrl;
@@ -18,6 +19,9 @@ class AppConfig {
 
   /// Geplande afsluitingen van de komende week, voor "later vertrekken".
   final String verkeerGeplandUrl;
+
+  /// Maximumsnelheden naar tijdstip, per OSM-way.
+  final String snelheidTijdenUrl;
 
   /// [overschrijf] is de inhoud van `/config.json` (web) en mag elk ervan
   /// vervangen, bijvoorbeeld als de tegels op een eigen hostnaam staan.
@@ -39,6 +43,7 @@ class AppConfig {
       tilesUrl: kies('tilesUrl', '/tiles'),
       verkeerUrl: kies('verkeerUrl', '/verkeer'),
       verkeerGeplandUrl: kies('verkeerGeplandUrl', '/verkeer-gepland'),
+      snelheidTijdenUrl: kies('snelheidTijdenUrl', '/snelheid-tijden'),
     );
   }
 

@@ -32,9 +32,33 @@ void main() {
     ]);
   });
 
-  test('fiets krijgt geen live verkeer; vermijden wordt een costing-optie', () {
-    final fiets = ValhallaService.verzoek([a, c], Profiel.fiets, taal: 'nl-NL');
-    expect(fiets.containsKey('date_time'), isFalse);
+  test('altijd een tijd (schoolstraten), live verkeer alleen voor de auto', () {
+    final nu = DateTime(2026, 9, 29, 8, 0);
+    final fiets = ValhallaService.verzoek(
+      [a, c],
+      Profiel.fiets,
+      taal: 'nl-NL',
+      nu: nu,
+    );
+    expect(fiets['date_time'], {'type': 3, 'value': '2026-09-29T08:00'});
+    expect(fiets.containsKey('costing_options'), isFalse);
+    // Auto zonder live verkeer: wel de tijd, niet het verkeer van nu.
+    final zonder = ValhallaService.verzoek(
+      [a, c],
+      Profiel.auto,
+      taal: 'nl-NL',
+      liveVerkeer: false,
+      nu: nu,
+    );
+    expect(zonder['date_time'], {'type': 3, 'value': '2026-09-29T08:00'});
+    expect(zonder['costing_options'], {
+      'auto': {
+        'speed_types': ['freeflow', 'constrained', 'predicted'],
+      },
+    });
+  });
+
+  test('vermijden wordt een costing-optie', () {
     final auto = ValhallaService.verzoek(
       [a, c],
       Profiel.auto,

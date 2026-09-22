@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Naar NDW's Matrixsignaalinformatie, ingekort. Portaal A2 km 10.0 (drie
+     stroken), A2 km 11.0 (leeg, maar vlakbij), A2 km 30.0 (leeg en ver weg). -->
+<SOAP:Envelope xmlns:SOAP="http://schemas.xmlsoap.org/soap/envelope/"><SOAP:Body><ndw:NdwVms xmlns:ndw="http://schemas.ndw.nu/wsdl/NdwTmisVms10/">
+<variable_message_sign_events xmlns="http://variable_message_sign.trafficmanagementinfo.publicatie.hwn.rws.nl/1.1">
+<event><sign_id><uuid>L1</uuid></sign_id><lanelocation><road>A2</road><carriageway>R</carriageway><lane>1</lane><km>10.0</km></lanelocation></event>
+<event><sign_id><uuid>L1</uuid></sign_id><display><speedlimit flashing="false" red_ring="true">80</speedlimit></display></event>
+<event><sign_id><uuid>L3</uuid></sign_id><display><lane_closed_ahead><merge_left/></lane_closed_ahead></display></event>
+<event><sign_id><uuid>L2</uuid></sign_id><display><speedlimit flashing="false" red_ring="false">70</speedlimit></display></event>
+<event><sign_id><uuid>N1</uuid></sign_id><display><blank flashing="false"/></display></event>
+<event><sign_id><uuid>V1</uuid></sign_id><display><blank flashing="false"/></display></event>
+<event><sign_id><uuid>X1</uuid></sign_id><display><lane_closed/></display></event>
+<event><sign_id><uuid>X2</uuid></sign_id><display><restriction_end/></display></event>
+<event><sign_id><uuid>X3</uuid></sign_id><display><lane_open/></display></event>
+<event><sign_id><uuid>ONBEKEND</uuid></sign_id><display><lane_closed/></display></event>
+</variable_message_sign_events></ndw:NdwVms></SOAP:Body></SOAP:Envelope>

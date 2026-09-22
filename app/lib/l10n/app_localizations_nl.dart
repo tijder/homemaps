@@ -447,6 +447,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String maximumsnelheidMatrix(int kmu) {
+    return 'Maximumsnelheid $kmu km/u op de matrixborden';
+  }
+
+  @override
   String get meldingOngeval => 'Ongeval';
 
   @override
@@ -454,6 +459,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get meldingObstakel => 'Voorwerp op de weg';
+
+  @override
+  String get meldingBrug => 'Open brug';
+
+  @override
+  String get matrixborden => 'Matrixborden';
 
   @override
   String meldingSinds(String tijd) {

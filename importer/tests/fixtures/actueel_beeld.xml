@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Naar NDW's actueel_beeld, ingekort. -->
+<mc:messageContainer xmlns:mc="http://datex2.eu/schema/3/messageContainer" xmlns:sit="http://datex2.eu/schema/3/situation" xmlns:com="http://datex2.eu/schema/3/common" xmlns:loc="http://datex2.eu/schema/3/locationReferencing" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" modelBaseVersion="3">
+  <mc:payload xsi:type="sit:SituationPublication">
+    <sit:situation id="S1"><sit:situationRecord xsi:type="sit:GeneralNetworkManagement" id="OPEN" version="1">
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-22T19:36:08.224822595Z</com:overallStartTime></com:validityTimeSpecification></sit:validity>
+      <sit:locationReference xsi:type="loc:PointLocation"><loc:pointByCoordinates><loc:pointCoordinates><loc:latitude>53.07374</loc:latitude><loc:longitude>5.335099</loc:longitude></loc:pointCoordinates></loc:pointByCoordinates></sit:locationReference>
+      <sit:operatorActionStatus>implemented</sit:operatorActionStatus><sit:complianceOption>mandatory</sit:complianceOption><sit:generalNetworkManagementType>bridgeSwingInOperation</sit:generalNetworkManagementType>
+    </sit:situationRecord></sit:situation>
+    <sit:situation id="S2"><sit:situationRecord xsi:type="sit:GeneralNetworkManagement" id="GEPLAND" version="1">
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-22T19:00:00Z</com:overallStartTime><com:overallEndTime>2026-09-22T21:00:00Z</com:overallEndTime></com:validityTimeSpecification></sit:validity>
+      <sit:locationReference xsi:type="loc:PointLocation"><loc:pointByCoordinates><loc:pointCoordinates><loc:latitude>52.38556</loc:latitude><loc:longitude>4.646385</loc:longitude></loc:pointCoordinates></loc:pointByCoordinates></sit:locationReference>
+      <sit:operatorActionStatus>approved</sit:operatorActionStatus><sit:generalNetworkManagementType>bridgeSwingInOperation</sit:generalNetworkManagementType>
+    </sit:situationRecord></sit:situation>
+    <sit:situation id="S3"><sit:situationRecord xsi:type="sit:GeneralNetworkManagement" id="DICHTGAAN" version="1">
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-22T19:30:00Z</com:overallStartTime></com:validityTimeSpecification></sit:validity>
+      <sit:locationReference xsi:type="loc:PointLocation"><loc:pointByCoordinates><loc:pointCoordinates><loc:latitude>51.9</loc:latitude><loc:longitude>4.3</loc:longitude></loc:pointCoordinates></loc:pointByCoordinates></sit:locationReference>
+      <sit:operatorActionStatus>beingTerminated</sit:operatorActionStatus><sit:generalNetworkManagementType>bridgeSwingInOperation</sit:generalNetworkManagementType>
+    </sit:situationRecord></sit:situation>
+    <sit:situation id="S4"><sit:situationRecord xsi:type="sit:GeneralNetworkManagement" id="VOORBIJ" version="1">
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-22T10:00:00Z</com:overallStartTime><com:overallEndTime>2026-09-22T10:10:00Z</com:overallEndTime></com:validityTimeSpecification></sit:validity>
+      <sit:locationReference xsi:type="loc:PointLocation"><loc:pointByCoordinates><loc:pointCoordinates><loc:latitude>52.0</loc:latitude><loc:longitude>5.0</loc:longitude></loc:pointCoordinates></loc:pointByCoordinates></sit:locationReference>
+      <sit:operatorActionStatus>implemented</sit:operatorActionStatus><sit:generalNetworkManagementType>bridgeSwingInOperation</sit:generalNetworkManagementType>
+    </sit:situationRecord></sit:situation>
+    <sit:situation id="S5"><sit:situationRecord xsi:type="sit:RoadOrCarriagewayOrLaneManagement" id="GEEN_BRUG" version="1">
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-22T10:00:00Z</com:overallStartTime></com:validityTimeSpecification></sit:validity>
+      <sit:locationReference xsi:type="loc:PointLocation"><loc:pointByCoordinates><loc:pointCoordinates><loc:latitude>52.1</loc:latitude><loc:longitude>5.1</loc:longitude></loc:pointCoordinates></loc:pointByCoordinates></sit:locationReference>
+      <sit:operatorActionStatus>implemented</sit:operatorActionStatus><sit:roadOrCarriagewayOrLaneManagementType>roadClosed</sit:roadOrCarriagewayOrLaneManagementType>
+    </sit:situationRecord></sit:situation>
+  </mc:payload>
+</mc:messageContainer>

@@ -445,6 +445,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String maximumsnelheidMatrix(int kmu) {
+    return 'Speed limit $kmu km/h on the overhead signs';
+  }
+
+  @override
   String get meldingOngeval => 'Accident';
 
   @override
@@ -452,6 +457,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get meldingObstakel => 'Object on the road';
+
+  @override
+  String get meldingBrug => 'Open bridge';
+
+  @override
+  String get matrixborden => 'Overhead lane signs';
 
   @override
   String meldingSinds(String tijd) {

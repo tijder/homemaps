@@ -62,6 +62,13 @@ server {
         proxy_pass $verkeer;
     }
 
+    # Maximumsnelheden naar tijdstip (OSM maxspeed:conditional), per OSM-way.
+    location = /snelheid-tijden {
+        set $verkeer ${VERKEER_UPSTREAM};
+        rewrite ^ /snelheid-tijden.json break;
+        proxy_pass $verkeer;
+    }
+
     # tileserver-gl bouwt de URL's in style.json en de TileJSON uit het verzoek:
     # Host, X-Forwarded-Proto en -- voor dit pad -- X-Forwarded-Path. Zo werkt één
     # installatie onder meerdere hostnamen (intern en publiek) zonder vaste

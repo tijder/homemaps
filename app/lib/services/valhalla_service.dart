@@ -6,6 +6,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import '../models/profiel.dart';
 import '../models/route.dart';
 import '../utils/polyline.dart';
+import '../utils/snelheid_tijden.dart';
 
 class RouteFout implements Exception {
   RouteFout(this.code, this.melding);
@@ -18,6 +19,10 @@ class RouteFout implements Exception {
   @override
   String toString() => 'RouteFout($code): $melding';
 }
+
+/// De maximumsnelheid (km/u, null als onbekend) en de OSM-way van een stuk
+/// route.
+typedef StukLimiet = ({int? limiet, int? way});
 
 class ValhallaService {
   ValhallaService(this._dio, this.basis);
@@ -42,10 +47,15 @@ class ValhallaService {
     double? koers,
     DateTime? nu,
   }) {
+    final live = liveVerkeer && profiel == Profiel.auto;
     final opties = <String, dynamic>{
       if (vermijdSnelwegen) 'use_highways': 0.0,
       if (vermijdTol) 'use_tolls': 0.0,
       if (vermijdVeren) 'use_ferry': 0.0,
+      // Wel een tijd (zie date_time hieronder), maar zonder het verkeer van nu:
+      // alleen de gewone snelheden.
+      if (profiel == Profiel.auto && !live)
+        'speed_types': ['freeflow', 'constrained', 'predicted'],
     };
     return {
       'locations': [
@@ -71,15 +81,17 @@ class ValhallaService {
       'elevation_interval': hoogteInterval,
       // Valhalla geeft alleen alternatieven tussen precies twee punten.
       if (alternatieven && punten.length == 2) 'alternates': 2,
-      // Live verkeer (snelheden én afsluitingen) telt alleen met een vertrektijd
-      // van nu, en alleen voor de auto. Met een latere tijd ([nu]) laat
-      // Valhalla het live verkeer zelf wegvallen naarmate het verder weg ligt. Niet `type: 0` ("vertrek nu"): dat gaat
+      // Altijd een tijd: Valhalla houdt tijdgebonden toegang (schoolstraten,
+      // venstertijden) alleen aan als hij weet wanneer je rijdt; zonder tijd
+      // rijdt hij er dwars doorheen. Niet `type: 0` ("vertrek nu"): dat gaat
       // langs de eenrichtingszoeker, en die geeft geen alternatieven. `type: 3`
-      // (één vaste tijd voor de hele route) gaat langs de tweerichtingszoeker
-      // en leest het live verkeer net zo goed -- zolang de tijd echt nu is.
-      // Valhalla leest hem als lokale tijd op het vertrekpunt.
-      if (liveVerkeer && profiel == Profiel.auto)
-        'date_time': {'type': 3, 'value': _minuut(nu ?? DateTime.now())},
+      // (één vaste tijd voor de hele route) gaat langs de tweerichtingszoeker.
+      // Live verkeer (snelheden én afsluitingen) telt alleen met een tijd van
+      // nu, en alleen voor de auto (anders zet `speed_types` het uit); met een
+      // latere tijd ([nu]) laat Valhalla het vanzelf wegvallen naarmate het
+      // verder weg ligt. Valhalla leest de tijd als lokale tijd op het
+      // vertrekpunt.
+      'date_time': {'type': 3, 'value': _minuut(nu ?? DateTime.now())},
     };
   }
 
@@ -184,10 +196,11 @@ class ValhallaService {
     }
   }
 
-  /// De maximumsnelheid (km/u) per stuk van [lijn]: element i hoort bij het
-  /// stuk van punt i naar i+1, null als die onbekend is. Null als het hele
-  /// verzoek mislukt.
-  Future<List<int?>?> snelheidsLimieten(
+  /// De maximumsnelheid (km/u) en de OSM-way per stuk van [lijn]: element i
+  /// hoort bij het stuk van punt i naar i+1; de limiet is null als die onbekend
+  /// is. De way is voor wat Valhalla niet leest: een limiet die van het
+  /// tijdstip afhangt (zie [SnelheidTijden]). Null als het hele verzoek mislukt.
+  Future<List<StukLimiet>?> snelheidsLimieten(
     List<LatLng> lijn,
     Profiel profiel, {
     CancelToken? annuleer,
@@ -211,6 +224,7 @@ class ValhallaService {
           'filters': {
             'attributes': [
               'edge.speed_limit',
+              'edge.way_id',
               'edge.begin_shape_index',
               'edge.end_shape_index',
             ],
@@ -219,21 +233,27 @@ class ValhallaService {
         },
         cancelToken: annuleer,
       );
-      final perStuk = List<int?>.filled(punten.length - 1, null);
+      final perStuk = List<StukLimiet>.filled(punten.length - 1, (
+        limiet: null,
+        way: null,
+      ));
       for (final edge in (antwoord.data?['edges'] as List? ?? const [])) {
         if (edge is! Map) continue;
-        final limiet = edge['speed_limit'];
+        final limiet = edge['speed_limit'], way = edge['way_id'];
         final begin = edge['begin_shape_index'], eind = edge['end_shape_index'];
+        if (begin is! num || eind is! num) continue;
         // Onbekend is 0 of ontbreekt; "unlimited" (Duitse snelweg) is een tekst.
-        if (limiet is! num || limiet <= 0 || begin is! num || eind is! num) {
-          continue;
-        }
+        final stuk = (
+          limiet: limiet is num && limiet > 0 ? limiet.round() : null,
+          way: way is num ? way.toInt() : null,
+        );
+        if (stuk.limiet == null && stuk.way == null) continue;
         for (
           var i = begin.toInt();
           i < eind.toInt() && i < perStuk.length;
           i++
         ) {
-          perStuk[i] = limiet.round();
+          perStuk[i] = stuk;
         }
       }
       return [

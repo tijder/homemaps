@@ -9,6 +9,7 @@ import '../models/app_config.dart';
 import '../services/langs_route.dart';
 import '../services/photon_service.dart';
 import '../services/valhalla_service.dart';
+import '../utils/snelheid_tijden.dart';
 import 'instellingen.dart';
 
 final dioProvider = Provider<Dio>(
@@ -86,18 +87,65 @@ final kaartStartProvider = FutureProvider<CameraPosition>((ref) async {
 /// minuten opnieuw.
 const verkeerInterval = Duration(minutes: 5);
 
-/// De verkeerslaag als GeoJSON, of null als hij uit staat. Een mislukte ophaalbeurt
-/// is een fout; wie `.value` leest houdt dan de vorige laag.
-final verkeerProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
-  final aan = ref.watch(instellingenProvider.select((i) => i.verkeerOpKaart));
+/// Onderweg vaker: de matrixborden boven de snelweg ververst de importer elke
+/// minuut.
+const verkeerIntervalOnderweg = Duration(minutes: 1);
+
+/// Of er genavigeerd wordt; de navigatie zet hem. Dan ververst de verkeerslaag
+/// vaker.
+final onderwegProvider = NotifierProvider<OnderwegNotifier, bool>(
+  OnderwegNotifier.new,
+);
+
+class OnderwegNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void zet(bool onderweg) => state = onderweg;
+}
+
+/// De verkeerslaag als GeoJSON, zolang iemand hem gebruikt: de kaart (als hij
+/// daar aan staat) of de navigatie (altijd: meldingen, tijdelijke en
+/// matrixbord-snelheden, open bruggen). Een mislukte ophaalbeurt is een fout;
+/// wie `.value` leest houdt dan de vorige laag.
+final verkeerLaagProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((
+  ref,
+) async {
   final config = ref.watch(appConfigProvider);
-  if (!aan || config == null) return null;
-  final ververs = Timer(verkeerInterval, ref.invalidateSelf);
+  if (config == null) return null;
+  final interval = ref.watch(onderwegProvider)
+      ? verkeerIntervalOnderweg
+      : verkeerInterval;
+  final ververs = Timer(interval, ref.invalidateSelf);
   ref.onDispose(ververs.cancel);
   final antwoord = await ref
       .watch(dioProvider)
       .get<Map<String, dynamic>>(config.verkeerUrl);
   return antwoord.data;
+});
+
+/// De verkeerslaag voor op de kaart, of null als hij daar uit staat.
+final verkeerProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
+  final aan = ref.watch(instellingenProvider.select((i) => i.verkeerOpKaart));
+  if (!aan) return null;
+  return ref.watch(verkeerLaagProvider.future);
+});
+
+/// Maximumsnelheden naar tijdstip (OSM `maxspeed:conditional`) per OSM-way;
+/// zie [SnelheidTijden]. Leeg als de server ze niet heeft.
+final snelheidTijdenProvider = FutureProvider<SnelheidTijden>((ref) async {
+  final config = ref.watch(appConfigProvider);
+  if (config == null) return SnelheidTijden.leeg;
+  final ververs = Timer(const Duration(hours: 6), ref.invalidateSelf);
+  ref.onDispose(ververs.cancel);
+  try {
+    final antwoord = await ref
+        .watch(dioProvider)
+        .get<Map<String, dynamic>>(config.snelheidTijdenUrl);
+    return SnelheidTijden.uitJson(antwoord.data);
+  } on DioException {
+    return SnelheidTijden.leeg;
+  }
 });
 
 /// De geplande afsluitingen (GeoJSON met per afsluiting zijn vensters). Pas

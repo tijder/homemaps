@@ -6,11 +6,13 @@ import 'package:homemaps/models/profiel.dart';
 import 'package:homemaps/models/route.dart';
 import 'package:homemaps/navigatie/navigatie_provider.dart';
 import 'package:homemaps/navigatie/stem.dart';
+import 'package:homemaps/navigatie/volger.dart';
 import 'package:homemaps/providers/diensten.dart';
 import 'package:homemaps/providers/instellingen.dart';
 import 'package:homemaps/providers/locatie.dart';
 import 'package:homemaps/services/valhalla_service.dart';
 import 'package:homemaps/utils/afstand.dart';
+import 'package:homemaps/utils/snelheid_tijden.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import 'hulp/nep_bron.dart' hide fix;
@@ -38,10 +40,10 @@ class NepValhalla extends ValhallaService {
   /// Reistijd over een lijn; standaard onbekend.
   double? Function(List<LatLng> lijn) tijd = (_) => null;
 
-  List<int?>? limieten;
+  List<StukLimiet>? limieten;
 
   @override
-  Future<List<int?>?> snelheidsLimieten(
+  Future<List<StukLimiet>?> snelheidsLimieten(
     List<LatLng> lijn,
     Profiel profiel, {
     CancelToken? annuleer,
@@ -283,7 +285,8 @@ void main() {
 
   test('maximumsnelheid van het stuk waar je rijdt', () async {
     valhalla.limieten = [
-      for (var i = 0; i < route.punten.length - 1; i++) i < 10 ? 60 : 80,
+      for (var i = 0; i < route.punten.length - 1; i++)
+        (limiet: i < 10 ? 60 : 80, way: null),
     ];
     await start();
     await Future<void>.delayed(Duration.zero);
@@ -298,7 +301,9 @@ void main() {
   });
 
   test('een tijdelijke maximumsnelheid wint als die lager is', () async {
-    valhalla.limieten = [for (var i = 0; i < route.punten.length - 1; i++) 50];
+    valhalla.limieten = [
+      for (var i = 0; i < route.punten.length - 1; i++) (limiet: 50, way: null),
+    ];
     final werk = route.punten.sublist(0, 16);
     c.dispose();
     c = ProviderContainer(
@@ -306,7 +311,7 @@ void main() {
         locatieBronProvider.overrideWithValue(bron),
         stemProvider.overrideWithValue(stem),
         valhallaProvider.overrideWithValue(valhalla),
-        verkeerProvider.overrideWithValue(
+        verkeerLaagProvider.overrideWithValue(
           AsyncData({
             'type': 'FeatureCollection',
             'features': [
@@ -336,7 +341,7 @@ void main() {
     await rijNaar(route.punten[2]);
     var nav = c.read(navigatieProvider)!;
     expect(nav.limiet, 30);
-    expect(nav.limietTijdelijk, isTrue);
+    expect(nav.limietBron, LimietBron.werk);
     // Voorbij het werk: weer de gewone 50.
     for (final punt in langs(route.punten, 20).take(80)) {
       await rijNaar(punt);
@@ -344,7 +349,123 @@ void main() {
     nav = c.read(navigatieProvider)!;
     expect(nav.stand!.segment, greaterThanOrEqualTo(16));
     expect(nav.limiet, 50);
-    expect(nav.limietTijdelijk, isFalse);
+    expect(nav.limietBron, LimietBron.osm);
+  });
+
+  Future<void> metLaag(
+    List<Map<String, dynamic>> features, {
+    SnelheidTijden tijden = SnelheidTijden.leeg,
+  }) async {
+    c.dispose();
+    c = ProviderContainer(
+      overrides: [
+        locatieBronProvider.overrideWithValue(bron),
+        stemProvider.overrideWithValue(stem),
+        valhallaProvider.overrideWithValue(valhalla),
+        verkeerLaagProvider.overrideWithValue(
+          AsyncData({'type': 'FeatureCollection', 'features': features}),
+        ),
+        snelheidTijdenProvider.overrideWithValue(AsyncData(tijden)),
+      ],
+    );
+    addTearDown(c.dispose);
+    final wacht = c.read(locatieProvider.notifier).zetAan();
+    await Future<void>.delayed(Duration.zero);
+    bron.fixes.add(fix(route.punten.first));
+    await wacht;
+  }
+
+  test('een limiet naar tijdstip: de regel die nu geldt', () async {
+    valhalla.limieten = [
+      for (var i = 0; i < route.punten.length - 1; i++) (limiet: 100, way: 7),
+    ];
+    // Een regel die altijd geldt: dit hangt niet van de klok van de test af.
+    await metLaag(
+      const [],
+      tijden: SnelheidTijden.uitJson({
+        'ways': {
+          '7': [
+            [
+              130,
+              127,
+              [
+                [0, 1440],
+              ],
+            ],
+          ],
+        },
+      }),
+    );
+    await start();
+    await Future<void>.delayed(Duration.zero);
+    await rijNaar(route.punten[2]);
+    final nav = c.read(navigatieProvider)!;
+    expect(nav.limiet, 130);
+    expect(nav.limietBron, LimietBron.tijd);
+  });
+
+  test('matrixborden gaan voor, tot een leeg portaal', () async {
+    valhalla.limieten = [
+      for (var i = 0; i < route.punten.length - 1; i++) (limiet: 80, way: null),
+    ];
+    final volger = RouteVolger(route);
+    Map<String, dynamic> portaal(int i, List<String> stroken) {
+      final plek = volger.plaatsOp(route.punten[i]);
+      return {
+        'type': 'Feature',
+        'properties': {'soort': 'msi', 'koers': plek.koers, 'stroken': stroken},
+        'geometry': {
+          'type': 'Point',
+          'coordinates': [route.punten[i].longitude, route.punten[i].latitude],
+        },
+      };
+    }
+
+    await metLaag([
+      portaal(3, ['50r', 'x']),
+      portaal(30, ['', '']),
+    ]);
+    await start();
+    await Future<void>.delayed(Duration.zero);
+    await rijNaar(route.punten[1]);
+    // Nog vóór het portaal: de gewone limiet, en het portaal in beeld.
+    var nav = c.read(navigatieProvider)!;
+    expect(nav.limiet, 80);
+    expect(nav.matrix?.stroken, ['50r', 'x']);
+    await rijNaar(route.punten[6]);
+    nav = c.read(navigatieProvider)!;
+    expect(nav.limiet, 50);
+    expect(nav.limietBron, LimietBron.msi);
+    expect(nav.matrix, isNull); // het volgende is leeg
+    for (final punt in langs(route.punten, 20).take(80)) {
+      await rijNaar(punt);
+    }
+    nav = c.read(navigatieProvider)!;
+    expect(nav.stand!.segment, greaterThan(30));
+    expect(nav.limiet, 80);
+    expect(nav.limietBron, LimietBron.osm);
+  });
+
+  test('een open brug op de route: één keer gewaarschuwd', () async {
+    final brug = langs(route.punten, 20)[50];
+    await metLaag([
+      {
+        'type': 'Feature',
+        'id': 0,
+        'properties': {'soort': 'brug'},
+        'geometry': {
+          'type': 'Point',
+          'coordinates': [brug.longitude, brug.latitude],
+        },
+      },
+    ]);
+    await start();
+    for (final p in langs(route.punten, 20).take(30)) {
+      await rijNaar(p);
+    }
+    expect(stem.zinnen.where((z) => z.startsWith('Let op')), [
+      'Let op: brug over 1000 m',
+    ]);
   });
 
   test('een ongeval vóór je op de route: één keer gewaarschuwd', () async {
@@ -372,7 +493,7 @@ void main() {
         locatieBronProvider.overrideWithValue(bron),
         stemProvider.overrideWithValue(stem),
         valhallaProvider.overrideWithValue(valhalla),
-        verkeerProvider.overrideWithValue(
+        verkeerLaagProvider.overrideWithValue(
           AsyncData({
             'type': 'FeatureCollection',
             'features': [

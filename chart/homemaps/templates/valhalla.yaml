@@ -117,6 +117,10 @@ spec:
             - { name: NDW_URL, value: {{ $verkeer.ndwUrl | quote }} }
             - { name: INTERVAL_SECONDEN, value: {{ $verkeer.intervalSeconden | quote }} }
             - { name: AFSLUITINGEN, value: {{ $verkeer.afsluitingen | quote }} }
+            - { name: MSI_SECONDEN, value: {{ $verkeer.msiSeconden | quote }} }
+            # Het OSM-bestand van de laatste tileset-bouw (zelfde volume): voor
+            # maximumsnelheden naar tijdstip.
+            - { name: OSM_PBF, value: /data/bron/gebied.osm.pbf }
           securityContext:
             {{- include "homemaps.containerSecurity" . | nindent 12 }}
             readOnlyRootFilesystem: true

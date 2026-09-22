@@ -397,3 +397,32 @@ def lees_snelheden(stroom: BinaryIO, van: datetime, tot: datetime) -> Iterator[T
                 _tekst(record, "causeType"),
                 tuple(vensters),
             )
+
+
+BRUG_BEZIG = {"beingImplemented", "implemented", "beingTerminated"}
+
+
+@dataclass(frozen=True)
+class Brug:
+    """Een brug die nu open staat (voor de scheepvaart): dicht voor het verkeer."""
+
+    id: str
+    punt: Punt
+
+
+def lees_bruggen(stroom: BinaryIO, nu: datetime | None = None) -> Iterator[Brug]:
+    """Uit `actueel_beeld`: bruggen die nu open zijn. Een geplande opening
+    (`approved`) telt pas als hij bezig is: opengaan, open, of weer dichtgaan --
+    in alle drie staat het verkeer stil."""
+    nu = nu or datetime.now(UTC)
+    for record in _records(stroom, "situationRecord"):
+        soort = _tekst(record, "generalNetworkManagementType") or ""
+        if (
+            not soort.startswith("bridge")
+            or _tekst(record, "operatorActionStatus") not in BRUG_BEZIG
+            or not _geldig(record, nu)
+        ):
+            continue
+        lat, lon = _tekst(record, "latitude"), _tekst(record, "longitude")
+        if lat is not None and lon is not None:
+            yield Brug(record.attrib["id"], (float(lat), float(lon)))

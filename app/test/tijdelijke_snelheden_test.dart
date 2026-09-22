@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:homemaps/l10n/app_localizations.dart';
+import 'package:homemaps/navigatie/navigatie_provider.dart';
 import 'package:homemaps/utils/tijdelijke_snelheden.dart';
 import 'package:homemaps/widgets/navigatie_balk.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
@@ -101,7 +102,11 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
-          body: SnelheidBord(limiet: 30, snelheid: 12, tijdelijk: tijdelijk),
+          body: SnelheidBord(
+            limiet: 30,
+            snelheid: 12,
+            bron: tijdelijk ? LimietBron.werk : LimietBron.osm,
+          ),
         ),
       ),
     );

@@ -126,3 +126,12 @@ def test_tijdelijke_snelheden_vooruit_en_venster():
     assert nacht.kmu == 70
     assert not nacht.geldt(van)
     assert nacht.geldt(datetime(2026, 9, 22, 23, 0, tzinfo=UTC))
+
+
+def test_open_bruggen():
+    nu = datetime(2026, 9, 22, 20, 0, tzinfo=UTC)
+    with open(FIXTURES / "actueel_beeld.xml", "rb") as stroom:
+        bruggen = {b.id: b for b in datex3.lees_bruggen(stroom, nu)}
+    # Niet: GEPLAND (nog niet bezig), VOORBIJ (afgelopen), GEEN_BRUG.
+    assert set(bruggen) == {"OPEN", "DICHTGAAN"}
+    assert bruggen["OPEN"].punt == (53.07374, 5.335099)

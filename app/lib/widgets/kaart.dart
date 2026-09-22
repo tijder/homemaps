@@ -461,20 +461,25 @@ class _KaartState extends State<Kaart> {
     );
   }
 
+  static const _opKaartZonderVertraging = {
+    'dicht',
+    'werk',
+    'ongeval',
+    'pech',
+    'obstakel',
+  };
+  static const _opKaart = {..._opKaartZonderVertraging, 'traag', 'file'};
+
   Future<void> _tekenVerkeer() async {
     final c = _controller;
     if (c == null || !_stijlKlaar) return;
     final features = [
       for (final feature in (widget.verkeer?['features'] as List? ?? const []))
         if (feature is Map<String, dynamic> &&
-            // Tijdelijke maximumsnelheden zijn voor onderweg, niet voor de
-            // kaart.
-            (feature['properties'] as Map?)?['soort'] != 'snelheid' &&
-            (widget.toonVertraging ||
-                !const {
-                  'traag',
-                  'file',
-                }.contains((feature['properties'] as Map?)?['soort'])))
+            // Alleen wat op de kaart hoort; tijdelijke snelheden, matrixborden
+            // en open bruggen zijn voor onderweg.
+            (widget.toonVertraging ? _opKaart : _opKaartZonderVertraging)
+                .contains((feature['properties'] as Map?)?['soort']))
           feature,
     ];
     _verkeerInfo = {

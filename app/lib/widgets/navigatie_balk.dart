@@ -52,6 +52,7 @@ class NavigatieKop extends StatelessWidget {
         ? volgende.bord
         : null;
     final rijstroken = volgende == null ? null : nav.rijstroken;
+    final matrix = nav.aangekomen ? null : nav.matrix;
 
     // Na "rotonde op" komt "rotonde af", met dezelfde uitrit: die staat al in
     // het grote pictogram. Dan pas wat erna komt.
@@ -115,7 +116,11 @@ class NavigatieKop extends StatelessWidget {
               ],
             ),
           ),
-          if (rijstroken != null) RijstrookBalk(rijstroken.stroken),
+          // De matrixborden gaan voor: daar staat wat nu geldt.
+          if (matrix != null)
+            MatrixBalk(matrix.stroken)
+          else if (rijstroken != null)
+            RijstrookBalk(rijstroken.stroken),
           if (toonDaarna)
             Container(
               color: kleuren.primary,
@@ -281,6 +286,87 @@ class RijstrookBalk extends StatelessWidget {
             color: kleur,
           ),
       ],
+    );
+  }
+}
+
+/// Het eerstvolgende portaal met matrixborden, per strook van links naar
+/// rechts, zoals het boven de weg hangt.
+class MatrixBalk extends StatelessWidget {
+  const MatrixBalk(this.stroken, {super.key});
+
+  /// Codes zoals in [Portaal]: "70", "70r", "x", "<", ">", "open", "einde", "".
+  final List<String> stroken;
+
+  static const _rood = Color(0xFFD32F2F);
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return Semantics(
+      label: l.matrixborden,
+      child: Container(
+        color: const Color(0xFF263238),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (final strook in stroken)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3),
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: _beeld(strook),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _beeld(String strook) {
+    Icon icoon(IconData pictogram, Color kleur) =>
+        Icon(pictogram, color: kleur, size: 28);
+    const wit = Colors.white;
+    return switch (strook) {
+      'x' => icoon(Icons.close, _rood),
+      '<' => icoon(Icons.south_west, wit),
+      '>' => icoon(Icons.south_east, wit),
+      'open' => icoon(Icons.arrow_downward, const Color(0xFF43A047)),
+      'einde' => icoon(Icons.block, Colors.white70),
+      '' => const SizedBox.shrink(),
+      _ => _snelheid(strook),
+    };
+  }
+
+  static Widget _snelheid(String strook) {
+    final verplicht = strook.endsWith('r');
+    final getal = verplicht ? strook.substring(0, strook.length - 1) : strook;
+    final tekst = Text(
+      getal,
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 15,
+        fontWeight: FontWeight.w700,
+      ),
+    );
+    if (!verplicht) return tekst;
+    return Container(
+      width: 34,
+      height: 34,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: _rood, width: 3),
+      ),
+      child: tekst,
     );
   }
 }
@@ -458,17 +544,18 @@ class VoorstelKaart extends StatelessWidget {
 
 /// Linksonder tijdens autonavigatie: het verkeersbord met de maximumsnelheid
 /// (als die bekend is) en je eigen snelheid, rood als je er ruim overheen zit.
-/// Een tijdelijke limiet (bij werk) krijgt een werk-pictogram.
+/// Een tijdelijke limiet (bij werk) krijgt een werk-pictogram; een limiet van
+/// de matrixborden staat wit op zwart, zoals boven de weg.
 class SnelheidBord extends StatelessWidget {
   const SnelheidBord({
     super.key,
     required this.limiet,
     required this.snelheid,
-    this.tijdelijk = false,
+    this.bron = LimietBron.osm,
   });
 
   final int? limiet;
-  final bool tijdelijk;
+  final LimietBron bron;
 
   /// In m/s, of null als onbekend.
   final double? snelheid;
@@ -484,9 +571,11 @@ class SnelheidBord extends StatelessWidget {
       children: [
         if (limiet != null)
           Semantics(
-            label: tijdelijk
-                ? l.maximumsnelheidTijdelijk(limiet!)
-                : l.maximumsnelheid(limiet!),
+            label: switch (bron) {
+              LimietBron.werk => l.maximumsnelheidTijdelijk(limiet!),
+              LimietBron.msi => l.maximumsnelheidMatrix(limiet!),
+              _ => l.maximumsnelheid(limiet!),
+            },
             child: Stack(
               clipBehavior: Clip.none,
               children: [
@@ -495,7 +584,7 @@ class SnelheidBord extends StatelessWidget {
                   height: 58,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: bron == LimietBron.msi ? Colors.black : Colors.white,
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: const Color(0xFFD32F2F),
@@ -507,14 +596,16 @@ class SnelheidBord extends StatelessWidget {
                   ),
                   child: Text(
                     '$limiet',
-                    style: const TextStyle(
-                      color: Colors.black,
+                    style: TextStyle(
+                      color: bron == LimietBron.msi
+                          ? Colors.white
+                          : Colors.black,
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
-                if (tijdelijk)
+                if (bron == LimietBron.werk)
                   Positioned(
                     right: -4,
                     bottom: -4,

@@ -11,6 +11,15 @@ Valhalla's `traffic.tar` en maakt er de verkeerslaag van de app van.
 | `veiligheidsgerelateerde_berichten_srti` (ongeval, pechgeval, voorwerp op de weg) | punten in dezelfde laag; de app waarschuwt ervoor onderweg |
 | `planningsfeed_wegwerkzaamheden_en_evenementen` (18 MB, eens per uur) | `/verkeer-gepland.geojson`: afsluitingen van de komende 8 dagen met hun vensters, voor "later vertrekken" |
 | `tijdelijke_verkeersmaatregelen_maximum_snelheden` (vooral RWS) en de `SpeedManagement`-records uit de planningsfeed (ook provincies en gemeenten) | `soort: snelheid` in `/verkeer.geojson`: tijdelijke maximumsnelheden die nu gelden, over de routevorm; de app toont onderweg de laagste van deze en OSM. Niet op de kaart, niet in `traffic.tar` |
+| `Matrixsignaalinformatie` (elke minuut, eigen draad) + `ndw_msi_shapefiles_latest.zip` (plekken, eens per dag) | `soort: msi` in `/verkeer.geojson`: per portaal wat de matrixborden tonen, per strook van links naar rechts (`"80r"` verplicht, `"80"` advies, `"x"`, `"<"`, `">"`, `"open"`, `"einde"`, `""`). Lege portalen alleen binnen 3 km van een bezet portaal: daar houdt een snelheid op |
+| `actueel_beeld` (bruggen die nu open zijn) | `soort: brug` in `/verkeer.geojson`: een waarschuwing onderweg |
+
+En uit het OSM-bestand van de tileset (`/data/bron/gebied.osm.pbf`, dat de bouwjob
+neerzet): `maxspeed:conditional` met een tijd ("130 @ (19:00-06:00)") per OSM-way,
+als `/snelheid-tijden.json`. Valhalla leest die tag niet; de app past de regel
+onderweg toe op de way die Valhalla bij elk stuk route noemt. De lezer
+(`osmregels.py`) pakt alleen de blokken uit waarin de tag voorkomt: voor Nederland
+~20 s en ~20 MB, opnieuw zodra het bestand verandert.
 
 ## Hoe het werkt
 
