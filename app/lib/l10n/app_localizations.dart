@@ -661,6 +661,12 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'Route wijzigen'**
   String get routeWijzigen;
+
+  /// No description provided for @eerstStoppen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Stop eerst de navigatie.'**
+  String get eerstStoppen;
 }
 
 class _AppLocalizationsDelegate

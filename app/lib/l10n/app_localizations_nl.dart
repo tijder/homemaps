@@ -343,4 +343,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get routeWijzigen => 'Route wijzigen';
+
+  @override
+  String get eerstStoppen => 'Stop eerst de navigatie.';
 }

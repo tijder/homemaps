@@ -66,7 +66,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
   double _sheetFractie = _sheetHalf;
 
   /// Hoog genoeg voor het greepje, de samenvattingsregel en één route.
-  double _sheetLaag(double hoogte) => (170 / hoogte).clamp(0.12, 0.3);
+  double _sheetLaag(double hoogte) => (205 / hoogte).clamp(0.12, 0.3);
 
   /// Met het scherm uit (navigatie loopt door) heeft meedraaien geen zin.
   bool _zichtbaar = true;
@@ -423,103 +423,128 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
         ? null
         : _meldingLaag(context, _melding!.plek, _melding!.info);
 
+    // Mag de terugknop de app uit? Alleen als er niets meer te sluiten is.
+    final magWeg =
+        nav == null &&
+        !planner.routeModus &&
+        planner.gevonden == null &&
+        _menu == null &&
+        _melding == null;
+    Widget terugknop(Widget kind) => PopScope(
+      canPop: magWeg,
+      onPopInvokedWithResult: (weg, _) {
+        if (!weg) _terug();
+      },
+      child: kind,
+    );
+
     if (nav != null) {
-      return Scaffold(
-        body: Stack(children: [kaart, _navigatieLaag(nav, breed), ?melding]),
+      return terugknop(
+        Scaffold(
+          body: Stack(children: [kaart, _navigatieLaag(nav, breed), ?melding]),
+        ),
       );
     }
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          kaart,
-          // Op een smal scherm staat de zoekbalk bovenaan; de knoppen schuiven
-          // eronder. Vóór de panelen in de stapel: de suggesties van de
-          // zoekbalk en het opgetrokken sheet gaan eroverheen, niet eronder.
-          Padding(
-            padding: EdgeInsets.only(
-              top: !breed && !planner.routeModus ? 64 : 0,
+    return terugknop(
+      Scaffold(
+        body: Stack(
+          children: [
+            kaart,
+            // Op een smal scherm staat de zoekbalk bovenaan; de knoppen schuiven
+            // eronder. Vóór de panelen in de stapel: de suggesties van de
+            // zoekbalk en het opgetrokken sheet gaan eroverheen, niet eronder.
+            Padding(
+              padding: EdgeInsets.only(
+                top: !breed && !planner.routeModus ? 64 : 0,
+              ),
+              child: knoppen,
             ),
-            child: knoppen,
-          ),
-          if (!planner.routeModus)
-            _zoekscherm(context, planner, breed)
-          else if (breed)
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: _paneelBreedte,
-              // De kaart is op het web een los HTML-element onder Flutter. Zonder
-              // interceptor schijnt zijn sleep-cursor door het paneel heen.
-              child: PointerInterceptor(
-                child: Material(
-                  elevation: 4,
-                  child: SafeArea(
-                    child: RoutePaneel(
-                      nabij: _midden,
-                      mijnLocatie: _mijnLocatieAlsPlaats,
-                      onNavigeer: _startNavigatie,
-                      onLocatieAan: _zetLocatieAan,
+            if (!planner.routeModus)
+              _zoekscherm(context, planner, breed)
+            else if (breed)
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: _paneelBreedte,
+                // De kaart is op het web een los HTML-element onder Flutter. Zonder
+                // interceptor schijnt zijn sleep-cursor door het paneel heen.
+                child: PointerInterceptor(
+                  child: Material(
+                    elevation: 4,
+                    child: SafeArea(
+                      child: RoutePaneel(
+                        nabij: _midden,
+                        mijnLocatie: _mijnLocatieAlsPlaats,
+                        onNavigeer: _startNavigatie,
+                        onLocatieAan: _zetLocatieAan,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            )
-          else
-            NotificationListener<DraggableScrollableNotification>(
-              onNotification: (melding) {
-                // Voor het in beeld brengen van de route: boven het sheet.
-                _sheetFractie = melding.extent;
-                return false;
-              },
-              child: DraggableScrollableSheet(
-                controller: _sheet,
-                initialChildSize: _sheetHalf,
-                minChildSize: _sheetLaag(hoogte),
-                maxChildSize: _sheetVol,
-                snap: true,
-                snapSizes: const [_sheetHalf],
-                builder: (context, scroll) => PointerInterceptor(
-                  child: Material(
-                    elevation: 8,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Column(
-                      children: [
-                        _greep(hoogte),
-                        Expanded(
-                          // Ook met de muis te slepen (een smal browservenster);
-                          // Flutter staat dat standaard alleen met een vinger
-                          // toe.
-                          child: ScrollConfiguration(
-                            behavior: ScrollConfiguration.of(context).copyWith(
-                              dragDevices: {
-                                ...ScrollConfiguration.of(context).dragDevices,
-                                PointerDeviceKind.mouse,
-                              },
-                            ),
-                            child: RoutePaneel(
-                              nabij: _midden,
-                              mijnLocatie: _mijnLocatieAlsPlaats,
-                              onNavigeer: _startNavigatie,
-                              onLocatieAan: _zetLocatieAan,
-                              scroll: scroll,
-                              compact: true,
+              )
+            else
+              NotificationListener<DraggableScrollableNotification>(
+                onNotification: (melding) {
+                  // Voor het in beeld brengen van de route: boven het sheet.
+                  _sheetFractie = melding.extent;
+                  // Helemaal naar beneden geveegd: dicht, terug naar zoeken.
+                  if (melding.extent < 0.02) _sluitSheet();
+                  return false;
+                },
+                child: DraggableScrollableSheet(
+                  controller: _sheet,
+                  initialChildSize: _sheetHalf,
+                  // Onder de lage stand is dicht: tot 0 kan het sheet mee
+                  // omlaag, en dan sluit het.
+                  minChildSize: 0,
+                  maxChildSize: _sheetVol,
+                  snap: true,
+                  snapSizes: [_sheetLaag(hoogte), _sheetHalf],
+                  builder: (context, scroll) => PointerInterceptor(
+                    child: Material(
+                      elevation: 8,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        children: [
+                          _greep(hoogte),
+                          Expanded(
+                            // Ook met de muis te slepen (een smal browservenster);
+                            // Flutter staat dat standaard alleen met een vinger
+                            // toe.
+                            child: ScrollConfiguration(
+                              behavior: ScrollConfiguration.of(context)
+                                  .copyWith(
+                                    dragDevices: {
+                                      ...ScrollConfiguration.of(context)
+                                          .dragDevices,
+                                      PointerDeviceKind.mouse,
+                                    },
+                                  ),
+                              child: RoutePaneel(
+                                nabij: _midden,
+                                mijnLocatie: _mijnLocatieAlsPlaats,
+                                onNavigeer: _startNavigatie,
+                                onLocatieAan: _zetLocatieAan,
+                                scroll: scroll,
+                                compact: true,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ?melding,
-          ?menu,
-        ],
+            ?melding,
+            ?menu,
+          ],
+        ),
       ),
     );
   }
@@ -669,11 +694,49 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
     );
   }
 
+  bool _sluitGepland = false;
+
+  /// Het sheet is dichtgeveegd: na dit frame terug naar zoeken (niet tijdens
+  /// de melding zelf, dan wordt het sheet nog opgebouwd).
+  void _sluitSheet() {
+    if (_sluitGepland) return;
+    _sluitGepland = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _sluitGepland = false;
+      if (!mounted) return;
+      _sheetFractie = _sheetHalf;
+      ref.read(plannerProvider.notifier).naarZoeken();
+    });
+  }
+
+  /// De terugknop (Android): eerst wat er open staat dicht, pas daarna de app
+  /// uit. Tijdens navigatie niet: de app uit zou de navigatie stoppen.
+  void _terug() {
+    final planner = ref.read(plannerProvider);
+    if (_menu != null || _melding != null) {
+      setState(() {
+        _menu = null;
+        _melding = null;
+      });
+    } else if (ref.read(navigatieProvider) != null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context).eerstStoppen)),
+        );
+    } else if (planner.routeModus) {
+      _sheetFractie = _sheetHalf;
+      ref.read(plannerProvider.notifier).naarZoeken();
+    } else if (planner.gevonden != null) {
+      ref.read(plannerProvider.notifier).sluitPlaats();
+    }
+  }
+
   /// Het greepje van het sheet. Het sheet zelf schuift alleen mee met zijn
   /// lijst; het greepje zit daarbuiten, dus slepen gaat hier met de hand. Een
   /// tik wisselt tussen half en vol.
   Widget _greep(double hoogte) {
-    final lagen = [_sheetLaag(hoogte), _sheetHalf, _sheetVol];
+    final lagen = [0.0, _sheetLaag(hoogte), _sheetHalf, _sheetVol];
     void naar(double doel) => _sheet.animateTo(
       doel,
       duration: const Duration(milliseconds: 250),

@@ -186,5 +186,6 @@
       }
     }
   },
-  "routeWijzigen": "Route wijzigen"
+  "routeWijzigen": "Route wijzigen",
+  "eerstStoppen": "Stop eerst de navigatie."
 }

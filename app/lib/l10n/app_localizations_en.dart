@@ -341,4 +341,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get routeWijzigen => 'Edit route';
+
+  @override
+  String get eerstStoppen => 'Stop navigation first.';
 }
