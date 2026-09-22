@@ -1089,8 +1089,9 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
   }
 }
 
-/// "Als thuis" op het kaartje van een gevonden plek; is dit al thuis, dan een
-/// vinkje en tikken haalt het weer weg.
+/// "Als thuis" op het kaartje van een gevonden plek, zolang er nog geen thuis
+/// is. Is er al een, dan niets -- wijzigen gaat via de instellingen -- behalve
+/// op het kaartje van thuis zelf: daar een vinkje.
 class _BewaarKnop extends StatelessWidget {
   const _BewaarKnop({
     required this.plaats,
@@ -1110,11 +1111,28 @@ class _BewaarKnop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final al = huidig != null && meters(huidig!.punt, plaats.punt) < 30;
-    return TextButton.icon(
-      onPressed: () => onBewaar(al ? null : plaats),
-      icon: Icon(al ? Icons.check : pictogram),
-      label: Text(al ? bewaard : label),
+    final bestaand = huidig;
+    if (bestaand == null) {
+      return TextButton.icon(
+        onPressed: () => onBewaar(plaats),
+        icon: Icon(pictogram),
+        label: Text(label),
+      );
+    }
+    if (meters(bestaand.punt, plaats.punt) >= 30) {
+      return const SizedBox.shrink();
+    }
+    final kleur = Theme.of(context).colorScheme.primary;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.check, size: 18, color: kleur),
+          const SizedBox(width: 4),
+          Text(bewaard, style: TextStyle(color: kleur)),
+        ],
+      ),
     );
   }
 }
