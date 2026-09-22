@@ -96,7 +96,20 @@ jobs:
           java-version: 21
           distribution: zulu
       - run: flutter pub get
+      # De vaste releasesleutel (zie app/android/app/build.gradle.kts). Zonder
+      # secret faalt de release liever dan dat hij met een wegwerpsleutel tekent:
+      # zo'n APK is niet over een bestaande installatie heen te zetten.
+      - name: Releasesleutel
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+        run: |
+          test -n "$KEYSTORE" || { echo "::error::secret ANDROID_KEYSTORE ontbreekt"; exit 1; }
+          echo "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/homemaps.jks"
+          echo "HOMEMAPS_KEYSTORE=$RUNNER_TEMP/homemaps.jks" >> "$GITHUB_ENV"
       - name: Build Android
+        env:
+          HOMEMAPS_KEYSTORE_WACHTWOORD: ${{ secrets.ANDROID_KEYSTORE_WACHTWOORD }}
+          HOMEMAPS_SLEUTEL_ALIAS: homemaps
         run: flutter build apk --release --build-name "${{ needs.gate.outputs.version }}" --build-number "${{ needs.gate.outputs.build }}"
       - name: Build Web
         run: flutter build web --release --wasm --no-web-resources-cdn --build-name "${{ needs.gate.outputs.version }}" --build-number "${{ needs.gate.outputs.build }}"
