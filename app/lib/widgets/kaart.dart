@@ -36,6 +36,7 @@ class Kaart extends StatefulWidget {
     this.onController,
   });
 
+  /// De URL van de kaartstijl, of de stijl zelf als JSON (de nachtversie).
   final String stijlUrl;
   final CameraPosition start;
 

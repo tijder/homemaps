@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -9,6 +10,7 @@ import '../models/app_config.dart';
 import '../services/langs_route.dart';
 import '../services/photon_service.dart';
 import '../services/valhalla_service.dart';
+import '../utils/nachtstijl.dart';
 import '../utils/snelheid_tijden.dart';
 import 'instellingen.dart';
 
@@ -129,6 +131,18 @@ final verkeerProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
   final aan = ref.watch(instellingenProvider.select((i) => i.verkeerOpKaart));
   if (!aan) return null;
   return ref.watch(verkeerLaagProvider.future);
+});
+
+/// De nachtversie van een kaartstijl (zie [nachtstijl]), als JSON voor
+/// MapLibre. Eén keer per stijl opgehaald en omgezet.
+final nachtStijlProvider = FutureProvider.family<String, String>((
+  ref,
+  url,
+) async {
+  final antwoord = await ref.watch(dioProvider).get<Map<String, dynamic>>(url);
+  final stijl = antwoord.data;
+  if (stijl == null) throw StateError('lege stijl: $url');
+  return jsonEncode(nachtstijl(stijl));
 });
 
 /// Maximumsnelheden naar tijdstip (OSM `maxspeed:conditional`) per OSM-way;

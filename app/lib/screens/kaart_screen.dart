@@ -408,8 +408,16 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
           )
         : fix;
 
+    // Staat de telefoon op donker, dan de nachtversie van de gewone kaart.
+    // Tot die er is (of als hij niet lukt) de gewone.
+    final stijlUrl = config.stijlUrl(instellingen.stijl);
+    final nacht =
+        instellingen.stijl == _stijlen[0] &&
+            MediaQuery.platformBrightnessOf(context) == Brightness.dark
+        ? ref.watch(nachtStijlProvider(stijlUrl)).value
+        : null;
     final kaart = Kaart(
-      stijlUrl: config.stijlUrl(instellingen.stijl),
+      stijlUrl: nacht ?? stijlUrl,
       start: start,
       punten: nav != null
           ? [null, ...nav.doelen]
