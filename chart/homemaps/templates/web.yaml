@@ -51,11 +51,13 @@ spec:
           image: {{ include "homemaps.image" (dict "root" . "image" .Values.web.image) }}
           imagePullPolicy: {{ .Values.web.image.pullPolicy }}
           env:
-            # nginx proxyt /valhalla, /geocode en /tiles hierheen. Een onderdeel
-            # dat uit staat levert op zijn pad een 502, niets ergers. Volledige
-            # namen: de resolver van nginx kent de search-domeinen van de pod niet.
+            # nginx proxyt /valhalla, /geocode, /tiles en /verkeer hierheen. Een
+            # onderdeel dat uit staat levert op zijn pad een 502, niets ergers.
+            # Volledige namen: de resolver van nginx kent de search-domeinen van
+            # de pod niet.
             - { name: VALHALLA_UPSTREAM, value: "http://{{ include "homemaps.onderdeel" (dict "root" . "naam" "valhalla") }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}:8002" }
             - { name: PHOTON_UPSTREAM, value: "http://{{ include "homemaps.onderdeel" (dict "root" . "naam" "photon") }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}:2322" }
+            - { name: VERKEER_UPSTREAM, value: "http://{{ include "homemaps.onderdeel" (dict "root" . "naam" "valhalla") }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}:9100" }
             - { name: TILES_UPSTREAM, value: "http://{{ include "homemaps.onderdeel" (dict "root" . "naam" "tiles") }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}:8080" }
           securityContext: {{- include "homemaps.containerSecurity" . | nindent 12 }}
           ports:

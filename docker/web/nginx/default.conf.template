@@ -47,6 +47,14 @@ server {
         proxy_pass $photon;
     }
 
+    # De verkeerslaag die de importer (naast Valhalla) elke ronde maakt. Hij pakt
+    # zelf in; nginx geeft Content-Encoding gewoon door.
+    location = /verkeer {
+        set $verkeer ${VERKEER_UPSTREAM};
+        rewrite ^ /verkeer.geojson break;
+        proxy_pass $verkeer;
+    }
+
     # tileserver-gl bouwt de URL's in style.json en de TileJSON uit het verzoek:
     # Host, X-Forwarded-Proto en -- voor dit pad -- X-Forwarded-Path. Zo werkt één
     # installatie onder meerdere hostnamen (intern en publiek) zonder vaste
