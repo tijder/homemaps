@@ -364,4 +364,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get negeren => 'Ignore';
+
+  @override
+  String aankomstOm(String tijd) {
+    return 'arrive $tijd';
+  }
 }

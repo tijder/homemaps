@@ -206,5 +206,13 @@
         "type": "String"
       }
     }
+  },
+  "aankomstOm": "aankomst {tijd}",
+  "@aankomstOm": {
+    "placeholders": {
+      "tijd": {
+        "type": "String"
+      }
+    }
   }
 }

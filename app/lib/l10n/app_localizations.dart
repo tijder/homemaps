@@ -697,6 +697,12 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'Negeren'**
   String get negeren;
+
+  /// No description provided for @aankomstOm.
+  ///
+  /// In nl, this message translates to:
+  /// **'aankomst {tijd}'**
+  String aankomstOm(String tijd);
 }
 
 class _AppLocalizationsDelegate

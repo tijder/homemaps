@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../l10n/app_localizations.dart';
@@ -408,7 +409,12 @@ class _RouteKaartje extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final kleuren = Theme.of(context).colorScheme;
+    final aankomst = DateTime.now().add(
+      Duration(seconds: route.seconden.round()),
+    );
+    final taal = Localizations.localeOf(context).languageCode;
     final extra = [
+      l.aankomstOm(DateFormat.Hm(taal).format(aankomst)),
       if (route.hoogtes.length > 1)
         l.stijgingDaling(route.stijging.round(), route.daling.round()),
       if (route.heeftTol) l.metTol,

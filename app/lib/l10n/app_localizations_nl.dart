@@ -366,4 +366,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get negeren => 'Negeren';
+
+  @override
+  String aankomstOm(String tijd) {
+    return 'aankomst $tijd';
+  }
 }

@@ -99,5 +99,6 @@
   "voorstelSneller": "Faster route: {minuten} min faster",
   "voorstelVia": "via {weg}",
   "nemen": "Take it",
-  "negeren": "Ignore"
+  "negeren": "Ignore",
+  "aankomstOm": "arrive {tijd}"
 }
