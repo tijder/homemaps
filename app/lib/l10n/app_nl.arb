@@ -214,5 +214,22 @@
         "type": "String"
       }
     }
-  }
+  },
+  "thuis": "Thuis",
+  "werk": "Werk",
+  "alsThuis": "Als thuis",
+  "alsWerk": "Als werk",
+  "plekken": "Plekken",
+  "plekkenUitleg": "Thuis en werk stel je in op het kaartje van een gevonden plek.",
+  "nietIngesteld": "Niet ingesteld",
+  "recentePlekken": "Recente plekken",
+  "aantalPlekken": "{aantal, plural, =0{Geen} =1{1 plek} other{{aantal} plekken}}",
+  "@aantalPlekken": {
+    "placeholders": {
+      "aantal": {
+        "type": "int"
+      }
+    }
+  },
+  "wissenKort": "Wissen"
 }

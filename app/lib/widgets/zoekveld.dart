@@ -8,6 +8,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import '../l10n/app_localizations.dart';
 import '../models/plaats.dart';
 import '../providers/diensten.dart';
+import '../providers/plekken.dart';
 
 /// Eén vakje van de route: toont de gekozen plaats, en zoekt bij het typen.
 class Zoekveld extends ConsumerStatefulWidget {
@@ -153,7 +154,10 @@ class _ZoekveldState extends ConsumerState<Zoekveld> {
     }
   }
 
-  void _kies(Plaats plaats) {
+  /// [onthoud]: een zoekresultaat of recente plek komt (weer) vooraan in de
+  /// recente; thuis, werk en "Mijn locatie" niet.
+  void _kies(Plaats plaats, {bool onthoud = false}) {
+    if (onthoud) ref.read(plekkenProvider.notifier).onthoud(plaats);
     _sluit?.cancel();
     _tekst.text = _naam = _weergave(plaats);
     setState(() {
@@ -180,13 +184,40 @@ class _ZoekveldState extends ConsumerState<Zoekveld> {
         (getypt.isEmpty ||
             getypt == _naam.toLowerCase() ||
             l.mijnLocatie.toLowerCase().startsWith(getypt));
-    final suggesties = _resultaten.isNotEmpty || metMijnLocatie;
+    // Thuis en werk als het vakje leeg is of je hun naam begint te typen; de
+    // recente als het leeg is, of die waar het getypte in voorkomt.
+    final plekken = ref.watch(plekkenProvider);
+    final leeg = getypt.isEmpty || getypt == _naam.toLowerCase();
+    final vast = !_open
+        ? const <(IconData, String, Plaats)>[]
+        : [
+            for (final (pictogram, label, plaats) in [
+              (Icons.home_outlined, l.thuis, plekken.thuis),
+              (Icons.work_outline, l.werk, plekken.werk),
+            ])
+              if (plaats != null &&
+                  (leeg || label.toLowerCase().startsWith(getypt)))
+                (pictogram, label, plaats),
+          ];
+    final recent = !_open
+        ? const <Plaats>[]
+        : leeg
+        ? plekken.recent.take(5).toList()
+        : plekken.recent
+              .where((p) => p.naam.toLowerCase().contains(getypt))
+              .take(3)
+              .toList();
+    final suggesties =
+        _resultaten.isNotEmpty ||
+        metMijnLocatie ||
+        vast.isNotEmpty ||
+        recent.isNotEmpty;
     final veld = TextField(
       controller: _tekst,
       focusNode: _focus,
       onChanged: _getypt,
       onSubmitted: (_) {
-        if (_resultaten.isNotEmpty) _kies(_resultaten.first);
+        if (_resultaten.isNotEmpty) _kies(_resultaten.first, onthoud: true);
       },
       textInputAction: TextInputAction.search,
       decoration: InputDecoration(
@@ -236,6 +267,44 @@ class _ZoekveldState extends ConsumerState<Zoekveld> {
             title: Text(l.mijnLocatie),
             onTap: _kiesMijnLocatie,
           ),
+        for (final (pictogram, label, plaats) in vast)
+          ListTile(
+            dense: true,
+            leading: Icon(
+              pictogram,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            title: Text(label),
+            subtitle: Text(
+              [
+                plaats.naam,
+                plaats.omschrijving,
+              ].where((t) => t.isNotEmpty).join(', '),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            onTap: () => _kies(
+              Plaats(naam: label, omschrijving: plaats.naam, punt: plaats.punt),
+            ),
+          ),
+        for (final plaats in recent)
+          ListTile(
+            dense: true,
+            leading: const Icon(Icons.history),
+            title: Text(
+              plaats.naam,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: plaats.omschrijving.isEmpty
+                ? null
+                : Text(
+                    plaats.omschrijving,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+            onTap: () => _kies(plaats, onthoud: true),
+          ),
         for (final plaats in _resultaten)
           ListTile(
             dense: true,
@@ -252,7 +321,7 @@ class _ZoekveldState extends ConsumerState<Zoekveld> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-            onTap: () => _kies(plaats),
+            onTap: () => _kies(plaats, onthoud: true),
           ),
       ],
     );

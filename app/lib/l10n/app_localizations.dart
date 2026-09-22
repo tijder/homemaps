@@ -703,6 +703,66 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'aankomst {tijd}'**
   String aankomstOm(String tijd);
+
+  /// No description provided for @thuis.
+  ///
+  /// In nl, this message translates to:
+  /// **'Thuis'**
+  String get thuis;
+
+  /// No description provided for @werk.
+  ///
+  /// In nl, this message translates to:
+  /// **'Werk'**
+  String get werk;
+
+  /// No description provided for @alsThuis.
+  ///
+  /// In nl, this message translates to:
+  /// **'Als thuis'**
+  String get alsThuis;
+
+  /// No description provided for @alsWerk.
+  ///
+  /// In nl, this message translates to:
+  /// **'Als werk'**
+  String get alsWerk;
+
+  /// No description provided for @plekken.
+  ///
+  /// In nl, this message translates to:
+  /// **'Plekken'**
+  String get plekken;
+
+  /// No description provided for @plekkenUitleg.
+  ///
+  /// In nl, this message translates to:
+  /// **'Thuis en werk stel je in op het kaartje van een gevonden plek.'**
+  String get plekkenUitleg;
+
+  /// No description provided for @nietIngesteld.
+  ///
+  /// In nl, this message translates to:
+  /// **'Niet ingesteld'**
+  String get nietIngesteld;
+
+  /// No description provided for @recentePlekken.
+  ///
+  /// In nl, this message translates to:
+  /// **'Recente plekken'**
+  String get recentePlekken;
+
+  /// No description provided for @aantalPlekken.
+  ///
+  /// In nl, this message translates to:
+  /// **'{aantal, plural, =0{Geen} =1{1 plek} other{{aantal} plekken}}'**
+  String aantalPlekken(int aantal);
+
+  /// No description provided for @wissenKort.
+  ///
+  /// In nl, this message translates to:
+  /// **'Wissen'**
+  String get wissenKort;
 }
 
 class _AppLocalizationsDelegate

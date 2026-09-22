@@ -22,6 +22,8 @@ import '../providers/diensten.dart';
 import '../providers/instellingen.dart';
 import '../providers/locatie.dart';
 import '../providers/planner.dart';
+import '../providers/plekken.dart';
+import '../utils/afstand.dart';
 import '../router/app_router.dart';
 import '../utils/muis_stub.dart'
     if (dart.library.js_interop) '../utils/muis_web.dart';
@@ -614,10 +616,39 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                       Text(gevonden.omschrijving),
                     ],
                     const SizedBox(height: 12),
-                    FilledButton.icon(
-                      onPressed: acties.startRoute,
-                      icon: const Icon(Icons.directions),
-                      label: Text(l.route),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        FilledButton.icon(
+                          onPressed: acties.startRoute,
+                          icon: const Icon(Icons.directions),
+                          label: Text(l.route),
+                        ),
+                        if (!gevonden.mijnLocatie) ...[
+                          _BewaarKnop(
+                            plaats: gevonden,
+                            huidig: ref.watch(plekkenProvider).thuis,
+                            pictogram: Icons.home_outlined,
+                            label: l.alsThuis,
+                            bewaard: l.thuis,
+                            onBewaar: ref
+                                .read(plekkenProvider.notifier)
+                                .zetThuis,
+                          ),
+                          _BewaarKnop(
+                            plaats: gevonden,
+                            huidig: ref.watch(plekkenProvider).werk,
+                            pictogram: Icons.work_outline,
+                            label: l.alsWerk,
+                            bewaard: l.werk,
+                            onBewaar: ref
+                                .read(plekkenProvider.notifier)
+                                .zetWerk,
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
@@ -897,6 +928,36 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// "Als thuis" op het kaartje van een gevonden plek; is dit al thuis, dan een
+/// vinkje en tikken haalt het weer weg.
+class _BewaarKnop extends StatelessWidget {
+  const _BewaarKnop({
+    required this.plaats,
+    required this.huidig,
+    required this.pictogram,
+    required this.label,
+    required this.bewaard,
+    required this.onBewaar,
+  });
+
+  final Plaats plaats;
+  final Plaats? huidig;
+  final IconData pictogram;
+  final String label;
+  final String bewaard;
+  final ValueChanged<Plaats?> onBewaar;
+
+  @override
+  Widget build(BuildContext context) {
+    final al = huidig != null && meters(huidig!.punt, plaats.punt) < 30;
+    return TextButton.icon(
+      onPressed: () => onBewaar(al ? null : plaats),
+      icon: Icon(al ? Icons.check : pictogram),
+      label: Text(al ? bewaard : label),
     );
   }
 }

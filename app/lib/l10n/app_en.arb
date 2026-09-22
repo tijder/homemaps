@@ -100,5 +100,15 @@
   "voorstelVia": "via {weg}",
   "nemen": "Take it",
   "negeren": "Ignore",
-  "aankomstOm": "arrive {tijd}"
+  "aankomstOm": "arrive {tijd}",
+  "thuis": "Home",
+  "werk": "Work",
+  "alsThuis": "Set as home",
+  "alsWerk": "Set as work",
+  "plekken": "Places",
+  "plekkenUitleg": "Set home and work on the card of a place you found.",
+  "nietIngesteld": "Not set",
+  "recentePlekken": "Recent places",
+  "aantalPlekken": "{aantal, plural, =0{None} =1{1 place} other{{aantal} places}}",
+  "wissenKort": "Clear"
 }

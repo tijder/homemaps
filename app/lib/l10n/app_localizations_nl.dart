@@ -371,4 +371,44 @@ class AppLocalizationsNl extends AppLocalizations {
   String aankomstOm(String tijd) {
     return 'aankomst $tijd';
   }
+
+  @override
+  String get thuis => 'Thuis';
+
+  @override
+  String get werk => 'Werk';
+
+  @override
+  String get alsThuis => 'Als thuis';
+
+  @override
+  String get alsWerk => 'Als werk';
+
+  @override
+  String get plekken => 'Plekken';
+
+  @override
+  String get plekkenUitleg =>
+      'Thuis en werk stel je in op het kaartje van een gevonden plek.';
+
+  @override
+  String get nietIngesteld => 'Niet ingesteld';
+
+  @override
+  String get recentePlekken => 'Recente plekken';
+
+  @override
+  String aantalPlekken(int aantal) {
+    String _temp0 = intl.Intl.pluralLogic(
+      aantal,
+      locale: localeName,
+      other: '$aantal plekken',
+      one: '1 plek',
+      zero: 'Geen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wissenKort => 'Wissen';
 }
