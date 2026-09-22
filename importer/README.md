@@ -26,8 +26,10 @@ Valhalla's `traffic.tar`.
    ronde schreef en nu geen meting meer heeft terug op "onbekend", en bij de start
    wordt het hele bestand geleegd.
 
-Live snelheden tellen in Valhalla alleen mee bij `date_time.type: 0` ("vertrek
-nu"), en vooral voor het begin van de route.
+Live snelheden en afsluitingen tellen in Valhalla alleen mee met een vertrektijd
+van nu: `date_time.type: 0` ("vertrek nu"), of `type: 3` met de tijd van nu -- dat
+laatste gebruikt de app, want alleen dan komen er ook alternatieven. Zonder
+`date_time` rijdt Valhalla dwars door een afsluiting heen.
 
 ## Ontwikkelen
 

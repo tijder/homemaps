@@ -37,6 +37,7 @@ class ValhallaService {
     bool vermijdSnelwegen = false,
     bool vermijdTol = false,
     bool vermijdVeren = false,
+    DateTime? nu,
   }) {
     final opties = <String, dynamic>{
       if (vermijdSnelwegen) 'use_highways': 0.0,
@@ -61,9 +62,21 @@ class ValhallaService {
       'elevation_interval': hoogteInterval,
       // Valhalla geeft alleen alternatieven tussen precies twee punten.
       if (punten.length == 2) 'alternates': 2,
-      // Live verkeer telt alleen bij "vertrek nu", en alleen voor de auto.
-      if (liveVerkeer && profiel == Profiel.auto) 'date_time': {'type': 0},
+      // Live verkeer (snelheden én afsluitingen) telt alleen met een vertrektijd
+      // van nu, en alleen voor de auto. Niet `type: 0` ("vertrek nu"): dat gaat
+      // langs de eenrichtingszoeker, en die geeft geen alternatieven. `type: 3`
+      // (één vaste tijd voor de hele route) gaat langs de tweerichtingszoeker
+      // en leest het live verkeer net zo goed -- zolang de tijd echt nu is.
+      // Valhalla leest hem als lokale tijd op het vertrekpunt.
+      if (liveVerkeer && profiel == Profiel.auto)
+        'date_time': {'type': 3, 'value': _minuut(nu ?? DateTime.now())},
     };
+  }
+
+  static String _minuut(DateTime tijd) {
+    String twee(int n) => n.toString().padLeft(2, '0');
+    return '${tijd.year}-${twee(tijd.month)}-${twee(tijd.day)}'
+        'T${twee(tijd.hour)}:${twee(tijd.minute)}';
   }
 
   Future<List<RouteOptie>> route(
@@ -76,14 +89,14 @@ class ValhallaService {
     bool vermijdVeren = false,
     CancelToken? annuleer,
   }) async {
-    Future<List<RouteOptie>> vraag({required bool live}) async {
+    try {
       final antwoord = await _dio.post<Map<String, dynamic>>(
         '$basis/route',
         data: verzoek(
           punten,
           profiel,
           taal: taal,
-          liveVerkeer: live,
+          liveVerkeer: liveVerkeer,
           vermijdSnelwegen: vermijdSnelwegen,
           vermijdTol: vermijdTol,
           vermijdVeren: vermijdVeren,
@@ -91,30 +104,6 @@ class ValhallaService {
         cancelToken: annuleer,
       );
       return leesAntwoord(antwoord.data ?? const {});
-    }
-
-    try {
-      final metVertrektijd =
-          liveVerkeer && profiel == Profiel.auto && punten.length == 2;
-      if (!metVertrektijd) return await vraag(live: liveVerkeer);
-      // Valhalla geeft bij een vertrektijd geen alternatieven: die komen alleen
-      // uit zijn tweerichtingszoeker, en die rekent zonder tijd. Daarom twee
-      // verzoeken tegelijk -- de route van nu met live verkeer, en de
-      // alternatieven zonder -- en daarna samenvoegen.
-      final (nu, zonderTijd) = await (
-        vraag(live: true),
-        vraag(live: false),
-      ).wait;
-      return voegSamen(nu, zonderTijd);
-    } on ParallelWaitError<dynamic, dynamic> catch (fout) {
-      // Het eerste echte probleem van de twee; de afhandeling hieronder past erop.
-      final (eerste, tweede) = fout.errors as (AsyncError?, AsyncError?);
-      final oorzaak = (eerste ?? tweede)!.error;
-      if (oorzaak is DioException) {
-        if (CancelToken.isCancel(oorzaak)) throw oorzaak;
-        throw _routeFout(oorzaak);
-      }
-      throw oorzaak;
     } on DioException catch (fout) {
       if (CancelToken.isCancel(fout)) rethrow;
       throw _routeFout(fout);
@@ -130,24 +119,6 @@ class ValhallaService {
       );
     }
     return RouteFout(0, fout.message ?? fout.type.name);
-  }
-
-  /// De route met live verkeer voorop, daarna de alternatieven uit het verzoek
-  /// zonder vertrektijd -- behalve die welke dezelfde weg zijn als de eerste. De
-  /// hoofdroute van het tweede verzoek doet ook mee: met file kan juist die het
-  /// alternatief zijn.
-  static List<RouteOptie> voegSamen(
-    List<RouteOptie> nu,
-    List<RouteOptie> zonderTijd,
-  ) {
-    final uit = [...nu];
-    for (final kandidaat in zonderTijd) {
-      final dubbel = uit.any(
-        (route) => (route.meters - kandidaat.meters).abs() < 50,
-      );
-      if (!dubbel) uit.add(kandidaat);
-    }
-    return uit.take(3).toList();
   }
 
   static List<RouteOptie> leesAntwoord(Map<String, dynamic> json) => [

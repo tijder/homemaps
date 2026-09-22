@@ -46,7 +46,8 @@ flutter_lints, pubspec met exact gepinde `flutter: 3.47.5`.
   `/structured`, strikte coördinaatherkenning.
 - Routing: Valhalla-client — profielen auto/fiets/lopen, van/via/naar, alternatieven
   (Valhalla kan die alleen zonder via-punten → UI verbergt ze dan), instructielijst,
-  hoogteprofiel (`elevation_interval`), "vertrek nu" = `date_time.type 0` (live verkeer).
+  hoogteprofiel (`elevation_interval`), "vertrek nu" = `date_time.type 3` met de tijd van nu (live verkeer, en anders
+  dan `type 0` mét alternatieven).
 - Runtime-config (API-/tile-URL's) via een door de chart gemount JSON-document, zoals
   ister's `/.well-known/`; standaard afgeleid van `location.origin`, zoals nu.
 
