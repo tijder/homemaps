@@ -1008,6 +1008,11 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
               NavigatieVoet(
                 nav,
                 onStop: () {
+                  // Na aankomst is de route af: terug naar een leeg scherm.
+                  // Wie eerder stopt, houdt de route om hem te hervatten.
+                  if (nav.aangekomen) {
+                    ref.read(plannerProvider.notifier).leeg();
+                  }
                   acties.stop();
                   _hervat?.cancel();
                 },

@@ -138,6 +138,13 @@ class PlannerNotifier extends Notifier<PlannerState> {
     );
   }
 
+  /// Na aankomst: terug naar een leeg zoekscherm, zonder route of gevonden
+  /// plaats.
+  void leeg() {
+    _lopend?.cancel();
+    state = PlannerState(beeldVersie: state.beeldVersie);
+  }
+
   // --------------------------------------------------------------- routescherm
 
   /// [volgBeeld]: breng het resultaat in beeld. Bij slepen op de kaart niet --

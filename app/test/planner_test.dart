@@ -38,6 +38,18 @@ void main() {
     expect(namen(), [null, null]);
   });
 
+  test('leeg gaat terug naar een leeg zoekscherm', () {
+    planner.toonPlaats(plaats('Dom', 52.09));
+    planner.startRoute();
+    planner.zetVan(plaats('A', 52.1));
+
+    planner.leeg();
+    expect(state().routeModus, isFalse);
+    expect(state().gevonden, isNull);
+    expect(namen(), [null, null]);
+    expect(state().routes.value, isEmpty);
+  });
+
   test('rechtermuisknop gaat direct naar het routescherm', () {
     planner.zetVan(plaats('A', 52.1), volgBeeld: false);
     expect(state().routeModus, isTrue);
