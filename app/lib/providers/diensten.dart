@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../models/app_config.dart';
+import '../services/langs_route.dart';
 import '../services/photon_service.dart';
 import '../services/valhalla_service.dart';
 import 'instellingen.dart';
@@ -44,6 +45,16 @@ final valhallaProvider = Provider<ValhallaService?>((ref) {
   final config = ref.watch(appConfigProvider);
   if (config == null) return null;
   return ValhallaService(ref.watch(dioProvider), config.valhallaUrl);
+});
+
+final langsRouteProvider = Provider<LangsRouteService?>((ref) {
+  final config = ref.watch(appConfigProvider);
+  if (config == null) return null;
+  return LangsRouteService(
+    ref.watch(dioProvider),
+    config.tilesUrl,
+    config.valhallaUrl,
+  );
 });
 
 /// Waar de kaart opent: het `center` uit de TileJSON van de eigen tileserver, zodat

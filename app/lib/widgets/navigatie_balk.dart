@@ -125,11 +125,15 @@ class NavigatieVoet extends StatelessWidget {
     super.key,
     required this.onStop,
     required this.onDempen,
+    this.onZoekLangs,
   });
 
   final NavigatieToestand nav;
   final VoidCallback onStop;
   final ValueChanged<bool> onDempen;
+
+  /// "Langs de route" (tanken, laden, ...): een stop toevoegen.
+  final VoidCallback? onZoekLangs;
 
   @override
   Widget build(BuildContext context) {
@@ -168,6 +172,12 @@ class NavigatieVoet extends StatelessWidget {
                       ],
                     ),
             ),
+            if (!nav.aangekomen && onZoekLangs != null)
+              IconButton(
+                tooltip: l.langsDeRoute,
+                icon: const Icon(Icons.local_gas_station_outlined),
+                onPressed: onZoekLangs,
+              ),
             if (!nav.aangekomen)
               IconButton(
                 tooltip: nav.gedempt ? l.stemAan : l.stemUit,

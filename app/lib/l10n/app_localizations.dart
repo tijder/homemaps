@@ -835,6 +835,54 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'{aantal, plural, =1{Geplande afsluiting op deze route: {venster}} other{{aantal} geplande afsluitingen op deze route, de eerste: {venster}}}'**
   String afsluitingOpRoute(String venster, int aantal);
+
+  /// No description provided for @langsDeRoute.
+  ///
+  /// In nl, this message translates to:
+  /// **'Langs de route'**
+  String get langsDeRoute;
+
+  /// No description provided for @langsTanken.
+  ///
+  /// In nl, this message translates to:
+  /// **'Tanken'**
+  String get langsTanken;
+
+  /// No description provided for @langsLaden.
+  ///
+  /// In nl, this message translates to:
+  /// **'Laden'**
+  String get langsLaden;
+
+  /// No description provided for @langsSupermarkt.
+  ///
+  /// In nl, this message translates to:
+  /// **'Supermarkt'**
+  String get langsSupermarkt;
+
+  /// No description provided for @langsEten.
+  ///
+  /// In nl, this message translates to:
+  /// **'Eten'**
+  String get langsEten;
+
+  /// No description provided for @langsNiets.
+  ///
+  /// In nl, this message translates to:
+  /// **'Niets gevonden binnen een kilometer van de route.'**
+  String get langsNiets;
+
+  /// No description provided for @langsAfstand.
+  ///
+  /// In nl, this message translates to:
+  /// **'{afstand} van de route'**
+  String langsAfstand(String afstand);
+
+  /// No description provided for @tussenstopToegevoegd.
+  ///
+  /// In nl, this message translates to:
+  /// **'Tussenstop: {naam}'**
+  String tussenstopToegevoegd(String naam);
 }
 
 class _AppLocalizationsDelegate

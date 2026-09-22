@@ -122,5 +122,13 @@
   "vertrek": "Depart",
   "vertrekNu": "Now",
   "vertrekLater": "Later…",
-  "afsluitingOpRoute": "{aantal, plural, =1{Planned closure on this route: {venster}} other{{aantal} planned closures on this route, first: {venster}}}"
+  "afsluitingOpRoute": "{aantal, plural, =1{Planned closure on this route: {venster}} other{{aantal} planned closures on this route, first: {venster}}}",
+  "langsDeRoute": "Along the route",
+  "langsTanken": "Fuel",
+  "langsLaden": "Charging",
+  "langsSupermarkt": "Supermarket",
+  "langsEten": "Food",
+  "langsNiets": "Nothing found within a kilometre of the route.",
+  "langsAfstand": "{afstand} from the route",
+  "tussenstopToegevoegd": "Stop: {naam}"
 }

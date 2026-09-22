@@ -461,4 +461,32 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get langsDeRoute => 'Along the route';
+
+  @override
+  String get langsTanken => 'Fuel';
+
+  @override
+  String get langsLaden => 'Charging';
+
+  @override
+  String get langsSupermarkt => 'Supermarket';
+
+  @override
+  String get langsEten => 'Food';
+
+  @override
+  String get langsNiets => 'Nothing found within a kilometre of the route.';
+
+  @override
+  String langsAfstand(String afstand) {
+    return '$afstand from the route';
+  }
+
+  @override
+  String tussenstopToegevoegd(String naam) {
+    return 'Stop: $naam';
+  }
 }

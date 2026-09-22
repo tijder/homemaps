@@ -30,6 +30,7 @@ import '../router/app_router.dart';
 import '../utils/muis_stub.dart'
     if (dart.library.js_interop) '../utils/muis_web.dart';
 import '../widgets/kaart.dart';
+import '../widgets/langs_route.dart';
 import '../widgets/locatie_reden.dart';
 import '../widgets/navigatie_balk.dart';
 import '../widgets/route_paneel.dart';
@@ -967,9 +968,44 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                   _hervat?.cancel();
                 },
                 onDempen: acties.dempen,
+                onZoekLangs: () => _zoekLangsRoute(nav),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Tijdens navigatie: een stop langs de rest van de route zoeken.
+  Future<void> _zoekLangsRoute(NavigatieToestand nav) async {
+    final stand = nav.stand;
+    final lijn = stand == null
+        ? nav.route.punten
+        : [stand.opRoute, ...nav.route.punten.skip(stand.segment + 1)];
+    final gekozen = await showModalBottomSheet<Plaats>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => PointerInterceptor(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: SingleChildScrollView(
+              child: LangsRouteZoeker(
+                lijn: lijn,
+                onGekozen: (plaats) => Navigator.of(context).pop(plaats),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    if (gekozen == null || !mounted) return;
+    ref.read(navigatieProvider.notifier).voegTussenstopToe(gekozen);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          AppLocalizations.of(context).tussenstopToegevoegd(gekozen.naam),
         ),
       ),
     );

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../models/route.dart';
+import 'afstand.dart';
 
 /// Een geplande afsluiting die op een route ligt, met het venster waarin hij
 /// je reis raakt.
@@ -46,7 +47,7 @@ List<AfsluitingOpRoute> afsluitingenOpRoute(
     if (lijn.length < 2) continue;
     final toets = [lijn.first, lijn[lijn.length ~/ 2], lijn.last];
     if (!toets.any(binnen)) continue;
-    final raak = toets.where((p) => _afstandTotLijn(p, route.punten) < 20);
+    final raak = toets.where((p) => metersTotLijn(p, route.punten) < 20);
     if (raak.length >= 2) uit.add(venster);
   }
   uit.sort((a, b) => a.van.compareTo(b.van));
@@ -83,24 +84,4 @@ List<LatLng> _lijn(Object? geometrie) {
     ],
     _ => const [],
   };
-}
-
-/// Meters van [p] tot de dichtstbijzijnde plek op [lijn] (platte projectie).
-double _afstandTotLijn(LatLng p, List<LatLng> lijn) {
-  final kos = cos(p.latitude * pi / 180);
-  var beste = double.infinity;
-  for (var i = 0; i < lijn.length - 1; i++) {
-    final ax = (lijn[i].longitude - p.longitude) * kos * 111320;
-    final ay = (lijn[i].latitude - p.latitude) * 110574;
-    final bx = (lijn[i + 1].longitude - p.longitude) * kos * 111320;
-    final by = (lijn[i + 1].latitude - p.latitude) * 110574;
-    final dx = bx - ax, dy = by - ay;
-    final kwadraat = dx * dx + dy * dy;
-    final t = kwadraat == 0
-        ? 0.0
-        : ((-ax * dx - ay * dy) / kwadraat).clamp(0.0, 1.0);
-    final x = ax + t * dx, y = ay + t * dy;
-    beste = min(beste, x * x + y * y);
-  }
-  return sqrt(beste);
 }

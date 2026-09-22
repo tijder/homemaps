@@ -5,6 +5,7 @@ import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../l10n/app_localizations.dart';
+import 'langs_route.dart';
 import 'locatie_reden.dart';
 import 'manoeuvre_pictogram.dart';
 import '../models/plaats.dart';
@@ -423,6 +424,15 @@ class _RoutePaneelState extends ConsumerState<RoutePaneel> {
             _StartKnop(
               onStart: () => widget.onNavigeer!(route),
               onLocatieAan: widget.onLocatieAan,
+            ),
+          ],
+          if (planner.gekozenRoute case final route?) ...[
+            const SizedBox(height: 12),
+            LangsRouteZoeker(
+              // Een andere route is een nieuwe zoektocht.
+              key: ObjectKey(route),
+              lijn: route.punten,
+              onGekozen: acties.voegViaToe,
             ),
           ],
         ],

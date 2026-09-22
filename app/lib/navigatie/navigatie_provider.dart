@@ -504,6 +504,15 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
     if (state?.fix case final laatste?) _bijFix(laatste);
   }
 
+  /// Een stop onderweg (tanken, boodschappen): vóór de rest van de doelen, en
+  /// meteen een nieuwe route vanaf hier.
+  void voegTussenstopToe(Plaats stop) {
+    final nu = state, fix = nu?.fix;
+    if (nu == null || fix == null || nu.aangekomen) return;
+    state = nu.kopie(doelen: [stop, ...nu.doelen]);
+    _herbereken(fix);
+  }
+
   /// "Negeren", of 45 seconden niets gekozen: de huidige route blijft, en deze
   /// komt niet nog eens voorbij.
   void negeerVoorstel() {

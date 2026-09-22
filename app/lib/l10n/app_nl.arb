@@ -284,5 +284,27 @@
         "type": "int"
       }
     }
+  },
+  "langsDeRoute": "Langs de route",
+  "langsTanken": "Tanken",
+  "langsLaden": "Laden",
+  "langsSupermarkt": "Supermarkt",
+  "langsEten": "Eten",
+  "langsNiets": "Niets gevonden binnen een kilometer van de route.",
+  "langsAfstand": "{afstand} van de route",
+  "@langsAfstand": {
+    "placeholders": {
+      "afstand": {
+        "type": "String"
+      }
+    }
+  },
+  "tussenstopToegevoegd": "Tussenstop: {naam}",
+  "@tussenstopToegevoegd": {
+    "placeholders": {
+      "naam": {
+        "type": "String"
+      }
+    }
   }
 }
