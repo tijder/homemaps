@@ -636,7 +636,7 @@ class _KaartState extends State<Kaart> {
   ) {
     if (laag.startsWith('verkeer-')) {
       final info = _verkeerInfo[id];
-      if (info != null) widget.onVerkeerGetikt?.call(scherm, info);
+      if (info != null) widget.onVerkeerGetikt?.call(_logisch(scherm), info);
       return;
     }
     if (!_lagen.contains(laag)) return;
@@ -644,6 +644,18 @@ class _KaartState extends State<Kaart> {
     if (index != null && index < widget.routes.length) {
       widget.onRouteGekozen(index);
     }
+  }
+
+  /// De plugin geeft schermpunten op Android in fysieke pixels
+  /// (Projection.toScreenLocation), op het web in CSS-pixels. Flutter rekent in
+  /// logische pixels: zonder deze omrekening kwam het puntmenu op een scherm met
+  /// dichtheid 3 ver buiten beeld, en werd het naar rechtsonder geduwd.
+  Point<double> _logisch(Point<double> scherm) {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+      return scherm;
+    }
+    final dichtheid = MediaQuery.devicePixelRatioOf(context);
+    return Point(scherm.x / dichtheid, scherm.y / dichtheid);
   }
 
   @override
@@ -671,6 +683,7 @@ class _KaartState extends State<Kaart> {
       widget.onController?.call(controller);
     },
     onStyleLoadedCallback: _stijlGeladen,
-    onMapLongClick: widget.onLangIngedrukt,
+    onMapLongClick: (scherm, punt) =>
+        widget.onLangIngedrukt(_logisch(scherm), punt),
   );
 }
