@@ -50,6 +50,18 @@ void main() {
     expect(state().routes.value, isEmpty);
   });
 
+  test('een route kiezen in de lijst brengt hem weer in beeld', () {
+    planner.zetVan(plaats('A', 52.1), volgBeeld: false);
+    final voor = state().beeldVersie;
+    planner.kies(1, volgBeeld: true);
+    expect(state().gekozen, 1);
+    expect(state().beeldVersie, voor + 1);
+    // Op de kaart aangetikt: het beeld blijft.
+    planner.kies(0);
+    expect(state().gekozen, 0);
+    expect(state().beeldVersie, voor + 1);
+  });
+
   test('rechtermuisknop gaat direct naar het routescherm', () {
     planner.zetVan(plaats('A', 52.1), volgBeeld: false);
     expect(state().routeModus, isTrue);

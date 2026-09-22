@@ -210,7 +210,12 @@ class PlannerNotifier extends Notifier<PlannerState> {
     _bereken(volgBeeld: true);
   }
 
-  void kies(int index) => state = state.kopie(gekozen: index);
+  /// [volgBeeld]: breng de routes weer helemaal in beeld (een keuze in de
+  /// lijst). Niet bij het aantikken van een route op de kaart: daar kijk je al.
+  void kies(int index, {bool volgBeeld = false}) => state = state.kopie(
+    gekozen: index,
+    beeldVersie: volgBeeld ? state.beeldVersie + 1 : null,
+  );
 
   /// Null = nu vertrekken.
   void zetVertrek(DateTime? vertrek) {

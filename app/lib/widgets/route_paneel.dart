@@ -413,7 +413,7 @@ class _RoutePaneelState extends ConsumerState<RoutePaneel> {
               route: route,
               titel: i == 0 ? l.snelste : l.alternatief(i),
               gekozen: i == planner.gekozen,
-              onTap: () => acties.kies(i),
+              onTap: () => acties.kies(i, volgBeeld: true),
               afsluitingen: afsluitingen != null && i < afsluitingen.length
                   ? afsluitingen[i]
                   : const [],
