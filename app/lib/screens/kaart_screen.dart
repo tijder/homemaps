@@ -9,6 +9,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 
@@ -119,6 +120,12 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
       for (final punt in ref.read(plannerProvider).punten.skip(1)) ?punt.plaats,
     ];
     if (doelen.isEmpty) return;
+    // Android 13+: zonder deze toestemming loopt de navigatie met het scherm uit
+    // ook, maar zonder zichtbare melding. Eén keer vragen; weigeren mag.
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      await Permission.notification.request();
+      if (!mounted) return;
+    }
     setState(() => _volgt = true);
     await ref
         .read(navigatieProvider.notifier)

@@ -61,13 +61,13 @@ Na een wijziging aan routes of vertalingen: `flutter gen-l10n` en
 
 ## Nog open
 
-- **De APK is alleen gebouwd, niet op een toestel gedraaid**, en wordt met de
-  debug-sleutel ondertekend. Voor een installeerbare release: een keystore als
-  secret en een `signingConfig` in `app/android/app/build.gradle.kts`.
+- **De APK is alleen gebouwd, niet op een toestel gedraaid.** Releases worden
+  ondertekend met één vaste sleutel (secrets `ANDROID_KEYSTORE` en
+  `ANDROID_KEYSTORE_WACHTWOORD`); raak je die kwijt, dan kan een nieuwe versie
+  niet meer over een oude heen.
 - **Navigatie op Android** is niet op een toestel gereden: stem, voorgronddienst
   met het scherm uit en de GPS van een echte telefoon zijn alleen in code en
-  tests gedekt. De toestemming voor meldingen (Android 13+) wordt niet gevraagd;
-  de dienst draait dan zonder zichtbare melding.
+  tests gedekt.
 - **NDW-voorwaarden**: de repo bevat geen NDW-data (de testfeed is nagemaakt), maar
   wie de importer draait gebruikt NDW's open data onder hun voorwaarden
   (ndw.nu/copyright).
