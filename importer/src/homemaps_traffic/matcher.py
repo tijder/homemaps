@@ -32,13 +32,20 @@ MAX_LOCATIES = 20
 class Match:
     edges: tuple[tuple[int, float, int], ...]  # (graphid, lengte in m, way_id)
     lengte_m: float
+    # De routevorm per leg, als Valhalla's polyline (zes decimalen): de lijn op de
+    # kaart. NDW's eigen lijn is meestal alleen begin en eind.
+    vorm: tuple[str, ...] = ()
 
     def naar_json(self):
-        return {"e": [list(edge) for edge in self.edges], "l": round(self.lengte_m, 1)}
+        return {
+            "e": [list(edge) for edge in self.edges],
+            "l": round(self.lengte_m, 1),
+            "v": list(self.vorm),
+        }
 
     @classmethod
     def uit_json(cls, data) -> "Match":
-        return cls(tuple((e[0], e[1], e[2]) for e in data["e"]), data["l"])
+        return cls(tuple((e[0], e[1], e[2]) for e in data["e"]), data["l"], tuple(data["v"]))
 
 
 def hemelsbreed(a: Punt, b: Punt) -> float:
@@ -109,6 +116,7 @@ class Valhalla:
             return None
         lijn = sum(hemelsbreed(a, b) for a, b in zip(punten, punten[1:], strict=False))
         edges: list[tuple[int, float, int]] = []
+        vorm: list[str] = []
         lengte = 0.0
         try:
             # Blokken die elkaar één punt overlappen: Valhalla neemt hooguit 20
@@ -135,6 +143,7 @@ class Valhalla:
                 if lengte > lijn * max_omweg + 150:
                     return None
                 for leg in route["trip"]["legs"]:
+                    vorm.append(leg["shape"])
                     spoor = self._vraag(
                         "/trace_attributes",
                         {
@@ -165,7 +174,7 @@ class Valhalla:
         except (KeyError, ValueError) as fout:
             log.debug("onverwacht antwoord: %s", fout)
             return None
-        return Match(tuple(edges), lengte) if edges else None
+        return Match(tuple(edges), lengte, tuple(vorm)) if edges else None
 
 
 def _ontdubbel(punten: Iterable[Punt]) -> list[Punt]:
@@ -188,9 +197,12 @@ class MatchCache:
         try:
             data = json.loads(pad.read_text())
             if data.get("tileset") == tileset:
+                # Een match van vóór de routevorm ("v") gaat eruit en wordt
+                # opnieuw gematcht: zonder vorm kan hij niet op de kaart.
                 self.matches = {
                     sleutel: Match.uit_json(waarde) if waarde else None
                     for sleutel, waarde in data["matches"].items()
+                    if not waarde or "v" in waarde
                 }
             else:
                 log.info(

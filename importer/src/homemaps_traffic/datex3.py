@@ -158,24 +158,77 @@ def _geldig(record: Element, nu: datetime) -> bool:
     return False
 
 
-def lees_afsluitingen(stroom: BinaryIO, nu: datetime | None = None) -> Iterator[Afsluiting]:
+@dataclass(frozen=True)
+class Maatregel:
+    """Een geldige maatregel op de weg, zoals de kaart hem toont. Een afsluiting
+    voor de routeplanner is er een bijzonder geval van (zie `als_afsluiting`)."""
+
+    id: str
+    versie: str
+    soort: str  # roadOrCarriagewayOrLaneManagementType
+    lijnen: tuple[tuple[Punt, ...], ...]  # één per posList, in volgorde
+    alleen_vracht: bool
+    rijbaan: str | None  # mainCarriageway, exitSlipRoad, ...
+    oorzaak: str | None  # causeType
+    eind: datetime | None
+    stroken_open: int | None
+
+    @property
+    def sleutel(self) -> str:
+        return f"{self.id}@{self.versie}"
+
+    @property
+    def sluit_af(self) -> bool:
+        return self.soort in AFSLUITTYPES and not self.alleen_vracht
+
+    def als_afsluiting(self) -> Afsluiting:
+        return Afsluiting(
+            self.id,
+            self.versie,
+            tuple(punt for lijn in self.lijnen for punt in lijn),
+            self.soort == "roadClosed",
+        )
+
+
+def _tekst(element: Element, naam: str) -> str | None:
+    """De eerste `naam` met tekst: DATEX nest soms gelijknamige elementen
+    (`carriageway` in `carriageway`)."""
+    for kind in _vind(element, naam):
+        if kind.text and kind.text.strip():
+            return kind.text.strip()
+    return None
+
+
+def lees_maatregelen(stroom: BinaryIO, nu: datetime | None = None) -> Iterator[Maatregel]:
     nu = nu or datetime.now(UTC)
     for record in _records(stroom, "situationRecord"):
-        soort = _eerste(record, "roadOrCarriagewayOrLaneManagementType")
-        if soort is None or soort.text not in AFSLUITTYPES:
+        soort = _tekst(record, "roadOrCarriagewayOrLaneManagementType")
+        if soort is None or not _geldig(record, nu):
             continue
-        # Een afsluiting voor alleen vrachtverkeer is er voor de auto niet.
-        if _eerste(record, "vehicleType") is not None:
+        lijnen = tuple(
+            tuple(punten)
+            for lijn in _vind(record, "posList")
+            if len(punten := _punten(lijn.text or "")) >= 2
+        )
+        if not lijnen:
             continue
-        if not _geldig(record, nu):
-            continue
-        punten: list[Punt] = []
-        for lijn in _vind(record, "posList"):
-            punten.extend(_punten(lijn.text or ""))
-        if len(punten) >= 2:
-            yield Afsluiting(
-                record.attrib["id"],
-                record.attrib.get("version", ""),
-                tuple(punten),
-                soort.text == "roadClosed",
-            )
+        specificatie = _eerste(record, "validityTimeSpecification")
+        stroken = _tekst(record, "numberOfOperationalLanes")
+        yield Maatregel(
+            record.attrib["id"],
+            record.attrib.get("version", ""),
+            soort,
+            lijnen,
+            # Een afsluiting voor alleen vrachtverkeer is er voor de auto niet.
+            _eerste(record, "vehicleType") is not None,
+            _tekst(record, "carriageway"),
+            _tekst(record, "causeType"),
+            _tijd(_tekst(specificatie, "overallEndTime")) if specificatie is not None else None,
+            int(stroken) if stroken and stroken.isdigit() else None,
+        )
+
+
+def lees_afsluitingen(stroom: BinaryIO, nu: datetime | None = None) -> Iterator[Afsluiting]:
+    for maatregel in lees_maatregelen(stroom, nu):
+        if maatregel.sluit_af:
+            yield maatregel.als_afsluiting()

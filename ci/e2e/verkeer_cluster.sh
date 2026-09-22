@@ -30,3 +30,11 @@ zonder=$(vraag "{$ROUTE,\"costing_options\":{\"auto\":{\"speed_types\":[\"freefl
 echo "CG-2 met live verkeer: ${live}s, zonder: ${zonder}s"
 python3 -c "import sys; sys.exit(0 if float('$live') > float('$zonder') * 1.5 else 'live verkeer heeft geen effect')"
 echo "live verkeer werkt"
+
+# De kaartlaag uit dezelfde ronde: de file en de afsluiting van de nepfeed.
+soorten=$($K exec "$POD" -c verkeer -- python3 -c "
+import json, urllib.request
+laag = json.load(urllib.request.urlopen('http://localhost:9100/verkeer.geojson', timeout=5))
+print(' '.join(sorted(f['properties']['soort'] for f in laag['features'])))")
+echo "kaartlaag: $soorten"
+[ "$soorten" = "dicht file" ] || { echo "kaartlaag klopt niet"; exit 1; }

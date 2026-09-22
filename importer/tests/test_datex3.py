@@ -49,3 +49,15 @@ def test_tijd_met_nanoseconden():
     assert datex3._tijd("2026-09-15T17:40:18.057252991Z") == datetime(
         2026, 9, 15, 17, 40, 18, 57252, tzinfo=UTC
     )
+
+
+def test_maatregelen_voor_de_kaart():
+    middag = datetime(2026, 9, 21, 12, 0, tzinfo=UTC)
+    with open(FIXTURES / "afsluitingen.xml", "rb") as stroom:
+        maatregelen = {m.id: m for m in datex3.lees_maatregelen(stroom, middag)}
+    # Ook de rijstrook en de vrachtafsluiting: wat ermee gebeurt beslist de kaartlaag.
+    assert set(maatregelen) == {"ACTIEF", "RIJSTROOK", "VRACHT"}
+    assert maatregelen["ACTIEF"].sluit_af
+    assert maatregelen["ACTIEF"].eind == datetime(2026, 11, 12, 15, 0, tzinfo=UTC)
+    assert not maatregelen["RIJSTROOK"].sluit_af
+    assert maatregelen["VRACHT"].alleen_vracht and not maatregelen["VRACHT"].sluit_af

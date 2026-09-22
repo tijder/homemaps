@@ -1,3 +1,4 @@
+import json
 import urllib.error
 
 import pytest
@@ -76,3 +77,13 @@ def test_geen_route_is_definitief_maar_een_weggevallen_verbinding_niet(tmp_path)
     assert MatchCache(tmp_path / "c.json", tileset=5).matches.keys() == {"a", "c"}
     # Een andere tileset: alles vervalt.
     assert MatchCache(tmp_path / "c.json", tileset=6).matches == {}
+
+
+def test_match_van_voor_de_routevorm_wordt_opnieuw_gematcht(tmp_path):
+    pad = tmp_path / "c.json"
+    oud = {"e": [[1, 100.0, 7]], "l": 100.0}
+    pad.write_text(json.dumps({"tileset": 5, "matches": {"oud": oud, "geen": None}}))
+    # "geen" blijft bekend onmatchbaar; "oud" moet terug naar Valhalla.
+    assert MatchCache(pad, tileset=5).matches == {"geen": None}
+    nieuw = Match(((1, 100.0, 7),), 100.0, ("abc",))
+    assert Match.uit_json(nieuw.naar_json()) == nieuw

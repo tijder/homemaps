@@ -8,7 +8,7 @@ Instellingen komen uit de omgeving (de chart zet ze):
   NDW_URL            basis van de feeds              (https://opendata.ndw.nu)
   INTERVAL_SECONDEN  tussen twee rondes              (300)
   AFSLUITINGEN       "false" zet die feed uit        (true)
-  METRICS_POORT      Prometheus-endpoint             (9100)
+  METRICS_POORT      /metrics en /verkeer.geojson    (9100)
 """
 
 import io
@@ -24,7 +24,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from socket import AF_INET6
 
-from . import datex3
+from . import datex3, kaartlaag
 from . import traffictile as tt
 from .matcher import Match, MatchCache, Valhalla
 from .tarindex import TrafficTar
@@ -87,11 +87,17 @@ def bereken_afsluitingen(
 
 
 class Stand:
-    """Wat /metrics laat zien. Eén ronde per keer, dus een lock volstaat."""
+    """Wat /metrics en /verkeer.geojson laten zien. Eén ronde per keer, dus een
+    lock volstaat."""
 
     def __init__(self):
         self.slot = threading.Lock()
         self.waarden: dict[str, float] = {}
+        self.laag: tuple[bytes, bytes] | None = None  # (gewoon, gzip)
+
+    def zet_laag(self, laag: tuple[bytes, bytes]) -> None:
+        with self.slot:
+            self.laag = laag
 
     def zet(self, **waarden: float) -> None:
         with self.slot:
@@ -113,10 +119,31 @@ class _Server(ThreadingHTTPServer):
 def start_metrics(stand: Stand, poort: int) -> None:
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
-            body = stand.tekst().encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "text/plain; version=0.0.4")
+            if self.path.split("?")[0] == "/verkeer.geojson":
+                self._laag()
+                return
+            self._stuur(200, stand.tekst().encode(), "text/plain; version=0.0.4")
+
+        def _laag(self):
+            laag = stand.laag
+            if laag is None:  # de eerste ronde loopt nog
+                self._stuur(503, b"nog geen ronde\n", "text/plain")
+                return
+            gzip = "gzip" in self.headers.get("Accept-Encoding", "")
+            self._stuur(
+                200,
+                laag[1] if gzip else laag[0],
+                "application/geo+json",
+                {"Cache-Control": "max-age=60", "Vary": "Accept-Encoding"}
+                | ({"Content-Encoding": "gzip"} if gzip else {}),
+            )
+
+        def _stuur(self, status, body, soort, extra=None):
+            self.send_response(status)
+            self.send_header("Content-Type", soort)
             self.send_header("Content-Length", str(len(body)))
+            for naam, waarde in (extra or {}).items():
+                self.send_header(naam, waarde)
             self.end_headers()
             self.wfile.write(body)
 
@@ -172,11 +199,13 @@ class Importer:
         snelheden = len(records)
 
         dicht: dict[int, int] = {}
+        maatregelen: list[datex3.Maatregel] = []
         if self.met_afsluitingen:
             feed = datex3.open_feed(
                 haal(f"{self.ndw}/tijdelijke_verkeersmaatregelen_afsluitingen.xml.gz")
             )
-            actief = list(datex3.lees_afsluitingen(feed))
+            maatregelen = list(datex3.lees_maatregelen(feed))
+            actief = [maatregel.als_afsluiting() for maatregel in maatregelen if maatregel.sluit_af]
             items: dict[str, tuple] = {}
             for afsluiting in actief:
                 items[afsluiting.sleutel] = afsluiting.punten
@@ -188,6 +217,11 @@ class Importer:
 
         geschreven, gewist, onbekend = self.tar.werk_bij(records, self.geschreven)
         self.geschreven = set(records)
+
+        features = kaartlaag.maatregelen(maatregelen) + kaartlaag.trage_stukken(
+            reistijden, self.locaties.matches
+        )
+        self.stand.zet_laag(kaartlaag.geojson(features))
         gematcht = sum(1 for match in self.locaties.matches.values() if match)
         self.stand.zet(
             laatste_ronde_timestamp_seconds=time.time(),
@@ -199,6 +233,7 @@ class Importer:
             metingen=len(reistijden),
             meetlocaties=len(self.locaties.matches),
             meetlocaties_gematcht=gematcht,
+            kaartlaag_features=len(features),
         )
         log.info(
             "ronde: %d metingen -> %d edges met snelheid, %d afgesloten, %d gewist (%.1f s)",

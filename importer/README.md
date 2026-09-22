@@ -1,12 +1,13 @@
 # homemaps-traffic
 
-Sidecar bij Valhalla: haalt elke paar minuten NDW's open data op en schrijft die in
-Valhalla's `traffic.tar`.
+Sidecar bij Valhalla: haalt elke paar minuten NDW's open data op, schrijft die in
+Valhalla's `traffic.tar` en maakt er de verkeerslaag van de app van.
 
 | bron (DATEX II v3, `opendata.ndw.nu`) | wordt |
 |---|---|
 | `reistijden_meetgegevens` + `reistijden_configuratie_meetlocaties` | live snelheid per edge |
 | `tijdelijke_verkeersmaatregelen_afsluitingen` (`carriagewayClosures`, `roadClosed`, nu geldig, niet alleen voor vracht) | afgesloten edges |
+| dezelfde feeds, plus `laneClosures` | `/verkeer.geojson`: de laag op de kaart |
 
 ## Hoe het werkt
 
@@ -22,7 +23,13 @@ Valhalla's `traffic.tar`.
 3. **Schrijven** (`tarindex.py`, `traffictile.py`). In het bestand zelf, via een
    gedeelde mmap, omdat Valhalla datzelfde bestand via mmap open houdt. Nooit een
    nieuw bestand ernaast zetten en hernoemen.
-4. **Wissen.** Valhalla kent geen veroudering. Elke ronde gaat alles wat de vorige
+4. **De kaartlaag** (`kaartlaag.py`). Afsluitingen ("dicht") en rijstrookafsluitingen
+   ("werk") over NDW's eigen lijn; trage stukken ("traag" onder 60% van de normale
+   snelheid, "file" onder 35%, altijd minstens 20 s vertraging) over de routevorm
+   van de match, want NDW's lijn is meestal alleen begin en eind. Elke ronde
+   opnieuw, op `:9100/verkeer.geojson` (gzip als de client het wil); de nginx van
+   de web-pod geeft hem door als `/verkeer`.
+5. **Wissen.** Valhalla kent geen veroudering. Elke ronde gaat alles wat de vorige
    ronde schreef en nu geen meting meer heeft terug op "onbekend", en bij de start
    wordt het hele bestand geleegd.
 
