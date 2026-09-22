@@ -248,5 +248,27 @@
         "type": "int"
       }
     }
+  },
+  "meldingOngeval": "Ongeval",
+  "meldingPech": "Pechgeval",
+  "meldingObstakel": "Voorwerp op de weg",
+  "meldingSinds": "Sinds {tijd}",
+  "@meldingSinds": {
+    "placeholders": {
+      "tijd": {
+        "type": "String"
+      }
+    }
+  },
+  "waarschuwingOpRoute": "Let op: {melding} over {afstand}.",
+  "@waarschuwingOpRoute": {
+    "placeholders": {
+      "melding": {
+        "type": "String"
+      },
+      "afstand": {
+        "type": "String"
+      }
+    }
   }
 }

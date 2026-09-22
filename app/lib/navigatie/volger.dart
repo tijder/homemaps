@@ -172,6 +172,18 @@ class RouteVolger {
     );
   }
 
+  /// Waar een los punt (een ongeval) op de route ligt: hoe ver langs de route,
+  /// hoe ver ernaast, en de richting van de route daar. Los van waar je rijdt.
+  ({double langs, double afstand, double koers}) plaatsOp(LatLng punt) {
+    final beste = _zoek(punt, 0, route.punten.length - 2);
+    final i = beste.segment;
+    return (
+      langs: _tot[i] + beste.fractie * (_tot[i + 1] - _tot[i]),
+      afstand: beste.afstand,
+      koers: _koers(route.punten[i], route.punten[i + 1]),
+    );
+  }
+
   /// Wat er van de route nog over is, vanaf [stand].
   List<LatLng> rest(NavStand stand) => [
     stand.opRoute,
@@ -257,6 +269,8 @@ double _koers(LatLng a, LatLng b) {
   final x = cos(f1) * sin(f2) - sin(f1) * cos(f2) * cos(dl);
   return (atan2(y, x) * 180 / pi + 360) % 360;
 }
+
+double hoekVerschil(double a, double b) => _hoekVerschil(a, b);
 
 double _hoekVerschil(double a, double b) {
   final d = (a - b).abs() % 360;

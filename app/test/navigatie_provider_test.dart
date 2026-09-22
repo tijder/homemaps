@@ -7,6 +7,7 @@ import 'package:homemaps/models/route.dart';
 import 'package:homemaps/navigatie/navigatie_provider.dart';
 import 'package:homemaps/navigatie/stem.dart';
 import 'package:homemaps/providers/diensten.dart';
+import 'package:homemaps/providers/instellingen.dart';
 import 'package:homemaps/providers/locatie.dart';
 import 'package:homemaps/services/valhalla_service.dart';
 import 'package:homemaps/utils/afstand.dart';
@@ -87,6 +88,8 @@ final teksten = NavTeksten(
   herberekenen: 'Route wordt herberekend.',
   snellereRoute: (m) => 'Snellere route, $m minuten',
   metAfstand: (m, zin) => 'Over ${m.round()} m $zin',
+  waarschuwing: (soort, m) =>
+      'Let op: $soort over ${(m / 100).round() * 100} m',
 );
 
 void main() {
@@ -284,5 +287,56 @@ void main() {
     final nav = c.read(navigatieProvider)!;
     expect(nav.stand!.segment, greaterThanOrEqualTo(10));
     expect(nav.limiet, 80);
+  });
+
+  test('een ongeval vóór je op de route: één keer gewaarschuwd', () async {
+    // Het ongeval ligt 1500 m verderop op de route; een pechgeval op de andere
+    // rijbaan (tegen de rijrichting in) telt niet.
+    final punten = langs(route.punten, 20);
+    final ongeval = punten[75], pech = punten[76];
+    Map<String, dynamic> punt(
+      int id,
+      String soort,
+      LatLng p, [
+      double? koers,
+    ]) => {
+      'type': 'Feature',
+      'id': id,
+      'properties': {'soort': soort, 'koers': ?koers},
+      'geometry': {
+        'type': 'Point',
+        'coordinates': [p.longitude, p.latitude],
+      },
+    };
+    c.dispose();
+    c = ProviderContainer(
+      overrides: [
+        locatieBronProvider.overrideWithValue(bron),
+        stemProvider.overrideWithValue(stem),
+        valhallaProvider.overrideWithValue(valhalla),
+        verkeerProvider.overrideWithValue(
+          AsyncData({
+            'type': 'FeatureCollection',
+            'features': [
+              punt(0, 'ongeval', ongeval),
+              punt(1, 'pech', pech, 180),
+            ],
+          }),
+        ),
+      ],
+    );
+    addTearDown(c.dispose);
+    final wacht = c.read(locatieProvider.notifier).zetAan();
+    await Future<void>.delayed(Duration.zero);
+    bron.fixes.add(fix(route.punten.first));
+    await wacht;
+    c.read(instellingenProvider);
+    await start();
+    for (final p in punten.take(60)) {
+      await rijNaar(p);
+    }
+    final waarschuwingen = stem.zinnen.where((z) => z.startsWith('Let op'));
+    // Al bij vertrek binnen de 2 km: meteen, en daarna niet nog eens.
+    expect(waarschuwingen, ['Let op: ongeval over 1500 m']);
   });
 }

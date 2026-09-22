@@ -1,4 +1,4 @@
-"""De drie NDW-feeds (DATEX II v3) die de importer gebruikt, streamend gelezen.
+"""De NDW-feeds (DATEX II v3) die de importer gebruikt, streamend gelezen.
 
 De configuratie van de meetlocaties is uitgepakt ruim 100 MB; alles gaat daarom
 via iterparse en elk afgehandeld element wordt direct weer losgelaten.
@@ -232,3 +232,43 @@ def lees_afsluitingen(stroom: BinaryIO, nu: datetime | None = None) -> Iterator[
     for maatregel in lees_maatregelen(stroom, nu):
         if maatregel.sluit_af:
             yield maatregel.als_afsluiting()
+
+
+# Van het xsi:type van een SRTI-melding naar wat de app toont.
+MELDINGSOORTEN = {
+    "Accident": "ongeval",
+    "VehicleObstruction": "pech",
+    "GeneralObstruction": "obstakel",
+}
+
+
+@dataclass(frozen=True)
+class Melding:
+    """Een veiligheidsmelding (SRTI): ongeval, pechgeval of iets op de weg, op
+    één punt."""
+
+    id: str
+    soort: str
+    punt: Punt
+    koers: float | None
+    sinds: datetime | None
+
+
+def lees_meldingen(stroom: BinaryIO, nu: datetime | None = None) -> Iterator[Melding]:
+    nu = nu or datetime.now(UTC)
+    for record in _records(stroom, "situationRecord"):
+        soort = MELDINGSOORTEN.get(record.attrib.get(XSI_TYPE, "").rsplit(":", 1)[-1])
+        if soort is None or not _geldig(record, nu):
+            continue
+        lat, lon = _tekst(record, "latitude"), _tekst(record, "longitude")
+        if lat is None or lon is None:
+            continue
+        koers = _tekst(record, "bearing")
+        specificatie = _eerste(record, "validityTimeSpecification")
+        yield Melding(
+            record.attrib["id"],
+            soort,
+            (float(lat), float(lon)),
+            float(koers) if koers else None,
+            _tijd(_tekst(specificatie, "overallStartTime")) if specificatie is not None else None,
+        )

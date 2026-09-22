@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mc:messageContainer xmlns:mc="http://datex2.eu/schema/3/messageContainer" xmlns:sit="http://datex2.eu/schema/3/situation" xmlns:com="http://datex2.eu/schema/3/common" xmlns:loc="http://datex2.eu/schema/3/locationReferencing" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" modelBaseVersion="3">
+  <mc:payload xsi:type="sit:SituationPublication">
+    <sit:situation id="S1"><sit:situationRecord xsi:type="sit:Accident" id="ONGEVAL" version="1">
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-22T14:00:00Z</com:overallStartTime></com:validityTimeSpecification></sit:validity>
+      <sit:locationReference xsi:type="loc:PointLocation"><loc:pointByCoordinates><loc:bearing>141</loc:bearing><loc:pointCoordinates><loc:latitude>52.1</loc:latitude><loc:longitude>5.1</loc:longitude></loc:pointCoordinates></loc:pointByCoordinates></sit:locationReference>
+      <sit:accidentType>accident</sit:accidentType>
+    </sit:situationRecord></sit:situation>
+    <sit:situation id="S2"><sit:situationRecord xsi:type="sit:VehicleObstruction" id="PECH" version="1">
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-22T14:30:00Z</com:overallStartTime></com:validityTimeSpecification></sit:validity>
+      <sit:locationReference xsi:type="loc:PointLocation"><loc:pointByCoordinates><loc:pointCoordinates><loc:latitude>52.2</loc:latitude><loc:longitude>5.2</loc:longitude></loc:pointCoordinates></loc:pointByCoordinates></sit:locationReference>
+    </sit:situationRecord></sit:situation>
+    <sit:situation id="S3"><sit:situationRecord xsi:type="sit:GeneralObstruction" id="VOORBIJ" version="1">
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-22T10:00:00Z</com:overallStartTime><com:overallEndTime>2026-09-22T11:00:00Z</com:overallEndTime></com:validityTimeSpecification></sit:validity>
+      <sit:locationReference xsi:type="loc:PointLocation"><loc:pointByCoordinates><loc:pointCoordinates><loc:latitude>52.3</loc:latitude><loc:longitude>5.3</loc:longitude></loc:pointCoordinates></loc:pointByCoordinates></sit:locationReference>
+    </sit:situationRecord></sit:situation>
+  </mc:payload>
+</mc:messageContainer>

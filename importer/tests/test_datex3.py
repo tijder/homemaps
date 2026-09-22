@@ -61,3 +61,16 @@ def test_maatregelen_voor_de_kaart():
     assert maatregelen["ACTIEF"].eind == datetime(2026, 11, 12, 15, 0, tzinfo=UTC)
     assert not maatregelen["RIJSTROOK"].sluit_af
     assert maatregelen["VRACHT"].alleen_vracht and not maatregelen["VRACHT"].sluit_af
+
+
+def test_meldingen_ongeval_en_pech_geldig_nu():
+    nu = datetime(2026, 9, 22, 15, 0, tzinfo=UTC)
+    with open(FIXTURES / "meldingen.xml", "rb") as stroom:
+        meldingen = {m.id: m for m in datex3.lees_meldingen(stroom, nu)}
+    # VOORBIJ is afgelopen.
+    assert set(meldingen) == {"ONGEVAL", "PECH"}
+    assert meldingen["ONGEVAL"].soort == "ongeval"
+    assert meldingen["ONGEVAL"].punt == (52.1, 5.1)
+    assert meldingen["ONGEVAL"].koers == 141
+    assert meldingen["PECH"].soort == "pech"
+    assert meldingen["PECH"].koers is None

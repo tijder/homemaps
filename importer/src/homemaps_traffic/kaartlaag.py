@@ -10,7 +10,7 @@ import json
 from collections.abc import Iterable
 from datetime import UTC
 
-from .datex3 import Maatregel, Punt, Reistijd
+from .datex3 import Maatregel, Melding, Punt, Reistijd
 from .matcher import Match
 
 # Een stuk is traag onder dit deel van zijn normale snelheid, en file daaronder.
@@ -102,6 +102,28 @@ def trage_stukken(reistijden: Iterable[Reistijd], matches: dict[str, Match | Non
                     "kmu": round(match.lengte_m / reistijd.seconden * 3.6),
                 },
                 "geometry": _geometrie([decodeer(leg) for leg in match.vorm]),
+            }
+        )
+    return uit
+
+
+def meldingen(items: Iterable[Melding]) -> list[dict]:
+    """Ongevallen, pechgevallen en voorwerpen op de weg, als punten."""
+    uit = []
+    for melding in items:
+        eigenschappen = {
+            "soort": melding.soort,
+            "koers": melding.koers,
+            "sinds": melding.sinds.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+            if melding.sinds
+            else None,
+        }
+        lat, lon = melding.punt
+        uit.append(
+            {
+                "type": "Feature",
+                "properties": {k: v for k, v in eigenschappen.items() if v is not None},
+                "geometry": {"type": "Point", "coordinates": [round(lon, 5), round(lat, 5)]},
             }
         )
     return uit

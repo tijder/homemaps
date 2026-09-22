@@ -424,4 +424,23 @@ class AppLocalizationsNl extends AppLocalizations {
   String maximumsnelheid(int kmu) {
     return 'Maximumsnelheid $kmu km/u';
   }
+
+  @override
+  String get meldingOngeval => 'Ongeval';
+
+  @override
+  String get meldingPech => 'Pechgeval';
+
+  @override
+  String get meldingObstakel => 'Voorwerp op de weg';
+
+  @override
+  String meldingSinds(String tijd) {
+    return 'Sinds $tijd';
+  }
+
+  @override
+  String waarschuwingOpRoute(String melding, String afstand) {
+    return 'Let op: $melding over $afstand.';
+  }
 }

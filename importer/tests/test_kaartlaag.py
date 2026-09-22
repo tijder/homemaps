@@ -78,3 +78,18 @@ def test_geojson_met_ids_en_gzip():
     assert data["type"] == "FeatureCollection"
     assert data["features"][0]["id"] == 0
     assert data["features"][0]["properties"]["hele_weg"] is True
+
+
+def test_meldingen_als_punten():
+    from homemaps_traffic.datex3 import Melding
+
+    features = kaartlaag.meldingen(
+        [Melding("A", "ongeval", (52.1, 5.1), 141.0, datetime(2026, 9, 22, 14, tzinfo=UTC))]
+    )
+    assert features == [
+        {
+            "type": "Feature",
+            "properties": {"soort": "ongeval", "koers": 141.0, "sinds": "2026-09-22T14:00:00Z"},
+            "geometry": {"type": "Point", "coordinates": [5.1, 52.1]},
+        }
+    ]

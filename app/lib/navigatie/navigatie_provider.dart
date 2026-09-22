@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../l10n/app_localizations.dart';
@@ -30,6 +31,7 @@ class NavTeksten {
     required this.herberekenen,
     required this.snellereRoute,
     required this.metAfstand,
+    required this.waarschuwing,
   });
 
   /// Voor de stem, bijvoorbeeld 'nl-NL'.
@@ -41,6 +43,9 @@ class NavTeksten {
   final String herberekenen;
   final String Function(int minutenSneller) snellereRoute;
   final String Function(double meters, String zin) metAfstand;
+
+  /// "Let op: ongeval over 2 kilometer." voor een melding op de route.
+  final String Function(String soort, double meters) waarschuwing;
 
   /// [taal] zoals Valhalla hem kent ('nl-NL', 'en-US').
   factory NavTeksten.uit(AppLocalizations l, String taal, String bestemming) {
@@ -55,6 +60,14 @@ class NavTeksten {
       meldingTekst: l.navigatieMeldingTekst,
       herberekenen: l.herberekenen,
       snellereRoute: l.snellereRoute,
+      waarschuwing: (soort, meters) => l.waarschuwingOpRoute(
+        switch (soort) {
+          'ongeval' => l.meldingOngeval,
+          'pech' => l.meldingPech,
+          _ => l.meldingObstakel,
+        }.toLowerCase(),
+        gesproken(meters),
+      ),
       metAfstand: (meters, zin) => l.overAfstand(
         gesproken(meters),
         // "Over 400 meter links afslaan", niet "... Links afslaan".
@@ -149,6 +162,12 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
 
   Timer? _voorstelVerloopt;
 
+  /// Meldingen (ongeval, pech, voorwerp) op de huidige route, op volgorde van
+  /// waar ze liggen; en welke al gezegd zijn.
+  List<({String id, double langs, String soort})> _meldingen = const [];
+  final _gewaarschuwd = <String>{};
+  ProviderSubscription<Map<String, dynamic>?>? _verkeer2;
+
   /// Maximumsnelheid per stuk van de huidige route (zie
   /// [ValhallaService.snelheidsLimieten]); leeg tot ze binnen zijn.
   List<int?> _limieten = const [];
@@ -205,6 +224,11 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
       titel: teksten.meldingTitel,
       tekst: teksten.meldingTekst,
     ));
+    // Nieuwe verkeersgegevens (elke vijf minuten): opnieuw kijken wat er op de
+    // route ligt.
+    _verkeer2 = ref.listen(verkeerProvider.select((v) => v.value), (_, laag) {
+      if (state case final nu?) _leesMeldingen(nu.route, laag);
+    });
     _fixes = ref.listen(locatieProvider.select((t) => t.fix), (_, fix) {
       if (fix != null) _bijFix(fix);
     }, fireImmediately: true);
@@ -229,6 +253,8 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
   void _ruimOp({bool provider = true}) {
     _fixes?.close();
     _fixes = null;
+    _verkeer2?.close();
+    _verkeer2 = null;
     _verkeer?.cancel();
     _verkeer = null;
     _voorstelVerloopt?.cancel();
@@ -245,6 +271,7 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
     _viaVoorbij = 0;
     _limieten = const [];
     _haalLimieten(route);
+    _meldingen = const [];
     _volger = RouteVolger(route);
     _aankondiger = Aankondiger(
       route,
@@ -259,7 +286,51 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
       fix: state?.fix,
       gedempt: state?.gedempt ?? false,
     );
+    _leesMeldingen(route, ref.read(verkeerProvider).value);
   }
+
+  /// Welke meldingen uit de verkeerslaag op deze route liggen: binnen 30 m
+  /// van de lijn, en aan jouw kant van de weg (een ongeval op de andere
+  /// rijbaan van de snelweg ligt er ook vlakbij).
+  void _leesMeldingen(RouteOptie route, Map<String, dynamic>? laag) {
+    final volger = _volger;
+    if (laag == null || volger == null || !identical(volger.route, route)) {
+      return;
+    }
+    final gevonden = <({String id, double langs, String soort})>[];
+    for (final feature in (laag['features'] as List? ?? const [])) {
+      if (feature is! Map) continue;
+      final eigen = (feature['properties'] as Map?) ?? const {};
+      final soort = eigen['soort'];
+      final geometrie = feature['geometry'] as Map?;
+      if (soort is! String ||
+          !const {'ongeval', 'pech', 'obstakel'}.contains(soort) ||
+          geometrie?['type'] != 'Point') {
+        continue;
+      }
+      final c = (geometrie!['coordinates'] as List).cast<num>();
+      final plek = volger.plaatsOp(LatLng(c[1].toDouble(), c[0].toDouble()));
+      final koers = eigen['koers'];
+      if (plek.afstand > 30) continue;
+      if (koers is num && hoekVerschil(koers.toDouble(), plek.koers) > 90) {
+        continue;
+      }
+      gevonden.add((
+        id: '${feature['id']}:$soort:${c[0]},${c[1]}',
+        langs: plek.langs,
+        soort: soort,
+      ));
+    }
+    gevonden.sort((a, b) => a.langs.compareTo(b.langs));
+    _meldingen = gevonden;
+  }
+
+  /// Hoe ver vooruit een melding op de route gezegd wordt.
+  double get _waarschuwAfstand => switch (_profiel) {
+    Profiel.auto => 2000,
+    Profiel.fiets => 500,
+    Profiel.lopen => 200,
+  };
 
   /// Op de achtergrond: de maximumsnelheden langs de route (alleen de auto).
   Future<void> _haalLimieten(RouteOptie route) async {
@@ -293,6 +364,15 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
     if (!nu.gedempt) {
       for (final zin in aankondiger.bij(stand, fix.snelheid ?? 0)) {
         _stem.zeg(zin);
+      }
+      // Een ongeval of pechgeval dat vóór je op de route ligt: één keer.
+      for (final melding in _meldingen) {
+        final vooruit = melding.langs - stand.langs;
+        if (vooruit < 0) continue;
+        if (vooruit > _waarschuwAfstand) break;
+        if (_gewaarschuwd.add(melding.id)) {
+          _stem.zeg(_teksten.waarschuwing(melding.soort, vooruit));
+        }
       }
     }
     // Voorbij een via-punt: dat hoort niet meer bij de volgende herberekening.

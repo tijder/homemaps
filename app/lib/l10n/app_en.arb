@@ -113,5 +113,10 @@
   "wissenKort": "Clear",
   "nietGevonden": "Not found: {zoek}",
   "kmu": "km/h",
-  "maximumsnelheid": "Speed limit {kmu} km/h"
+  "maximumsnelheid": "Speed limit {kmu} km/h",
+  "meldingOngeval": "Accident",
+  "meldingPech": "Broken-down vehicle",
+  "meldingObstakel": "Object on the road",
+  "meldingSinds": "Since {tijd}",
+  "waarschuwingOpRoute": "Caution: {melding} in {afstand}."
 }

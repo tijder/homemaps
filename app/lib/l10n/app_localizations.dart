@@ -781,6 +781,36 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'Maximumsnelheid {kmu} km/u'**
   String maximumsnelheid(int kmu);
+
+  /// No description provided for @meldingOngeval.
+  ///
+  /// In nl, this message translates to:
+  /// **'Ongeval'**
+  String get meldingOngeval;
+
+  /// No description provided for @meldingPech.
+  ///
+  /// In nl, this message translates to:
+  /// **'Pechgeval'**
+  String get meldingPech;
+
+  /// No description provided for @meldingObstakel.
+  ///
+  /// In nl, this message translates to:
+  /// **'Voorwerp op de weg'**
+  String get meldingObstakel;
+
+  /// No description provided for @meldingSinds.
+  ///
+  /// In nl, this message translates to:
+  /// **'Sinds {tijd}'**
+  String meldingSinds(String tijd);
+
+  /// No description provided for @waarschuwingOpRoute.
+  ///
+  /// In nl, this message translates to:
+  /// **'Let op: {melding} over {afstand}.'**
+  String waarschuwingOpRoute(String melding, String afstand);
 }
 
 class _AppLocalizationsDelegate

@@ -19,6 +19,20 @@ class VerkeerMelding extends StatelessWidget {
   ) {
     final soort = info['soort'];
     final regels = <String>[];
+    if (soort case 'ongeval' || 'pech' || 'obstakel') {
+      final sinds = DateTime.tryParse(info['sinds'] as String? ?? '');
+      if (sinds != null) {
+        regels.add(l.meldingSinds(DateFormat.Hm(taal).format(sinds.toLocal())));
+      }
+      return (
+        switch (soort) {
+          'ongeval' => l.meldingOngeval,
+          'pech' => l.meldingPech,
+          _ => l.meldingObstakel,
+        },
+        regels,
+      );
+    }
     if (soort == 'file' || soort == 'traag') {
       final vertraging = (info['vertraging_s'] as num?)?.toDouble() ?? 0;
       regels.add(

@@ -1,5 +1,5 @@
-"""Maakt de drie NDW-feeds na, voor Andorra: één reistijdsegment met file op de
-CG-2 en één afsluiting in Andorra la Vella. Zelfde structuur als de echte
+"""Maakt de NDW-feeds na, voor Andorra: één reistijdsegment met file op de
+CG-2, één afsluiting in Andorra la Vella en één ongeval (SRTI) op de CG-2. Zelfde structuur als de echte
 DATEX II v3-feeds, zodat de importer ongewijzigd draait.
 
 Gebruik: maak.py <uitvoermap>
@@ -39,6 +39,11 @@ FEEDS = {
 <sit:validity><com:validityTimeSpecification><com:overallStartTime>2020-01-01T00:00:00Z</com:overallStartTime></com:validityTimeSpecification></sit:validity>
 <sit:locationReference><loc:gmlLineString><loc:posList>{DICHT}</loc:posList></loc:gmlLineString></sit:locationReference>
 <sit:roadOrCarriagewayOrLaneManagementType>roadClosed</sit:roadOrCarriagewayOrLaneManagementType>
+</sit:situationRecord></sit:situation></mc:payload></mc:messageContainer>""",
+    "veiligheidsgerelateerde_berichten_srti": f"""<mc:messageContainer {NS}><mc:payload>
+<sit:situation id="O"><sit:situationRecord xsi:type="sit:Accident" id="NEP_ONGEVAL" version="1">
+<sit:validity><com:validityTimeSpecification><com:overallStartTime>2020-01-01T00:00:00Z</com:overallStartTime></com:validityTimeSpecification></sit:validity>
+<sit:locationReference xsi:type="loc:PointLocation"><loc:pointByCoordinates><loc:pointCoordinates><loc:latitude>42.55</loc:latitude><loc:longitude>1.59</loc:longitude></loc:pointCoordinates></loc:pointByCoordinates></sit:locationReference>
 </sit:situationRecord></sit:situation></mc:payload></mc:messageContainer>""",
 }
 

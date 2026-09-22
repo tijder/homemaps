@@ -8,6 +8,7 @@ Instellingen komen uit de omgeving (de chart zet ze):
   NDW_URL            basis van de feeds              (https://opendata.ndw.nu)
   INTERVAL_SECONDEN  tussen twee rondes              (300)
   AFSLUITINGEN       "false" zet die feed uit        (true)
+  MELDINGEN          "false" zet de SRTI-feed uit    (true)
   METRICS_POORT      /metrics en /verkeer.geojson    (9100)
 """
 
@@ -31,6 +32,7 @@ from .tarindex import TrafficTar
 
 log = logging.getLogger("homemaps_traffic")
 
+SRTI = "veiligheidsgerelateerde_berichten_srti.xml.gz"
 MAX_KPH = 160  # daarboven is het een meetfout, geen auto
 
 
@@ -169,9 +171,11 @@ class Importer:
         ndw: str,
         stand: Stand,
         afsluitingen: bool = True,
+        meldingen: bool = True,
     ):
         self.tar, self.valhalla, self.ndw, self.stand = tar, valhalla, ndw.rstrip("/"), stand
         self.met_afsluitingen = afsluitingen
+        self.met_meldingen = meldingen
         tileset = valhalla.tileset()
         self.locaties = MatchCache(cache_dir / "meetlocaties.json", tileset)
         self.afsluitingen = MatchCache(cache_dir / "afsluitingen.json", tileset)
@@ -221,6 +225,17 @@ class Importer:
         features = kaartlaag.maatregelen(maatregelen) + kaartlaag.trage_stukken(
             reistijden, self.locaties.matches
         )
+        if self.met_meldingen:
+            # Alleen voor de kaart en de waarschuwing onderweg: de vertraging
+            # die een ongeval geeft zit al in de reistijden. Een mislukte
+            # ophaalbeurt kost dus alleen de punten, niet de ronde.
+            try:
+                feed = datex3.open_feed(
+                    haal(f"{self.ndw}/veiligheidsgerelateerde_berichten_srti.xml.gz")
+                )
+                features += kaartlaag.meldingen(datex3.lees_meldingen(feed))
+            except (OSError, ValueError) as fout:
+                log.warning("meldingen niet opgehaald: %s", fout)
         self.stand.zet_laag(kaartlaag.geojson(features))
         gematcht = sum(1 for match in self.locaties.matches.values() if match)
         self.stand.zet(
@@ -277,6 +292,7 @@ def main() -> None:
         omgeving.get("NDW_URL", "https://opendata.ndw.nu"),
         stand,
         omgeving.get("AFSLUITINGEN", "true").lower() != "false",
+        omgeving.get("MELDINGEN", "true").lower() != "false",
     )
     mislukt = 0
     while True:

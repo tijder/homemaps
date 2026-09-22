@@ -418,6 +418,47 @@ class _KaartState extends State<Kaart> {
       ),
       minzoom: 9,
     );
+    // Ongevallen, pechgevallen en voorwerpen op de weg: punten, bovenop de
+    // lijnen. Met een ruime, vrijwel onzichtbare cirkel eromheen voor de tik.
+    await c.addCircleLayer(
+      _verkeerBron,
+      'verkeer-melding',
+      const CircleLayerProperties(
+        circleRadius: [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          8,
+          4,
+          14,
+          8,
+        ],
+        circleColor: [
+          'match',
+          ['get', 'soort'],
+          'ongeval',
+          '#c62828',
+          'pech',
+          '#ef6c00',
+          '#f9a825',
+        ],
+        circleStrokeColor: '#ffffff',
+        circleStrokeWidth: 2,
+      ),
+      filter: soort(['ongeval', 'pech', 'obstakel']),
+      minzoom: 8,
+    );
+    await c.addCircleLayer(
+      _verkeerBron,
+      'verkeer-melding-raak',
+      const CircleLayerProperties(
+        circleRadius: 18,
+        circleColor: '#000000',
+        circleOpacity: 0.01,
+      ),
+      filter: soort(['ongeval', 'pech', 'obstakel']),
+      minzoom: 8,
+    );
   }
 
   Future<void> _tekenVerkeer() async {
