@@ -111,5 +111,7 @@
   "recentePlekken": "Recent places",
   "aantalPlekken": "{aantal, plural, =0{None} =1{1 place} other{{aantal} places}}",
   "wissenKort": "Clear",
-  "nietGevonden": "Not found: {zoek}"
+  "nietGevonden": "Not found: {zoek}",
+  "kmu": "km/h",
+  "maximumsnelheid": "Speed limit {kmu} km/h"
 }

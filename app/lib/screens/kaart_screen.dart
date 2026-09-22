@@ -916,23 +916,36 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
           children: [
             blok(NavigatieKop(nav)),
             const Spacer(),
-            if (!_volgt && !nav.aangekomen)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: PointerInterceptor(
-                    child: FloatingActionButton.extended(
-                      onPressed: () {
-                        _hervat?.cancel();
-                        setState(() => _volgt = true);
-                      },
-                      icon: const Icon(Icons.navigation),
-                      label: Text(l.hervatten),
+            // Linksonder: snelheid (auto), en "Hervatten" als je zelf
+            // rondkijkt.
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (ref.watch(instellingenProvider).profiel == Profiel.auto &&
+                      !nav.aangekomen)
+                    PointerInterceptor(
+                      child: SnelheidBord(
+                        limiet: nav.limiet,
+                        snelheid: nav.fix?.snelheid,
+                      ),
                     ),
-                  ),
-                ),
+                  const SizedBox(width: 8),
+                  if (!_volgt && !nav.aangekomen)
+                    PointerInterceptor(
+                      child: FloatingActionButton.extended(
+                        onPressed: () {
+                          _hervat?.cancel();
+                          setState(() => _volgt = true);
+                        },
+                        icon: const Icon(Icons.navigation),
+                        label: Text(l.hervatten),
+                      ),
+                    ),
+                ],
               ),
+            ),
             if (nav.voorstel case final voorstel?) ...[
               blok(
                 VoorstelKaart(

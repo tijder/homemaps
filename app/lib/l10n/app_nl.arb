@@ -239,5 +239,14 @@
         "type": "String"
       }
     }
+  },
+  "kmu": "km/u",
+  "maximumsnelheid": "Maximumsnelheid {kmu} km/u",
+  "@maximumsnelheid": {
+    "placeholders": {
+      "kmu": {
+        "type": "int"
+      }
+    }
   }
 }

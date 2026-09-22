@@ -278,3 +278,80 @@ class VoorstelKaart extends StatelessWidget {
     );
   }
 }
+
+/// Linksonder tijdens autonavigatie: het verkeersbord met de maximumsnelheid
+/// (als die bekend is) en je eigen snelheid, rood als je er ruim overheen zit.
+class SnelheidBord extends StatelessWidget {
+  const SnelheidBord({super.key, required this.limiet, required this.snelheid});
+
+  final int? limiet;
+
+  /// In m/s, of null als onbekend.
+  final double? snelheid;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final kleuren = Theme.of(context).colorScheme;
+    final kmu = snelheid == null ? null : (snelheid! * 3.6).round();
+    final teHard = limiet != null && kmu != null && kmu > limiet! + 5;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (limiet != null)
+          Semantics(
+            label: l.maximumsnelheid(limiet!),
+            child: Container(
+              width: 58,
+              height: 58,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFD32F2F), width: 6),
+                boxShadow: const [
+                  BoxShadow(blurRadius: 4, color: Colors.black26),
+                ],
+              ),
+              child: Text(
+                '$limiet',
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        if (kmu != null) ...[
+          const SizedBox(height: 6),
+          Material(
+            elevation: 4,
+            color: teHard ? kleuren.error : kleuren.surface,
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              child: Column(
+                children: [
+                  Text(
+                    '$kmu',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: teHard ? kleuren.onError : kleuren.onSurface,
+                    ),
+                  ),
+                  Text(
+                    l.kmu,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: teHard ? kleuren.onError : kleuren.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}

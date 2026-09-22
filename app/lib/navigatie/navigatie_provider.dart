@@ -98,6 +98,7 @@ class NavigatieToestand {
     this.herberekent = false,
     this.aangekomen = false,
     this.voorstel,
+    this.limiet,
   });
 
   final RouteOptie route;
@@ -111,6 +112,9 @@ class NavigatieToestand {
   final bool aangekomen;
   final Voorstel? voorstel;
 
+  /// De maximumsnelheid hier (km/u), of null als onbekend.
+  final int? limiet;
+
   NavigatieToestand kopie({
     RouteOptie? route,
     List<Plaats>? doelen,
@@ -120,6 +124,7 @@ class NavigatieToestand {
     bool? herberekent,
     bool? aangekomen,
     Voorstel? Function()? voorstel,
+    int? Function()? limiet,
   }) => NavigatieToestand(
     route: route ?? this.route,
     doelen: doelen ?? this.doelen,
@@ -129,6 +134,7 @@ class NavigatieToestand {
     herberekent: herberekent ?? this.herberekent,
     aangekomen: aangekomen ?? this.aangekomen,
     voorstel: voorstel != null ? voorstel() : this.voorstel,
+    limiet: limiet != null ? limiet() : this.limiet,
   );
 }
 
@@ -142,6 +148,10 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
   DateTime _laatsteHerberekening = DateTime(0);
 
   Timer? _voorstelVerloopt;
+
+  /// Maximumsnelheid per stuk van de huidige route (zie
+  /// [ValhallaService.snelheidsLimieten]); leeg tot ze binnen zijn.
+  List<int?> _limieten = const [];
 
   /// Afgewezen routes (op hun lengte), om niet steeds dezelfde voor te stellen.
   final _afgewezen = <int>{};
@@ -233,6 +243,8 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
 
   void _nieuweRoute(RouteOptie route, List<Plaats> doelen) {
     _viaVoorbij = 0;
+    _limieten = const [];
+    _haalLimieten(route);
     _volger = RouteVolger(route);
     _aankondiger = Aankondiger(
       route,
@@ -247,6 +259,19 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
       fix: state?.fix,
       gedempt: state?.gedempt ?? false,
     );
+  }
+
+  /// Op de achtergrond: de maximumsnelheden langs de route (alleen de auto).
+  Future<void> _haalLimieten(RouteOptie route) async {
+    final valhalla = ref.read(valhallaProvider);
+    if (valhalla == null || _profiel != Profiel.auto) return;
+    final limieten = await valhalla
+        .snelheidsLimieten(route.punten, _profiel)
+        .catchError((Object _) => null);
+    // Intussen een andere route: deze hoort er niet meer bij.
+    if (limieten != null && identical(state?.route, route)) {
+      _limieten = limieten;
+    }
   }
 
   void _bijFix(LocatieFix fix) {
@@ -287,6 +312,8 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
       fix: fix,
       aangekomen: stand.aangekomen,
       doelen: doelen,
+      limiet: () =>
+          stand.segment < _limieten.length ? _limieten[stand.segment] : null,
     );
     if (stand.aangekomen) {
       // Klaar: geen scherm-aan en geen achtergronddienst meer. Het scherm laat

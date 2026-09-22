@@ -769,6 +769,18 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'Niet gevonden: {zoek}'**
   String nietGevonden(String zoek);
+
+  /// No description provided for @kmu.
+  ///
+  /// In nl, this message translates to:
+  /// **'km/u'**
+  String get kmu;
+
+  /// No description provided for @maximumsnelheid.
+  ///
+  /// In nl, this message translates to:
+  /// **'Maximumsnelheid {kmu} km/u'**
+  String maximumsnelheid(int kmu);
 }
 
 class _AppLocalizationsDelegate

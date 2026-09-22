@@ -416,4 +416,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String nietGevonden(String zoek) {
     return 'Niet gevonden: $zoek';
   }
+
+  @override
+  String get kmu => 'km/u';
+
+  @override
+  String maximumsnelheid(int kmu) {
+    return 'Maximumsnelheid $kmu km/u';
+  }
 }

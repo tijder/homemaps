@@ -37,6 +37,15 @@ class NepValhalla extends ValhallaService {
   /// Reistijd over een lijn; standaard onbekend.
   double? Function(List<LatLng> lijn) tijd = (_) => null;
 
+  List<int?>? limieten;
+
+  @override
+  Future<List<int?>?> snelheidsLimieten(
+    List<LatLng> lijn,
+    Profiel profiel, {
+    CancelToken? annuleer,
+  }) async => limieten;
+
   @override
   Future<double?> reistijd(
     List<LatLng> lijn,
@@ -259,5 +268,21 @@ void main() {
       await c.read(navigatieProvider.notifier).zoekSneller();
       expect(c.read(navigatieProvider)!.voorstel, isNull);
     });
+  });
+
+  test('maximumsnelheid van het stuk waar je rijdt', () async {
+    valhalla.limieten = [
+      for (var i = 0; i < route.punten.length - 1; i++) i < 10 ? 60 : 80,
+    ];
+    await start();
+    await Future<void>.delayed(Duration.zero);
+    await rijNaar(route.punten[2]);
+    expect(c.read(navigatieProvider)!.limiet, 60);
+    for (final punt in langs(route.punten, 20).take(80)) {
+      await rijNaar(punt);
+    }
+    final nav = c.read(navigatieProvider)!;
+    expect(nav.stand!.segment, greaterThanOrEqualTo(10));
+    expect(nav.limiet, 80);
   });
 }

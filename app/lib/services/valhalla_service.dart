@@ -178,6 +178,68 @@ class ValhallaService {
     }
   }
 
+  /// De maximumsnelheid (km/u) per stuk van [lijn]: element i hoort bij het
+  /// stuk van punt i naar i+1, null als die onbekend is. Null als het hele
+  /// verzoek mislukt.
+  Future<List<int?>?> snelheidsLimieten(
+    List<LatLng> lijn,
+    Profiel profiel, {
+    CancelToken? annuleer,
+  }) async {
+    // Dubbele punten (tussen twee legs) eruit, maar onthouden waar elk
+    // oorspronkelijk punt terechtkwam.
+    final punten = <LatLng>[];
+    final naar = <int>[];
+    for (final punt in lijn) {
+      if (punten.isEmpty || punten.last != punt) punten.add(punt);
+      naar.add(punten.length - 1);
+    }
+    if (punten.length < 2) return null;
+    try {
+      final antwoord = await _dio.post<Map<String, dynamic>>(
+        '$basis/trace_attributes',
+        data: {
+          'encoded_polyline': codeerPolyline(punten),
+          'costing': profiel.costing,
+          'shape_match': 'edge_walk',
+          'filters': {
+            'attributes': [
+              'edge.speed_limit',
+              'edge.begin_shape_index',
+              'edge.end_shape_index',
+            ],
+            'action': 'include',
+          },
+        },
+        cancelToken: annuleer,
+      );
+      final perStuk = List<int?>.filled(punten.length - 1, null);
+      for (final edge in (antwoord.data?['edges'] as List? ?? const [])) {
+        if (edge is! Map) continue;
+        final limiet = edge['speed_limit'];
+        final begin = edge['begin_shape_index'], eind = edge['end_shape_index'];
+        // Onbekend is 0 of ontbreekt; "unlimited" (Duitse snelweg) is een tekst.
+        if (limiet is! num || limiet <= 0 || begin is! num || eind is! num) {
+          continue;
+        }
+        for (
+          var i = begin.toInt();
+          i < eind.toInt() && i < perStuk.length;
+          i++
+        ) {
+          perStuk[i] = limiet.round();
+        }
+      }
+      return [
+        for (var i = 0; i < lijn.length - 1; i++)
+          perStuk[naar[i].clamp(0, perStuk.length - 1)],
+      ];
+    } on DioException catch (fout) {
+      if (CancelToken.isCancel(fout)) rethrow;
+      return null;
+    }
+  }
+
   static RouteFout _routeFout(DioException fout) {
     final data = fout.response?.data;
     if (data is Map && data['error'] != null) {
