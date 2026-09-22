@@ -104,4 +104,22 @@ helm --kube-context "kind-$CLUSTER" test "$RELEASE" -n "$NS" --logs
 stap "live verkeer"
 ci/e2e/verkeer_cluster.sh "$CLUSTER" "$NS" "$RELEASE"
 
+stap "app in de browser"
+if python3 -c 'import playwright' 2>/dev/null; then
+  # Een vrije poort, zodat een lokaal draaiende app (op POORT) niet in de weg zit.
+  TOETSPOORT=$(python3 -c 'import socket; s=socket.socket(); s.bind(("",0)); print(s.getsockname()[1])')
+  $K port-forward "svc/$RELEASE-homemaps-web" "$TOETSPOORT:8080" >/dev/null 2>&1 &
+  DOORSTUREN=$!
+  trap 'kill $DOORSTUREN 2>/dev/null || true' EXIT
+  for _ in $(seq 1 30); do
+    curl -fs "http://127.0.0.1:$TOETSPOORT/healthz" >/dev/null && break
+    sleep 1
+  done
+  # Van Andorra la Vella naar Encamp.
+  python3 ci/e2e/app_browser.py "http://127.0.0.1:$TOETSPOORT" 42.5063,1.5218 42.5343,1.5801
+  kill $DOORSTUREN 2>/dev/null || true
+else
+  echo "overgeslagen: geen Playwright (pip install playwright && playwright install chromium)"
+fi
+
 printf '\nKlaar. De app: kubectl --context kind-%s -n %s port-forward svc/%s-homemaps-web %s:8080  ->  http://localhost:%s\n' "$CLUSTER" "$NS" "$RELEASE" "$POORT" "$POORT"

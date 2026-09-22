@@ -153,7 +153,8 @@ jobs:
           fi
 
   # De hele chart in kind, met Andorra als gebied en een nagemaakte NDW-feed: bouwjobs,
-  # helm test over de vier proxypaden, en de toets dat live verkeer de route verandert.
+  # helm test over de vier proxypaden, de toets dat live verkeer de route verandert,
+  # en de app in een echte browser (route, navigatie met een nagemaakte GPS).
   e2e:
     name: Chart end-to-end on kind
     needs: [build, importer, chart]
@@ -171,8 +172,23 @@ jobs:
         uses: helm/kind-action@v1
         with:
           install_only: true
+      # Voor de toets van de app in een echte browser (ci/e2e/app_browser.py).
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Install Playwright
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
       - name: Bring up the cluster and test it
         run: ci/up.sh
+      - name: Schermafdrukken van de browsertoets
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: app-browser
+          path: ci/e2e/uitvoer/
+          if-no-files-found: ignore
       - name: Diagnostics
         if: failure()
         run: |

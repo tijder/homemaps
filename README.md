@@ -39,7 +39,12 @@ cd importer && pip install -e '.[dev]' && pytest && ruff check .
 Navigatie testen zonder te rijden: open de web-app met
 `?simulatie=52.186,5.7035` (het startpunt), eventueel `&snelheid=20` (m/s) en
 `&mis=2` (bij manoeuvre 2 rechtdoor, zodat hij herberekent). Een nagemaakte GPS
-rijdt dan de route af.
+rijdt dan de route af. `&naar=52.17,5.60` (en `&van=`) opent meteen een route;
+dat werkt ook zonder simulatie, om een route als link te delen.
+
+`ci/up.sh` toetst met Playwright (als dat er is) ook de app in een browser:
+`ci/e2e/app_browser.py` plant een route in Andorra, navigeert met de
+nagemaakte GPS en stopt. Schermafdrukken komen in `ci/e2e/uitvoer/`.
 
 Het app-icoon is code: `python3 app/tool/maak_icoon.py` tekent het, daarna maakt
 `dart run flutter_launcher_icons` er de Android- en web-iconen van.

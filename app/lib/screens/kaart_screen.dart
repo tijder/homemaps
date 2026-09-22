@@ -19,6 +19,7 @@ import '../models/plaats.dart';
 import '../models/profiel.dart';
 import '../models/route.dart';
 import '../navigatie/navigatie_provider.dart';
+import '../navigatie/simulatie.dart';
 import '../providers/diensten.dart';
 import '../providers/instellingen.dart';
 import '../providers/locatie.dart';
@@ -29,6 +30,8 @@ import '../utils/geo_link.dart';
 import '../router/app_router.dart';
 import '../utils/muis_stub.dart'
     if (dart.library.js_interop) '../utils/muis_web.dart';
+import '../utils/testhaak_stub.dart'
+    if (dart.library.js_interop) '../utils/testhaak_web.dart';
 import '../widgets/kaart.dart';
 import '../widgets/langs_route.dart';
 import '../widgets/locatie_reden.dart';
@@ -91,6 +94,10 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
     // Een adres of punt uit een andere app (agenda, contacten, een website):
     // `geo:` en `google.navigation:`. Ook de link waarmee de app gestart is.
     if (!kIsWeb) _links = AppLinks().uriLinkStream.listen(_linkOntvangen);
+    // Op het web: ?naar=lat,lon (en eventueel &van=lat,lon) opent meteen de
+    // route, om een route als link te delen. Met ?simulatie= gaat ook de
+    // locatie vanzelf aan (voor de browsertoetsen).
+    if (kIsWeb) WidgetsBinding.instance.addPostFrameCallback((_) => _uitUrl());
     _levensloop = AppLifecycleListener(
       onHide: () => setState(() => _zichtbaar = false),
       onShow: () => setState(() => _zichtbaar = true),
@@ -105,6 +112,28 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
     _links?.cancel();
     _sheet.dispose();
     super.dispose();
+  }
+
+  Future<void> _uitUrl() async {
+    final parameters = Uri.base.queryParameters;
+    LatLng? punt(String? tekst) {
+      final delen = tekst?.split(',');
+      if (delen == null || delen.length != 2) return null;
+      final lat = double.tryParse(delen[0]), lon = double.tryParse(delen[1]);
+      return lat == null || lon == null ? null : LatLng(lat, lon);
+    }
+
+    if (ref.read(locatieBronProvider) is SimulatieBron) {
+      await ref.read(locatieProvider.notifier).zetAan();
+    }
+    final naar = punt(parameters['naar']);
+    if (naar == null || !mounted) return;
+    final planner = ref.read(plannerProvider.notifier);
+    planner.toonPlaats(Plaats.vanPunt(naar));
+    planner.startRoute();
+    if (punt(parameters['van']) case final van?) {
+      planner.zetVan(Plaats.vanPunt(van));
+    }
   }
 
   void _zelfBewogen() {
@@ -350,6 +379,21 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
 
     final nav = ref.watch(navigatieProvider);
     final fix = ref.watch(locatieProvider.select((t) => t.fix));
+    if (kIsWeb && ref.read(locatieBronProvider) is SimulatieBron) {
+      final stand = nav?.stand;
+      publiceerTestStand({
+        'locatie': ref.read(locatieProvider).stand.name,
+        'routeModus': planner.routeModus,
+        'routes': planner.routes.value?.length ?? 0,
+        'navigeert': nav != null,
+        'aangekomen': nav?.aangekomen ?? false,
+        'volgende': stand == null
+            ? null
+            : nav!.route.manoeuvres[stand.volgende].instructie,
+        'restMeters': stand?.restMeters.round(),
+        'vanRoute': stand?.vanRoute,
+      });
+    }
     // Tijdens navigatie staat het puntje op de weg zolang je op de route rijdt,
     // zoals je dat van een navigatiesysteem gewend bent.
     final stand = nav?.stand;
