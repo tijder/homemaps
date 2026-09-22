@@ -590,6 +590,18 @@ abstract class AppLocalizations {
   /// **'Klaar'**
   String get klaar;
 
+  /// No description provided for @afrit.
+  ///
+  /// In nl, this message translates to:
+  /// **'Afrit {nummer}'**
+  String afrit(String nummer);
+
+  /// No description provided for @rijstrokenGoed.
+  ///
+  /// In nl, this message translates to:
+  /// **'{goed, plural, =1{1 goede rijstrook} other{{goed} goede rijstroken}} van {totaal}'**
+  String rijstrokenGoed(int goed, int totaal);
+
   /// No description provided for @hervatten.
   ///
   /// In nl, this message translates to:

@@ -184,6 +184,24 @@ class RouteVolger {
     );
   }
 
+  /// Hoe ver langs de route elk van [plekken] ligt, die op volgorde langs de
+  /// route liggen: elke plek wordt pas ná de vorige gezocht, zodat een weg die
+  /// vlak langs zichzelf terugkomt (een klaverblad) niet verspringt. Null voor
+  /// een plek die meer dan [maxAfwijking] van de route ligt.
+  List<double?> langsVan(List<LatLng> plekken) {
+    var van = 0;
+    return [
+      for (final plek in plekken)
+        () {
+          final beste = _zoek(plek, van, route.punten.length - 2);
+          if (beste.afstand > maxAfwijking) return null;
+          van = beste.segment;
+          final i = beste.segment;
+          return _tot[i] + beste.fractie * (_tot[i + 1] - _tot[i]);
+        }(),
+    ];
+  }
+
   /// Wat er van de route nog over is, vanaf [stand].
   List<LatLng> rest(NavStand stand) => [
     stand.opRoute,

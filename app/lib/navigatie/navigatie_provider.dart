@@ -112,6 +112,7 @@ class NavigatieToestand {
     this.aangekomen = false,
     this.voorstel,
     this.limiet,
+    this.rijstroken,
   });
 
   final RouteOptie route;
@@ -128,6 +129,10 @@ class NavigatieToestand {
   /// De maximumsnelheid hier (km/u), of null als onbekend.
   final int? limiet;
 
+  /// De rijstroken bij de eerstvolgende kruising waar het ertoe doet welke je
+  /// neemt, en hoe ver die nog is. Null als er niets te kiezen valt.
+  final ({double over, List<Rijstrook> stroken})? rijstroken;
+
   NavigatieToestand kopie({
     RouteOptie? route,
     List<Plaats>? doelen,
@@ -138,6 +143,7 @@ class NavigatieToestand {
     bool? aangekomen,
     Voorstel? Function()? voorstel,
     int? Function()? limiet,
+    ({double over, List<Rijstrook> stroken})? Function()? rijstroken,
   }) => NavigatieToestand(
     route: route ?? this.route,
     doelen: doelen ?? this.doelen,
@@ -148,6 +154,7 @@ class NavigatieToestand {
     aangekomen: aangekomen ?? this.aangekomen,
     voorstel: voorstel != null ? voorstel() : this.voorstel,
     limiet: limiet != null ? limiet() : this.limiet,
+    rijstroken: rijstroken != null ? rijstroken() : this.rijstroken,
   );
 }
 
@@ -171,6 +178,13 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
   /// Maximumsnelheid per stuk van de huidige route (zie
   /// [ValhallaService.snelheidsLimieten]); leeg tot ze binnen zijn.
   List<int?> _limieten = const [];
+
+  /// De kruisingen met rijstroken op de huidige route, op volgorde langs de
+  /// route (zie [ValhallaService.rijstroken]); leeg tot ze binnen zijn.
+  List<({double langs, List<Rijstrook> stroken})> _rijstroken = const [];
+
+  /// Zo ver vooruit staan de rijstroken al in beeld.
+  static const rijstrookVooruit = 2000.0;
 
   /// Afgewezen routes (op hun lengte), om niet steeds dezelfde voor te stellen.
   final _afgewezen = <int>{};
@@ -271,6 +285,8 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
     _viaVoorbij = 0;
     _limieten = const [];
     _haalLimieten(route);
+    _rijstroken = const [];
+    _haalRijstroken(route);
     _meldingen = const [];
     _volger = RouteVolger(route);
     _aankondiger = Aankondiger(
@@ -345,6 +361,49 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
     }
   }
 
+  /// Op de achtergrond: de rijstroken langs de route (alleen de auto).
+  Future<void> _haalRijstroken(RouteOptie route) async {
+    final valhalla = ref.read(valhallaProvider);
+    if (valhalla == null || _profiel != Profiel.auto) return;
+    final advies = await valhalla
+        .rijstroken(route.punten, _profiel)
+        .catchError((Object _) => null);
+    final volger = _volger;
+    if (advies == null ||
+        volger == null ||
+        !identical(state?.route, route) ||
+        !identical(volger.route, route)) {
+      return;
+    }
+    final langs = volger.langsVan([for (final a in advies) a.plek]);
+    _rijstroken = [
+      for (final (i, a) in advies.indexed)
+        if (langs[i] != null) (langs: langs[i]!, stroken: a.stroken),
+    ];
+  }
+
+  /// De eerstvolgende kruising vóór of bij de volgende manoeuvre waar niet
+  /// elke strook goed is. Zijn ze allemaal goed, dan valt er niets te kiezen.
+  ({double over, List<Rijstrook> stroken})? _rijstrookAdvies(
+    NavStand stand,
+    RouteVolger volger,
+  ) {
+    final grens = min(
+      stand.langs + rijstrookVooruit,
+      volger.totManoeuvre(stand.volgende) + 10,
+    );
+    for (final kruising in _rijstroken) {
+      if (kruising.langs < stand.langs) continue;
+      if (kruising.langs > grens) break;
+      if (kruising.stroken.length < 2 ||
+          kruising.stroken.every((s) => s.goed)) {
+        continue;
+      }
+      return (over: kruising.langs - stand.langs, stroken: kruising.stroken);
+    }
+    return null;
+  }
+
   void _bijFix(LocatieFix fix) {
     final nu = state, volger = _volger, aankondiger = _aankondiger;
     if (nu == null || volger == null || aankondiger == null || nu.aangekomen) {
@@ -394,6 +453,7 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
       doelen: doelen,
       limiet: () =>
           stand.segment < _limieten.length ? _limieten[stand.segment] : null,
+      rijstroken: () => _rijstrookAdvies(stand, volger),
     );
     if (stand.aangekomen) {
       // Klaar: geen scherm-aan en geen achtergronddienst meer. Het scherm laat

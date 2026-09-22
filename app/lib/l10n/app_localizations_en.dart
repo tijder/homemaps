@@ -298,6 +298,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get klaar => 'Done';
 
   @override
+  String afrit(String nummer) {
+    return 'Exit $nummer';
+  }
+
+  @override
+  String rijstrokenGoed(int goed, int totaal) {
+    String _temp0 = intl.Intl.pluralLogic(
+      goed,
+      locale: localeName,
+      other: '$goed correct lanes',
+      one: '1 correct lane',
+    );
+    return '$_temp0 of $totaal';
+  }
+
+  @override
   String get hervatten => 'Re-centre';
 
   @override

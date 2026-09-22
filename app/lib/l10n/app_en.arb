@@ -82,6 +82,25 @@
   "gesprokenKilometer": "{km} kilometers",
   "aangekomen": "You have arrived",
   "klaar": "Done",
+  "afrit": "Exit {nummer}",
+  "@afrit": {
+    "placeholders": {
+      "nummer": {
+        "type": "String"
+      }
+    }
+  },
+  "rijstrokenGoed": "{goed, plural, =1{1 correct lane} other{{goed} correct lanes}} of {totaal}",
+  "@rijstrokenGoed": {
+    "placeholders": {
+      "goed": {
+        "type": "int"
+      },
+      "totaal": {
+        "type": "int"
+      }
+    }
+  },
   "hervatten": "Re-centre",
   "stopNavigatie": "Stop",
   "stemUit": "Mute",

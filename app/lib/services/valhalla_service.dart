@@ -246,6 +246,73 @@ class ValhallaService {
     }
   }
 
+  /// De rijstroken bij de kruisingen langs [lijn], waar OSM ze kent (en
+  /// Valhalla ze dus weet). Alleen het OSRM-formaat geeft ze; `edge_walk`
+  /// houdt het precies op deze weg. Null als het verzoek mislukt.
+  Future<List<RijstrookAdvies>?> rijstroken(
+    List<LatLng> lijn,
+    Profiel profiel, {
+    CancelToken? annuleer,
+  }) async {
+    final punten = <LatLng>[];
+    for (final punt in lijn) {
+      if (punten.isEmpty || punten.last != punt) punten.add(punt);
+    }
+    if (punten.length < 2) return null;
+    try {
+      final antwoord = await _dio.post<Map<String, dynamic>>(
+        '$basis/trace_route',
+        data: {
+          'encoded_polyline': codeerPolyline(punten),
+          'costing': profiel.costing,
+          'shape_match': 'edge_walk',
+          'format': 'osrm',
+        },
+        cancelToken: annuleer,
+      );
+      return leesRijstroken(antwoord.data ?? const {});
+    } on DioException catch (fout) {
+      if (CancelToken.isCancel(fout)) rethrow;
+      return null;
+    }
+  }
+
+  /// Uit een OSRM-antwoord: elke kruising met rijstroken, op volgorde.
+  static List<RijstrookAdvies> leesRijstroken(Map<String, dynamic> json) {
+    final uit = <RijstrookAdvies>[];
+    for (final match in (json['matchings'] as List? ?? const [])) {
+      for (final leg in ((match as Map)['legs'] as List? ?? const [])) {
+        for (final stap in ((leg as Map)['steps'] as List? ?? const [])) {
+          for (final kruising
+              in ((stap as Map)['intersections'] as List? ?? const [])) {
+            final plek = (kruising as Map)['location'];
+            final stroken = kruising['lanes'];
+            if (plek is! List || plek.length < 2 || stroken is! List) continue;
+            uit.add((
+              plek: LatLng(
+                (plek[1] as num).toDouble(),
+                (plek[0] as num).toDouble(),
+              ),
+              stroken: [
+                for (final strook in stroken.cast<Map>())
+                  Rijstrook(
+                    richtingen: [
+                      for (final r
+                          in (strook['indications'] as List? ?? const []))
+                        r as String,
+                    ],
+                    goed: strook['valid'] == true,
+                    gebruik: strook['valid_indication'] as String?,
+                  ),
+              ],
+            ));
+          }
+        }
+      }
+    }
+    return uit;
+  }
+
   static RouteFout _routeFout(DioException fout) {
     final data = fout.response?.data;
     if (data is Map && data['error'] != null) {

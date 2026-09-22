@@ -460,7 +460,7 @@ class _RoutePaneelState extends ConsumerState<RoutePaneel> {
           ListTile(
             dense: true,
             contentPadding: EdgeInsets.zero,
-            leading: Icon(manoeuvrePictogram(manoeuvre.type)),
+            leading: ManoeuvreIcoon(manoeuvre),
             title: Text(manoeuvre.instructie),
             trailing: manoeuvre.meters > 0
                 ? Text(afstand(manoeuvre.meters))

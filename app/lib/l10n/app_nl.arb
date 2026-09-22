@@ -161,6 +161,25 @@
   },
   "aangekomen": "Je bent er",
   "klaar": "Klaar",
+  "afrit": "Afrit {nummer}",
+  "@afrit": {
+    "placeholders": {
+      "nummer": {
+        "type": "String"
+      }
+    }
+  },
+  "rijstrokenGoed": "{goed, plural, =1{1 goede rijstrook} other{{goed} goede rijstroken}} van {totaal}",
+  "@rijstrokenGoed": {
+    "placeholders": {
+      "goed": {
+        "type": "int"
+      },
+      "totaal": {
+        "type": "int"
+      }
+    }
+  },
   "hervatten": "Hervatten",
   "stopNavigatie": "Stop",
   "stemUit": "Stem uit",

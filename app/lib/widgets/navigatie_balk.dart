@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/route.dart';
 import '../navigatie/navigatie_provider.dart';
 import '../utils/opmaak.dart';
 import 'manoeuvre_pictogram.dart';
@@ -24,25 +25,49 @@ class NavigatieKop extends StatelessWidget {
     final stand = nav.stand;
     final manoeuvres = nav.route.manoeuvres;
 
-    final (IconData pictogram, String titel, String? onder) = nav.aangekomen
-        ? (Icons.flag, l.aangekomen, nav.doelen.lastOrNull?.weergave(l))
+    final volgende = stand != null && !nav.aangekomen && !nav.herberekent
+        ? manoeuvres[stand.volgende]
+        : null;
+    final (Widget pictogram, String titel, String? onder) = nav.aangekomen
+        ? (
+            _icoon(Icons.flag, kleuren),
+            l.aangekomen,
+            nav.doelen.lastOrNull?.weergave(l),
+          )
         : nav.herberekent
-        ? (Icons.sync, l.herberekenenBezig, null)
+        ? (_icoon(Icons.sync, kleuren), l.herberekenenBezig, null)
         : stand == null
-        ? (Icons.navigation, l.locatieZoeken, null)
+        ? (_icoon(Icons.navigation, kleuren), l.locatieZoeken, null)
         : (
-            manoeuvrePictogram(manoeuvres[stand.volgende].type),
+            ManoeuvreIcoon(
+              manoeuvres[stand.volgende],
+              size: 56,
+              color: kleuren.onPrimaryContainer,
+            ),
             afstand(_rond(stand.totVolgende)),
             manoeuvres[stand.volgende].instructie,
           );
+    // Het bord bij een op- of afrit, splitsing of invoegstrook.
+    final bord = volgende != null && volgende.type >= 18 && volgende.type <= 25
+        ? volgende.bord
+        : null;
+    final rijstroken = volgende == null ? null : nav.rijstroken;
 
-    final daarna = stand != null && !nav.aangekomen && !nav.herberekent
+    // Na "rotonde op" komt "rotonde af", met dezelfde uitrit: die staat al in
+    // het grote pictogram. Dan pas wat erna komt.
+    var daarna = stand != null && !nav.aangekomen && !nav.herberekent
         ? stand.volgende + 1
         : null;
-    final toonDaarna =
-        daarna != null &&
+    var tussen = volgende?.meters ?? 0;
+    if (daarna != null &&
         daarna < manoeuvres.length &&
-        manoeuvres[stand!.volgende].meters < _daarnaBinnen;
+        volgende?.type == 26 &&
+        manoeuvres[daarna].type == 27) {
+      tussen += manoeuvres[daarna].meters;
+      daarna++;
+    }
+    final toonDaarna =
+        daarna != null && daarna < manoeuvres.length && tussen < _daarnaBinnen;
 
     return Material(
       color: kleuren.primaryContainer,
@@ -57,13 +82,17 @@ class NavigatieKop extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
             child: Row(
               children: [
-                Icon(pictogram, size: 56, color: kleuren.onPrimaryContainer),
+                pictogram,
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      if (bord != null) ...[
+                        WegBord(bord),
+                        const SizedBox(height: 6),
+                      ],
                       Text(
                         titel,
                         style: tekst.headlineMedium?.copyWith(
@@ -86,6 +115,7 @@ class NavigatieKop extends StatelessWidget {
               ],
             ),
           ),
+          if (rijstroken != null) RijstrookBalk(rijstroken.stroken),
           if (toonDaarna)
             Container(
               color: kleuren.primary,
@@ -97,10 +127,7 @@ class NavigatieKop extends StatelessWidget {
                     style: tekst.titleSmall?.copyWith(color: kleuren.onPrimary),
                   ),
                   const SizedBox(width: 8),
-                  Icon(
-                    manoeuvrePictogram(manoeuvres[daarna].type),
-                    color: kleuren.onPrimary,
-                  ),
+                  ManoeuvreIcoon(manoeuvres[daarna], color: kleuren.onPrimary),
                 ],
               ),
             ),
@@ -109,6 +136,9 @@ class NavigatieKop extends StatelessWidget {
     );
   }
 
+  static Widget _icoon(IconData pictogram, ColorScheme kleuren) =>
+      Icon(pictogram, size: 56, color: kleuren.onPrimaryContainer);
+
   /// Een afstand die niet bij elke meter verspringt: onder de 100 m op 10 m,
   /// daarboven op 50 m.
   static double _rond(double meters) => meters < 100
@@ -116,6 +146,143 @@ class NavigatieKop extends StatelessWidget {
       : meters < 1000
       ? (meters / 50).round() * 50
       : meters;
+}
+
+/// Een bord zoals langs de snelweg: het afritnummer, de wegnummers (A-wegen
+/// rood, N-wegen geel, zoals in Nederland) en de richtingen.
+class WegBord extends StatelessWidget {
+  const WegBord(this.bord, {super.key});
+
+  final Bord bord;
+
+  static const _blauw = Color(0xFF0A4C9A);
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final tekst = Theme.of(context).textTheme;
+    final richtingen = bord.richtingen.isNotEmpty
+        ? bord.richtingen.take(3).join(' · ')
+        : bord.naam;
+    Widget schildje(String inhoud, Color achter, Color voor) => Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      decoration: BoxDecoration(
+        color: achter,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: Colors.white, width: 1.5),
+      ),
+      child: Text(
+        inhoud,
+        style: tekst.labelLarge?.copyWith(
+          color: voor,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: _blauw,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          if (bord.afrit case final afrit?)
+            schildje(l.afrit(afrit), Colors.white, _blauw),
+          for (final weg in bord.wegen.take(2))
+            if (weg.startsWith('A') || weg.startsWith('E'))
+              schildje(
+                weg,
+                weg.startsWith('E')
+                    ? const Color(0xFF00843D)
+                    : const Color(0xFFD2232A),
+                Colors.white,
+              )
+            else if (weg.startsWith('N'))
+              schildje(weg, const Color(0xFFFFD200), Colors.black)
+            else
+              schildje(weg, _blauw, Colors.white),
+          if (richtingen != null)
+            Text(
+              richtingen,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: tekst.titleSmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// De rijstroken bij de eerstvolgende kruising: goede vol, de rest gedimd.
+class RijstrookBalk extends StatelessWidget {
+  const RijstrookBalk(this.stroken, {super.key});
+
+  final List<Rijstrook> stroken;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final kleuren = Theme.of(context).colorScheme;
+    return Semantics(
+      label: l.rijstrokenGoed(
+        stroken.where((s) => s.goed).length,
+        stroken.length,
+      ),
+      child: Container(
+        color: kleuren.primary,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (final (i, strook) in stroken.indexed) ...[
+              if (i > 0)
+                Container(
+                  width: 1,
+                  height: 28,
+                  color: kleuren.onPrimary.withValues(alpha: 0.3),
+                ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: _strook(strook, kleuren),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _strook(Rijstrook strook, ColorScheme kleuren) {
+    // Een goede strook met meer richtingen: alleen die je neemt, anders past
+    // het niet en zegt het minder.
+    final richtingen = strook.goed && strook.gebruik != null
+        ? [strook.gebruik!]
+        : strook.richtingen.isEmpty
+        ? const ['straight']
+        : strook.richtingen;
+    final kleur = strook.goed
+        ? kleuren.onPrimary
+        : kleuren.onPrimary.withValues(alpha: 0.35);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final richting in richtingen.take(2))
+          Icon(
+            rijstrookPictogram(richting),
+            size: richtingen.length > 1 ? 22 : 30,
+            color: kleur,
+          ),
+      ],
+    );
+  }
 }
 
 /// Onderaan tijdens navigatie: aankomsttijd, wat er nog rest, stem en stop.
