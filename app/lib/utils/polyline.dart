@@ -30,6 +30,34 @@ List<LatLng> decodeerPolyline(String tekst, {int decimalen = 6}) {
   return punten;
 }
 
+/// Het omgekeerde van [decodeerPolyline]. Alleen gewone rekenkunde, geen
+/// bit-operaties op mogelijk negatieve getallen: zie de opmerking daar over
+/// JavaScript.
+String codeerPolyline(List<LatLng> punten, {int decimalen = 6}) {
+  final factor = _macht10(decimalen);
+  final uit = StringBuffer();
+  void getal(int waarde) {
+    // Zigzag: 0, -1, 1, -2, 2 ... -> 0, 1, 2, 3, 4 ...
+    var v = waarde < 0 ? -2 * waarde - 1 : 2 * waarde;
+    while (v >= 0x20) {
+      uit.writeCharCode(0x20 + v % 32 + 63);
+      v = v ~/ 32;
+    }
+    uit.writeCharCode(v + 63);
+  }
+
+  var lat = 0, lon = 0;
+  for (final punt in punten) {
+    final nieuwLat = (punt.latitude * factor).round();
+    final nieuwLon = (punt.longitude * factor).round();
+    getal(nieuwLat - lat);
+    getal(nieuwLon - lon);
+    lat = nieuwLat;
+    lon = nieuwLon;
+  }
+  return uit.toString();
+}
+
 double _macht10(int n) {
   var waarde = 1.0;
   for (var i = 0; i < n; i++) {

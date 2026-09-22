@@ -667,6 +667,12 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'Stop eerst de navigatie.'**
   String get eerstStoppen;
+
+  /// No description provided for @vertraging.
+  ///
+  /// In nl, this message translates to:
+  /// **'vertraging'**
+  String get vertraging;
 }
 
 class _AppLocalizationsDelegate

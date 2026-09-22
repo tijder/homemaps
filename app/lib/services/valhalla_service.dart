@@ -5,6 +5,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../models/profiel.dart';
 import '../models/route.dart';
+import '../utils/polyline.dart';
 
 class RouteFout implements Exception {
   RouteFout(this.code, this.melding);
@@ -115,10 +116,54 @@ class ValhallaService {
         ),
         cancelToken: annuleer,
       );
-      return leesAntwoord(antwoord.data ?? const {});
+      final routes = leesAntwoord(antwoord.data ?? const {});
+      final metVerkeer = liveVerkeer && profiel == Profiel.auto;
+      if (!metVerkeer) return routes;
+      // Tegelijk voor elke route: hoe lang dezelfde weg zonder verkeer duurt.
+      final normaal = await Future.wait([
+        for (final route in routes) normaleTijd(route, profiel, annuleer),
+      ]);
+      return [
+        for (final (i, route) in routes.indexed)
+          route.metNormaleTijd(normaal[i]),
+      ];
     } on DioException catch (fout) {
       if (CancelToken.isCancel(fout)) rethrow;
       throw _routeFout(fout);
+    }
+  }
+
+  /// De reistijd van precies deze weg zonder live verkeer: Valhalla legt de
+  /// vorm opnieuw op de kaart (edge_walk: exact dezelfde wegen) en rekent zonder
+  /// vertrektijd. Null als dat mislukt; dan is er gewoon geen vertraging te
+  /// melden.
+  Future<double?> normaleTijd(
+    RouteOptie route,
+    Profiel profiel, [
+    CancelToken? annuleer,
+  ]) async {
+    // Tussen twee legs staat hetzelfde punt twee keer; eruit.
+    final punten = <LatLng>[];
+    for (final punt in route.punten) {
+      if (punten.isEmpty || punten.last != punt) punten.add(punt);
+    }
+    if (punten.length < 2) return null;
+    try {
+      final antwoord = await _dio.post<Map<String, dynamic>>(
+        '$basis/trace_route',
+        data: {
+          'encoded_polyline': codeerPolyline(punten),
+          'costing': profiel.costing,
+          'shape_match': 'edge_walk',
+          'directions_type': 'none',
+        },
+        cancelToken: annuleer,
+      );
+      final tijd = antwoord.data?['trip']?['summary']?['time'];
+      return tijd is num ? tijd.toDouble() : null;
+    } on DioException catch (fout) {
+      if (CancelToken.isCancel(fout)) rethrow;
+      return null;
     }
   }
 

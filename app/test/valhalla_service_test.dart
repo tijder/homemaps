@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:homemaps/models/profiel.dart';
+import 'package:homemaps/models/route.dart';
 import 'package:homemaps/services/valhalla_service.dart';
 import 'package:homemaps/utils/polyline.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
@@ -115,5 +116,42 @@ void main() {
     expect(routes[0].daling, 6);
     expect(routes[0].heeftVeer, isTrue);
     expect(routes[1].meters, 15000);
+  });
+
+  test('polyline coderen is het omgekeerde van decoderen', () {
+    // Hetzelfde voorbeeld als hierboven, nu de andere kant op.
+    expect(
+      codeerPolyline(const [LatLng(52.0907, 5.1214), LatLng(52.3731, 4.8922)]),
+      'wsjjbBovqwH_qfP~s~L',
+    );
+    // Ook negatief (zuid, west) en met kleine stappen.
+    const punten = [
+      LatLng(-33.868820, 151.209290),
+      LatLng(-33.868821, 151.209289),
+      LatLng(40.712776, -74.005974),
+    ];
+    final terug = decodeerPolyline(codeerPolyline(punten));
+    for (final (i, punt) in punten.indexed) {
+      expect(terug[i].latitude, closeTo(punt.latitude, 1e-9));
+      expect(terug[i].longitude, closeTo(punt.longitude, 1e-9));
+    }
+  });
+
+  test('vertraging: live min normaal, nooit negatief, nul zonder gegevens', () {
+    RouteOptie r(double seconden, double? normaal) => RouteOptie(
+      meters: 1000,
+      seconden: seconden,
+      punten: const [],
+      manoeuvres: const [],
+      hoogtes: const [],
+      hoogteInterval: 30,
+      heeftTol: false,
+      heeftVeer: false,
+      normaleSeconden: normaal,
+    );
+    expect(r(2500, 2000).vertraging, 500);
+    expect(r(1900, 2000).vertraging, 0);
+    expect(r(2500, null).vertraging, 0);
+    expect(r(2500, null).metNormaleTijd(2400).vertraging, 100);
   });
 }

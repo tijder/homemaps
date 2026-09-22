@@ -346,4 +346,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get eerstStoppen => 'Stop eerst de navigatie.';
+
+  @override
+  String get vertraging => 'vertraging';
 }

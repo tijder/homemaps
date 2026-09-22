@@ -424,9 +424,39 @@ class _RouteKaartje extends StatelessWidget {
         title: Text('${duur(route.seconden)} · ${afstand(route.meters)}'),
         subtitle: Text([titel, ...extra].join(' · ')),
         selected: gekozen,
+        trailing: _vertraging(context, route),
       ),
     );
   }
+}
+
+/// "+9 min vertraging" rechts op het kaartje, als het verkeer er een minuut
+/// of meer bij doet. Rood bij veel (tien minuten, of een kwart van de reis),
+/// anders oranje.
+Widget? _vertraging(BuildContext context, RouteOptie route) {
+  final seconden = route.vertraging;
+  if (seconden < 60) return null;
+  final l = AppLocalizations.of(context);
+  final veel = seconden >= 600 || seconden >= route.seconden * 0.25;
+  final kleur = veel
+      ? Theme.of(context).colorScheme.error
+      : const Color(0xFFE65100);
+  final tekst = Theme.of(context).textTheme;
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    mainAxisAlignment: MainAxisAlignment.center,
+    crossAxisAlignment: CrossAxisAlignment.end,
+    children: [
+      Text(
+        '+${duur(seconden)}',
+        style: tekst.titleSmall?.copyWith(
+          color: kleur,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      Text(l.vertraging, style: tekst.bodySmall?.copyWith(color: kleur)),
+    ],
+  );
 }
 
 class _Foutmelding extends StatelessWidget {

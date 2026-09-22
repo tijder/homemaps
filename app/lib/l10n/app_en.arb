@@ -94,5 +94,6 @@
   "opnieuwProberen": "Try again",
   "aantalTussenpunten": "{aantal, plural, =1{via 1 stop} other{via {aantal} stops}}",
   "routeWijzigen": "Edit route",
-  "eerstStoppen": "Stop navigation first."
+  "eerstStoppen": "Stop navigation first.",
+  "vertraging": "delay"
 }

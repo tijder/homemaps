@@ -55,6 +55,7 @@ class RouteOptie {
     required this.hoogteInterval,
     required this.heeftTol,
     required this.heeftVeer,
+    this.normaleSeconden,
   });
 
   final double meters;
@@ -68,6 +69,27 @@ class RouteOptie {
   final double hoogteInterval;
   final bool heeftTol;
   final bool heeftVeer;
+
+  /// Dezelfde weg zonder het verkeer van nu; null als dat niet bekend is (geen
+  /// live verkeer gevraagd, of de server gaf het niet).
+  final double? normaleSeconden;
+
+  /// Hoeveel langer het nu duurt door files en drukte; nul als het meevalt.
+  double get vertraging => normaleSeconden == null
+      ? 0
+      : (seconden - normaleSeconden!).clamp(0, double.infinity);
+
+  RouteOptie metNormaleTijd(double? seconden) => RouteOptie(
+    meters: meters,
+    seconden: this.seconden,
+    punten: punten,
+    manoeuvres: manoeuvres,
+    hoogtes: hoogtes,
+    hoogteInterval: hoogteInterval,
+    heeftTol: heeftTol,
+    heeftVeer: heeftVeer,
+    normaleSeconden: seconden,
+  );
 
   double get stijging => _som((verschil) => verschil > 0 ? verschil : 0);
   double get daling => _som((verschil) => verschil < 0 ? -verschil : 0);

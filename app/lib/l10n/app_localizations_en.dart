@@ -344,4 +344,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eerstStoppen => 'Stop navigation first.';
+
+  @override
+  String get vertraging => 'delay';
 }
