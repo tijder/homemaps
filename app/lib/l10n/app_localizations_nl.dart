@@ -164,4 +164,64 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get sleepOmTeVerplaatsen => 'Sleep om de volgorde te wijzigen';
+
+  @override
+  String get verkeerOpKaart => 'Verkeer';
+
+  @override
+  String get verkeerWegDicht => 'Weg afgesloten';
+
+  @override
+  String get verkeerAfritDicht => 'Afrit afgesloten';
+
+  @override
+  String get verkeerOpritDicht => 'Oprit afgesloten';
+
+  @override
+  String get verkeerVerbindingswegDicht => 'Verbindingsweg afgesloten';
+
+  @override
+  String get verkeerParallelbaanDicht => 'Parallelbaan afgesloten';
+
+  @override
+  String get verkeerRijbaanDicht => 'Rijbaan afgesloten';
+
+  @override
+  String get verkeerRijstrookDicht => 'Rijstrook afgesloten';
+
+  @override
+  String verkeerStrokenOpen(int aantal) {
+    String _temp0 = intl.Intl.pluralLogic(
+      aantal,
+      locale: localeName,
+      other: '$aantal rijstroken open',
+      one: '1 rijstrook open',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get verkeerFile => 'File';
+
+  @override
+  String get verkeerTraag => 'Langzaam verkeer';
+
+  @override
+  String verkeerVertraging(String duur, int kmu) {
+    return '+$duur vertraging · $kmu km/u';
+  }
+
+  @override
+  String verkeerTot(String moment) {
+    return 'Tot $moment';
+  }
+
+  @override
+  String get oorzaakWerk => 'Werkzaamheden';
+
+  @override
+  String get oorzaakOngeval => 'Ongeval';
+
+  @override
+  String get oorzaakEvenement => 'Evenement';
 }

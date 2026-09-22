@@ -163,4 +163,64 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sleepOmTeVerplaatsen => 'Drag to reorder';
+
+  @override
+  String get verkeerOpKaart => 'Traffic';
+
+  @override
+  String get verkeerWegDicht => 'Road closed';
+
+  @override
+  String get verkeerAfritDicht => 'Exit closed';
+
+  @override
+  String get verkeerOpritDicht => 'On-ramp closed';
+
+  @override
+  String get verkeerVerbindingswegDicht => 'Connecting road closed';
+
+  @override
+  String get verkeerParallelbaanDicht => 'Parallel road closed';
+
+  @override
+  String get verkeerRijbaanDicht => 'Carriageway closed';
+
+  @override
+  String get verkeerRijstrookDicht => 'Lane closed';
+
+  @override
+  String verkeerStrokenOpen(int aantal) {
+    String _temp0 = intl.Intl.pluralLogic(
+      aantal,
+      locale: localeName,
+      other: '$aantal lanes open',
+      one: '1 lane open',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get verkeerFile => 'Traffic jam';
+
+  @override
+  String get verkeerTraag => 'Slow traffic';
+
+  @override
+  String verkeerVertraging(String duur, int kmu) {
+    return '+$duur delay · $kmu km/h';
+  }
+
+  @override
+  String verkeerTot(String moment) {
+    return 'Until $moment';
+  }
+
+  @override
+  String get oorzaakWerk => 'Roadworks';
+
+  @override
+  String get oorzaakOngeval => 'Accident';
+
+  @override
+  String get oorzaakEvenement => 'Event';
 }

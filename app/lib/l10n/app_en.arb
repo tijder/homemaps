@@ -48,5 +48,21 @@
   "zoekHier": "Search the map",
   "route": "Directions",
   "terugNaarZoeken": "Back to search",
-  "sleepOmTeVerplaatsen": "Drag to reorder"
+  "sleepOmTeVerplaatsen": "Drag to reorder",
+  "verkeerOpKaart": "Traffic",
+  "verkeerWegDicht": "Road closed",
+  "verkeerAfritDicht": "Exit closed",
+  "verkeerOpritDicht": "On-ramp closed",
+  "verkeerVerbindingswegDicht": "Connecting road closed",
+  "verkeerParallelbaanDicht": "Parallel road closed",
+  "verkeerRijbaanDicht": "Carriageway closed",
+  "verkeerRijstrookDicht": "Lane closed",
+  "verkeerStrokenOpen": "{aantal, plural, =1{1 lane open} other{{aantal} lanes open}}",
+  "verkeerFile": "Traffic jam",
+  "verkeerTraag": "Slow traffic",
+  "verkeerVertraging": "+{duur} delay · {kmu} km/h",
+  "verkeerTot": "Until {moment}",
+  "oorzaakWerk": "Roadworks",
+  "oorzaakOngeval": "Accident",
+  "oorzaakEvenement": "Event"
 }

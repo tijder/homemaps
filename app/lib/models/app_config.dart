@@ -1,17 +1,21 @@
-/// Waar de app zijn drie backends vindt. Alles hangt onder één server:
-/// `/valhalla`, `/geocode` en `/tiles` (zo levert de chart het).
+/// Waar de app zijn backends vindt. Alles hangt onder één server: `/valhalla`,
+/// `/geocode`, `/tiles` en `/verkeer` (zo levert de chart het).
 class AppConfig {
   const AppConfig({
     required this.valhallaUrl,
     required this.geocodeUrl,
     required this.tilesUrl,
+    required this.verkeerUrl,
   });
 
   final String valhallaUrl;
   final String geocodeUrl;
   final String tilesUrl;
 
-  /// [overschrijf] is de inhoud van `/config.json` (web) en mag elk van de drie
+  /// De verkeerslaag (GeoJSON) die de importer elke ronde maakt.
+  final String verkeerUrl;
+
+  /// [overschrijf] is de inhoud van `/config.json` (web) en mag elk ervan
   /// vervangen, bijvoorbeeld als de tegels op een eigen hostnaam staan.
   factory AppConfig.vanServer(
     String server, [
@@ -29,6 +33,7 @@ class AppConfig {
       valhallaUrl: kies('valhallaUrl', '/valhalla'),
       geocodeUrl: kies('geocodeUrl', '/geocode'),
       tilesUrl: kies('tilesUrl', '/tiles'),
+      verkeerUrl: kies('verkeerUrl', '/verkeer'),
     );
   }
 

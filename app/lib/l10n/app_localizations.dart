@@ -391,6 +391,102 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'Sleep om de volgorde te wijzigen'**
   String get sleepOmTeVerplaatsen;
+
+  /// No description provided for @verkeerOpKaart.
+  ///
+  /// In nl, this message translates to:
+  /// **'Verkeer'**
+  String get verkeerOpKaart;
+
+  /// No description provided for @verkeerWegDicht.
+  ///
+  /// In nl, this message translates to:
+  /// **'Weg afgesloten'**
+  String get verkeerWegDicht;
+
+  /// No description provided for @verkeerAfritDicht.
+  ///
+  /// In nl, this message translates to:
+  /// **'Afrit afgesloten'**
+  String get verkeerAfritDicht;
+
+  /// No description provided for @verkeerOpritDicht.
+  ///
+  /// In nl, this message translates to:
+  /// **'Oprit afgesloten'**
+  String get verkeerOpritDicht;
+
+  /// No description provided for @verkeerVerbindingswegDicht.
+  ///
+  /// In nl, this message translates to:
+  /// **'Verbindingsweg afgesloten'**
+  String get verkeerVerbindingswegDicht;
+
+  /// No description provided for @verkeerParallelbaanDicht.
+  ///
+  /// In nl, this message translates to:
+  /// **'Parallelbaan afgesloten'**
+  String get verkeerParallelbaanDicht;
+
+  /// No description provided for @verkeerRijbaanDicht.
+  ///
+  /// In nl, this message translates to:
+  /// **'Rijbaan afgesloten'**
+  String get verkeerRijbaanDicht;
+
+  /// No description provided for @verkeerRijstrookDicht.
+  ///
+  /// In nl, this message translates to:
+  /// **'Rijstrook afgesloten'**
+  String get verkeerRijstrookDicht;
+
+  /// No description provided for @verkeerStrokenOpen.
+  ///
+  /// In nl, this message translates to:
+  /// **'{aantal, plural, =1{1 rijstrook open} other{{aantal} rijstroken open}}'**
+  String verkeerStrokenOpen(int aantal);
+
+  /// No description provided for @verkeerFile.
+  ///
+  /// In nl, this message translates to:
+  /// **'File'**
+  String get verkeerFile;
+
+  /// No description provided for @verkeerTraag.
+  ///
+  /// In nl, this message translates to:
+  /// **'Langzaam verkeer'**
+  String get verkeerTraag;
+
+  /// No description provided for @verkeerVertraging.
+  ///
+  /// In nl, this message translates to:
+  /// **'+{duur} vertraging · {kmu} km/u'**
+  String verkeerVertraging(String duur, int kmu);
+
+  /// No description provided for @verkeerTot.
+  ///
+  /// In nl, this message translates to:
+  /// **'Tot {moment}'**
+  String verkeerTot(String moment);
+
+  /// No description provided for @oorzaakWerk.
+  ///
+  /// In nl, this message translates to:
+  /// **'Werkzaamheden'**
+  String get oorzaakWerk;
+
+  /// No description provided for @oorzaakOngeval.
+  ///
+  /// In nl, this message translates to:
+  /// **'Ongeval'**
+  String get oorzaakOngeval;
+
+  /// No description provided for @oorzaakEvenement.
+  ///
+  /// In nl, this message translates to:
+  /// **'Evenement'**
+  String get oorzaakEvenement;
 }
 
 class _AppLocalizationsDelegate

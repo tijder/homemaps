@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -67,4 +69,22 @@ final kaartStartProvider = FutureProvider<CameraPosition>((ref) async {
   } on Object {
     return terugval;
   }
+});
+
+/// Hoe vaak de verkeerslaag wordt ververst; de importer maakt hem elke vijf
+/// minuten opnieuw.
+const verkeerInterval = Duration(minutes: 5);
+
+/// De verkeerslaag als GeoJSON, of null als hij uit staat. Een mislukte ophaalbeurt
+/// is een fout; wie `.value` leest houdt dan de vorige laag.
+final verkeerProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
+  final aan = ref.watch(instellingenProvider.select((i) => i.verkeerOpKaart));
+  final config = ref.watch(appConfigProvider);
+  if (!aan || config == null) return null;
+  final ververs = Timer(verkeerInterval, ref.invalidateSelf);
+  ref.onDispose(ververs.cancel);
+  final antwoord = await ref
+      .watch(dioProvider)
+      .get<Map<String, dynamic>>(config.verkeerUrl);
+  return antwoord.data;
 });

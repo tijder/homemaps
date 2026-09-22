@@ -13,6 +13,7 @@ class Instellingen {
     this.vermijdSnelwegen = false,
     this.vermijdTol = false,
     this.vermijdVeren = false,
+    this.verkeerOpKaart = true,
   });
 
   /// Alleen op Android nodig: op het web is de server de eigen origin.
@@ -24,6 +25,9 @@ class Instellingen {
   final bool vermijdTol;
   final bool vermijdVeren;
 
+  /// Afsluitingen, werk op de weg en files als laag over de kaart.
+  final bool verkeerOpKaart;
+
   Instellingen kopie({
     String? server,
     String? stijl,
@@ -32,6 +36,7 @@ class Instellingen {
     bool? vermijdSnelwegen,
     bool? vermijdTol,
     bool? vermijdVeren,
+    bool? verkeerOpKaart,
   }) => Instellingen(
     server: server ?? this.server,
     stijl: stijl ?? this.stijl,
@@ -40,6 +45,7 @@ class Instellingen {
     vermijdSnelwegen: vermijdSnelwegen ?? this.vermijdSnelwegen,
     vermijdTol: vermijdTol ?? this.vermijdTol,
     vermijdVeren: vermijdVeren ?? this.vermijdVeren,
+    verkeerOpKaart: verkeerOpKaart ?? this.verkeerOpKaart,
   );
 }
 
@@ -71,6 +77,7 @@ class InstellingenNotifier extends Notifier<Instellingen> {
           doos.get('vermijdSnelwegen', defaultValue: false) as bool,
       vermijdTol: doos.get('vermijdTol', defaultValue: false) as bool,
       vermijdVeren: doos.get('vermijdVeren', defaultValue: false) as bool,
+      verkeerOpKaart: doos.get('verkeerOpKaart', defaultValue: true) as bool,
     );
   }
 
@@ -84,6 +91,7 @@ class InstellingenNotifier extends Notifier<Instellingen> {
       'vermijdSnelwegen': nieuw.vermijdSnelwegen,
       'vermijdTol': nieuw.vermijdTol,
       'vermijdVeren': nieuw.vermijdVeren,
+      'verkeerOpKaart': nieuw.verkeerOpKaart,
     });
   }
 }

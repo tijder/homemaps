@@ -24,6 +24,9 @@ class Kaart extends StatefulWidget {
     required this.onRouteGekozen,
     required this.onLangIngedrukt,
     required this.rand,
+    this.verkeer,
+    this.toonVertraging = true,
+    this.onVerkeerGetikt,
     this.onController,
   });
 
@@ -47,6 +50,16 @@ class Kaart extends StatefulWidget {
   /// De ruimte die het paneel over de kaart legt; de route wordt daarbuiten
   /// in beeld gebracht.
   final EdgeInsets rand;
+
+  /// De verkeerslaag (GeoJSON van `/verkeer`), of null als hij uit staat.
+  final Map<String, dynamic>? verkeer;
+
+  /// Files en langzaam verkeer tonen; afsluitingen en werk staan er altijd op.
+  final bool toonVertraging;
+
+  /// Een tik op een stuk verkeer, met de eigenschappen uit de GeoJSON.
+  final void Function(Point<double> scherm, Map<String, dynamic> eigenschappen)?
+  onVerkeerGetikt;
   final ValueChanged<MapLibreMapController>? onController;
 
   @override
@@ -56,6 +69,7 @@ class Kaart extends StatefulWidget {
 class _KaartState extends State<Kaart> {
   static const _routeBron = 'routes';
   static const _aansluitBron = 'aansluiting';
+  static const _verkeerBron = 'verkeer';
 
   /// Kleiner dan dit is het gat tussen een punt en de weg niet het tonen waard.
   static const _minAansluiting = 15.0;
@@ -63,6 +77,9 @@ class _KaartState extends State<Kaart> {
 
   MapLibreMapController? _controller;
   bool _stijlKlaar = false;
+
+  /// Feature-id -> eigenschappen, om bij een tik te laten zien wat er is.
+  var _verkeerInfo = <String, Map<String, dynamic>>{};
 
   /// Cirkel-id -> index in [Kaart.punten]; de gevonden plaats zit er niet in.
   final _cirkelIndex = <String, int>{};
@@ -79,6 +96,10 @@ class _KaartState extends State<Kaart> {
       return;
     }
     if (!_stijlKlaar) return;
+    if (oud.verkeer != widget.verkeer ||
+        oud.toonVertraging != widget.toonVertraging) {
+      _tekenVerkeer();
+    }
     if (oud.routes != widget.routes ||
         oud.gekozen != widget.gekozen ||
         // Het scherm bouwt deze lijst elke keer opnieuw; op inhoud vergelijken,
@@ -95,8 +116,10 @@ class _KaartState extends State<Kaart> {
     // De cirkels van de punten zijn annotaties; hun laag bestaat al. De routelijnen
     // moeten daar ónder, anders verdwijnt een punt achter zijn eigen route.
     final onder = c.circleManager?.layerIds.firstOrNull;
+    await c.addGeoJsonSource(_verkeerBron, _leeg);
     await c.addGeoJsonSource(_routeBron, _leeg);
     await c.addGeoJsonSource(_aansluitBron, _leeg);
+    await _verkeerLagen(c);
     // Alternatieven grijs en onderop; de gekozen route blauw met een witte rand.
     await c.addLineLayer(
       _routeBron,
@@ -163,7 +186,134 @@ class _KaartState extends State<Kaart> {
     _stijlKlaar = true;
     _cirkelIndex.clear();
     _ingepast = 0;
+    await _tekenVerkeer();
     await _teken();
+  }
+
+  /// Onder de routes, zodat een route over een file heen leesbaar blijft. Een
+  /// afsluiting is rood met witte streepjes, werk oranje gestreept, files rood en
+  /// langzaam verkeer oranje. Pas vanaf een zoom waarop je wegen onderscheidt:
+  /// landelijk zijn het er honderden.
+  Future<void> _verkeerLagen(MapLibreMapController c) async {
+    List<Object> breedte(double laag, double hoog) => [
+      'interpolate',
+      ['linear'],
+      ['zoom'],
+      8,
+      laag,
+      15,
+      hoog,
+    ];
+    List<Object> soort(List<String> soorten) => [
+      'in',
+      ['get', 'soort'],
+      ['literal', soorten],
+    ];
+    await c.addLineLayer(
+      _verkeerBron,
+      'verkeer-traag',
+      LineLayerProperties(
+        lineColor: [
+          'match',
+          ['get', 'soort'],
+          'file',
+          '#c62828',
+          '#ef6c00',
+        ],
+        lineWidth: breedte(2.5, 7),
+        // Landelijk alleen de files; langzaam verkeer komt er vanaf zoom 9 bij.
+        lineOpacity: [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          8,
+          [
+            'match',
+            ['get', 'soort'],
+            'file',
+            0.85,
+            0,
+          ],
+          9.5,
+          0.85,
+        ],
+        lineCap: 'round',
+        lineJoin: 'round',
+      ),
+      filter: soort(['traag', 'file']),
+      minzoom: 7,
+    );
+    await c.addLineLayer(
+      _verkeerBron,
+      'verkeer-werk',
+      LineLayerProperties(
+        lineColor: '#f9a825',
+        lineWidth: breedte(2.5, 7),
+        lineDasharray: const [1.5, 1],
+      ),
+      filter: soort(['werk']),
+      minzoom: 9,
+    );
+    await c.addLineLayer(
+      _verkeerBron,
+      'verkeer-dicht',
+      LineLayerProperties(
+        lineColor: '#d32f2f',
+        lineWidth: breedte(3, 8),
+        lineCap: 'round',
+      ),
+      filter: soort(['dicht']),
+      minzoom: 9,
+    );
+    await c.addLineLayer(
+      _verkeerBron,
+      'verkeer-dicht-streep',
+      LineLayerProperties(
+        lineColor: '#ffffff',
+        lineWidth: breedte(1, 3),
+        lineDasharray: const [1, 1.5],
+      ),
+      filter: soort(['dicht']),
+      minzoom: 9,
+      enableInteraction: false,
+    );
+    // Een lijn van een paar pixels raak je met een vinger niet: een brede,
+    // vrijwel onzichtbare lijn eroverheen vangt de tik. Een fractie zichtbaar
+    // in plaats van 0, zodat MapLibre hem zeker meetelt bij een tik.
+    await c.addLineLayer(
+      _verkeerBron,
+      'verkeer-raak',
+      const LineLayerProperties(
+        lineColor: '#000000',
+        lineWidth: 20,
+        lineOpacity: 0.01,
+      ),
+      minzoom: 9,
+    );
+  }
+
+  Future<void> _tekenVerkeer() async {
+    final c = _controller;
+    if (c == null || !_stijlKlaar) return;
+    final features = [
+      for (final feature in (widget.verkeer?['features'] as List? ?? const []))
+        if (feature is Map<String, dynamic> &&
+            (widget.toonVertraging ||
+                !const {
+                  'traag',
+                  'file',
+                }.contains((feature['properties'] as Map?)?['soort'])))
+          feature,
+    ];
+    _verkeerInfo = {
+      for (final feature in features)
+        '${feature['id']}': (feature['properties'] as Map)
+            .cast<String, dynamic>(),
+    };
+    await c.setGeoJsonSource(_verkeerBron, {
+      'type': 'FeatureCollection',
+      'features': features,
+    });
   }
 
   static const _leeg = {'type': 'FeatureCollection', 'features': <dynamic>[]};
@@ -309,12 +459,17 @@ class _KaartState extends State<Kaart> {
   }
 
   void _featureGetikt(
-    Point<double> _,
+    Point<double> scherm,
     LatLng _,
     String id,
     String laag,
     Annotation? _,
   ) {
+    if (laag.startsWith('verkeer-')) {
+      final info = _verkeerInfo[id];
+      if (info != null) widget.onVerkeerGetikt?.call(scherm, info);
+      return;
+    }
     if (!_lagen.contains(laag)) return;
     final index = int.tryParse(id);
     if (index != null && index < widget.routes.length) {

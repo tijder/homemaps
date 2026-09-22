@@ -65,5 +65,45 @@
   "zoekHier": "Zoek op de kaart",
   "route": "Route",
   "terugNaarZoeken": "Terug naar zoeken",
-  "sleepOmTeVerplaatsen": "Sleep om de volgorde te wijzigen"
+  "sleepOmTeVerplaatsen": "Sleep om de volgorde te wijzigen",
+  "verkeerOpKaart": "Verkeer",
+  "verkeerWegDicht": "Weg afgesloten",
+  "verkeerAfritDicht": "Afrit afgesloten",
+  "verkeerOpritDicht": "Oprit afgesloten",
+  "verkeerVerbindingswegDicht": "Verbindingsweg afgesloten",
+  "verkeerParallelbaanDicht": "Parallelbaan afgesloten",
+  "verkeerRijbaanDicht": "Rijbaan afgesloten",
+  "verkeerRijstrookDicht": "Rijstrook afgesloten",
+  "verkeerStrokenOpen": "{aantal, plural, =1{1 rijstrook open} other{{aantal} rijstroken open}}",
+  "@verkeerStrokenOpen": {
+    "placeholders": {
+      "aantal": {
+        "type": "int"
+      }
+    }
+  },
+  "verkeerFile": "File",
+  "verkeerTraag": "Langzaam verkeer",
+  "verkeerVertraging": "+{duur} vertraging · {kmu} km/u",
+  "@verkeerVertraging": {
+    "placeholders": {
+      "duur": {
+        "type": "String"
+      },
+      "kmu": {
+        "type": "int"
+      }
+    }
+  },
+  "verkeerTot": "Tot {moment}",
+  "@verkeerTot": {
+    "placeholders": {
+      "moment": {
+        "type": "String"
+      }
+    }
+  },
+  "oorzaakWerk": "Werkzaamheden",
+  "oorzaakOngeval": "Ongeval",
+  "oorzaakEvenement": "Evenement"
 }

@@ -8,6 +8,7 @@ import 'package:pointer_interceptor/pointer_interceptor.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/plaats.dart';
+import '../models/profiel.dart';
 import '../providers/diensten.dart';
 import '../providers/instellingen.dart';
 import '../providers/planner.dart';
@@ -16,6 +17,7 @@ import '../utils/muis_stub.dart'
     if (dart.library.js_interop) '../utils/muis_web.dart';
 import '../widgets/kaart.dart';
 import '../widgets/route_paneel.dart';
+import '../widgets/verkeer_melding.dart';
 import '../widgets/zoekveld.dart';
 
 @RoutePage()
@@ -30,8 +32,12 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
   static const _paneelBreedte = 380.0;
   static const _stijlen = ['osm-bright', 'positron', 'dark-matter'];
 
+  /// De keuze in het lagenmenu die de verkeerslaag aan- of uitzet.
+  static const _verkeer = 'verkeer';
+
   MapLibreMapController? _kaart;
   ({Offset plek, LatLng punt})? _menu;
+  ({Offset plek, Map<String, dynamic> info})? _melding;
   late final void Function() _stopMuis;
 
   LatLng? _midden() => _kaart?.cameraPosition?.target;
@@ -148,6 +154,12 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
       onRouteGekozen: ref.read(plannerProvider.notifier).kies,
       onLangIngedrukt: _puntMenu,
       onController: (controller) => _kaart = controller,
+      verkeer: ref.watch(verkeerProvider).value,
+      // Een file zegt de fietser en de wandelaar niets; een dichte weg wel.
+      toonVertraging: instellingen.profiel == Profiel.auto,
+      onVerkeerGetikt: (scherm, info) => setState(
+        () => _melding = (plek: Offset(scherm.x, scherm.y), info: info),
+      ),
       rand: breed
           ? const EdgeInsets.only(left: _paneelBreedte)
           : EdgeInsets.only(
@@ -169,9 +181,15 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                   tooltip: l.kaartstijl,
                   icon: const _Rondje(Icons.layers_outlined),
                   initialValue: instellingen.stijl,
-                  onSelected: (stijl) => ref
+                  onSelected: (keuze) => ref
                       .read(instellingenProvider.notifier)
-                      .wijzig(instellingen.kopie(stijl: stijl)),
+                      .wijzig(
+                        keuze == _verkeer
+                            ? instellingen.kopie(
+                                verkeerOpKaart: !instellingen.verkeerOpKaart,
+                              )
+                            : instellingen.kopie(stijl: keuze),
+                      ),
                   itemBuilder: (_) => [
                     for (final (stijl, naam) in [
                       (_stijlen[0], l.stijlKaart),
@@ -182,6 +200,12 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                         value: stijl,
                         child: PointerInterceptor(child: Text(naam)),
                       ),
+                    const PopupMenuDivider(),
+                    CheckedPopupMenuItem(
+                      value: _verkeer,
+                      checked: instellingen.verkeerOpKaart,
+                      child: PointerInterceptor(child: Text(l.verkeerOpKaart)),
+                    ),
                   ],
                 ),
                 IconButton(
@@ -203,6 +227,9 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
     );
 
     final menu = _menu == null ? null : _menuLaag(context, _menu!);
+    final melding = _melding == null
+        ? null
+        : _meldingLaag(context, _melding!.plek, _melding!.info);
 
     return Scaffold(
       body: Stack(
@@ -266,6 +293,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
             ),
             child: knoppen,
           ),
+          ?melding,
           ?menu,
         ],
       ),
@@ -407,6 +435,39 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                       ],
                     ),
                   ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Wat er op een aangetikt stuk verkeer aan de hand is, naast de plek van de
+  /// tik. Zoals het puntmenu: een vlak over de kaart dat bij een tik sluit.
+  Widget _meldingLaag(
+    BuildContext context,
+    Offset plek,
+    Map<String, dynamic> info,
+  ) {
+    final scherm = MediaQuery.sizeOf(context);
+    const breedte = 260.0, hoogte = 140.0;
+    return Positioned.fill(
+      child: PointerInterceptor(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => setState(() => _melding = null),
+          child: Stack(
+            children: [
+              Positioned(
+                left: min(plek.dx + 8, scherm.width - breedte - 8),
+                top: min(plek.dy + 8, scherm.height - hoogte - 8),
+                width: breedte,
+                child: Material(
+                  elevation: 8,
+                  borderRadius: BorderRadius.circular(8),
+                  child: VerkeerMelding(info),
                 ),
               ),
             ],
