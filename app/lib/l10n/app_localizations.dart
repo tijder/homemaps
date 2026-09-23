@@ -608,6 +608,12 @@ abstract class AppLocalizations {
   /// **'Klaar'**
   String get klaar;
 
+  /// Wat je doet bij een op- of afrit, splitsing of invoegstrook, kort, in de navigatiekop.
+  ///
+  /// In nl, this message translates to:
+  /// **'{soort, select, oprit{Oprit nemen} afrit{Afrit nemen} rechtdoor{Rechtdoor aanhouden} rechts{Rechts aanhouden} links{Links aanhouden} invoegen{Invoegen} other{}}'**
+  String korteActie(String soort);
+
   /// No description provided for @afrit.
   ///
   /// In nl, this message translates to:

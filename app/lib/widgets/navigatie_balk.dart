@@ -47,10 +47,11 @@ class NavigatieKop extends StatelessWidget {
             afstand(_rond(stand.totVolgende)),
             manoeuvres[stand.volgende].instructie,
           );
-    // Het bord bij een op- of afrit, splitsing of invoegstrook.
-    final bord = volgende != null && volgende.type >= 18 && volgende.type <= 25
-        ? volgende.bord
-        : null;
+    // Bij een op- of afrit, splitsing of invoegstrook, zoals bij Google en
+    // Apple Maps: kort wat je doet, met het bord eronder, in plaats van de
+    // hele zin.
+    final bord = volgende?.wegwijzer;
+    final actie = bord == null ? null : korteActie(volgende!, l);
     final rijstroken = volgende == null ? null : nav.rijstroken;
     final matrix = nav.aangekomen ? null : nav.matrix;
 
@@ -90,10 +91,6 @@ class NavigatieKop extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (bord != null) ...[
-                        WegBord(bord),
-                        const SizedBox(height: 6),
-                      ],
                       Text(
                         titel,
                         style: tekst.headlineMedium?.copyWith(
@@ -101,7 +98,18 @@ class NavigatieKop extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      if (onder != null)
+                      if (bord != null) ...[
+                        if (actie != null)
+                          Text(
+                            actie,
+                            style: tekst.titleMedium?.copyWith(
+                              color: kleuren.onPrimaryContainer,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        const SizedBox(height: 6),
+                        WegBord(bord),
+                      ] else if (onder != null)
                         Text(
                           onder,
                           maxLines: 2,
@@ -156,6 +164,21 @@ class NavigatieKop extends StatelessWidget {
       : meters < 1000
       ? (meters / 50).round() * 50
       : meters;
+}
+
+/// Kort wat je doet bij een op- of afrit, splitsing of invoegstrook ("Links
+/// aanhouden"), of null bij een andere manoeuvre.
+String? korteActie(Manoeuvre manoeuvre, AppLocalizations l) {
+  final soort = switch (manoeuvre.type) {
+    17 || 18 || 19 => 'oprit',
+    20 || 21 => 'afrit',
+    22 => 'rechtdoor',
+    23 => 'rechts',
+    24 => 'links',
+    25 || 37 || 38 => 'invoegen',
+    _ => null,
+  };
+  return soort == null ? null : l.korteActie(soort);
 }
 
 /// Een bord zoals langs de snelweg: het afritnummer, de wegnummers (A-wegen

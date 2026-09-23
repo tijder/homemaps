@@ -68,6 +68,56 @@ void main() {
     expect(stroe().manoeuvres.where((m) => m.bord != null), isEmpty);
   });
 
+  test('bord: ook de wegwijzers boven de doorgaande weg', () {
+    final bord = Bord.vanValhalla(const {
+      'guide_branch_elements': [
+        {'text': 'A27'},
+      ],
+      'guide_toward_elements': [
+        {'text': 'Almere'},
+        {'text': 'Hilversum'},
+      ],
+      'junction_name_elements': [
+        {'text': 'Knooppunt Eemnes'},
+      ],
+    })!;
+    expect(bord.wegen, ['A27']);
+    expect(bord.richtingen, ['Almere', 'Hilversum']);
+    expect(bord.naam, 'Knooppunt Eemnes');
+    // Die van de afrit zelf gaan voor.
+    expect(
+      Bord.vanValhalla(const {
+        'exit_toward_elements': [
+          {'text': 'Utrecht'},
+        ],
+        'guide_toward_elements': [
+          {'text': 'Almere'},
+        ],
+      })!.richtingen,
+      ['Utrecht'],
+    );
+  });
+
+  test('wegwijzer: zonder bord het wegnummer, alleen bij op- en afritten', () {
+    // Stroe: "Houd links aan om op Heuvelrandweg/R101 te blijven", geen bord
+    // en geen A-, N- of S-nummer.
+    final m = stroe().manoeuvres;
+    expect(m.firstWhere((m) => m.type == 24).wegwijzer, isNull);
+    const splitsing = Manoeuvre(
+      instructie: 'Houd links aan om op A27 te blijven.',
+      type: 24,
+      meters: 0,
+      seconden: 0,
+      vormIndex: 0,
+      straten: ['E 231', 'A27'],
+    );
+    expect(splitsing.wegwijzer!.wegen, ['A27']);
+    // Een gewone afslag heeft nooit een wegwijzer.
+    expect(m.firstWhere((m) => m.type == 15).wegwijzer, isNull);
+    expect(hoofdnummer(['Rijksweg 12', 'E 30']), 'E 30');
+    expect(hoofdnummer(['Heuvelrandweg', 'R101']), isNull);
+  });
+
   test('rijstroken uit het OSRM-antwoord, op volgorde langs de route', () {
     final advies = utrechtRijstroken();
     expect(advies, isNotEmpty);
@@ -326,5 +376,40 @@ void main() {
     await tester.pumpWidget(app(const RijstrookBalk(stroken)));
     expect(find.text('300 m'), findsNothing);
     expect(find.bySemanticsLabel('1 goede rijstrook van 2'), findsOneWidget);
+  });
+
+  testWidgets('kop bij een splitsing: kort wat je doet, met het bord', (
+    tester,
+  ) async {
+    final route = utrecht();
+    final links = route.manoeuvres.indexWhere((m) => m.type == 24);
+    await tester.pumpWidget(
+      app(
+        NavigatieKop(
+          NavigatieToestand(
+            route: route,
+            doelen: const [],
+            stand: NavStand(
+              opRoute: route.punten.first,
+              segment: 0,
+              langs: 0,
+              afwijking: 0,
+              routeKoers: 0,
+              volgende: links,
+              totVolgende: 15000,
+              restMeters: 20000,
+              restSeconden: 900,
+              vanRoute: false,
+              aangekomen: false,
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('15 km'), findsOneWidget);
+    expect(find.text('Links aanhouden'), findsOneWidget);
+    expect(find.text('A12'), findsOneWidget);
+    expect(find.textContaining('Amersfoort'), findsOneWidget);
+    expect(find.textContaining('Houd links aan'), findsNothing);
   });
 }

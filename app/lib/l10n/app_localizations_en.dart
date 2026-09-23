@@ -307,6 +307,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get klaar => 'Done';
 
   @override
+  String korteActie(String soort) {
+    String _temp0 = intl.Intl.selectLogic(soort, {
+      'oprit': 'Take the ramp',
+      'afrit': 'Take the exit',
+      'rechtdoor': 'Keep straight',
+      'rechts': 'Keep right',
+      'links': 'Keep left',
+      'invoegen': 'Merge',
+      'other': '',
+    });
+    return '$_temp0';
+  }
+
+  @override
   String afrit(String nummer) {
     return 'Exit $nummer';
   }

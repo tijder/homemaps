@@ -55,6 +55,20 @@ class Manoeuvre {
 
   bool get isRotonde => type == 26 || type == 27;
 
+  /// Op- of afrit, splitsing of invoegen: waar de bewegwijzering telt.
+  bool get isWegwijzing =>
+      (type >= 17 && type <= 25) || type == 37 || type == 38;
+
+  /// Het bord bij een op- of afrit, splitsing of invoegstrook. Staat er geen
+  /// bord in de route, dan het wegnummer waar je op komt ("A27"), zoals ook
+  /// Google en Apple Maps doen.
+  Bord? get wegwijzer {
+    if (!isWegwijzing) return null;
+    if (bord != null) return bord;
+    final weg = hoofdnummer(straten);
+    return weg == null ? null : Bord(wegen: [weg]);
+  }
+
   /// Bestemming (4) of een via-punt onderweg (ook 4, of 5/6 rechts/links).
   bool get isBestemming => type >= 4 && type <= 6;
 }
@@ -88,6 +102,15 @@ class Manoeuvre {
     hoek: (na - voor + 360) % 360.0,
   );
 }
+
+/// Een wegnummer ("A27", "N228", "S100", "E 30"), geen straatnaam.
+bool isWegnummer(String naam) => RegExp(r'^[ANSE] ?\d+$').hasMatch(naam);
+
+/// Het wegnummer dat op de borden staat: een A-, N- of S-weg eerst, een
+/// E-nummer alleen als er niets anders is. Null als er geen nummer bij is.
+String? hoofdnummer(List<String> namen) =>
+    namen.where((n) => isWegnummer(n) && !n.startsWith('E')).firstOrNull ??
+    namen.where(isWegnummer).firstOrNull;
 
 /// De bewegwijzering bij een manoeuvre, zoals Valhalla die in `sign` geeft.
 class Bord {
@@ -124,12 +147,19 @@ class Bord {
       return uit;
     }
 
+    // De borden bij de afrit gaan voor; anders die boven de doorgaande weg
+    // (OSM `destination` op de hoofdrijbaan) of de naam van het knooppunt.
+    List<String> eerst(String afrit, String gids) {
+      final uit = teksten(afrit);
+      return uit.isNotEmpty ? uit : teksten(gids);
+    }
+
     final afrit = teksten('exit_number_elements');
-    final naam = teksten('exit_name_elements');
+    final naam = eerst('exit_name_elements', 'junction_name_elements');
     final bord = Bord(
       afrit: afrit.firstOrNull,
-      wegen: teksten('exit_branch_elements'),
-      richtingen: teksten('exit_toward_elements'),
+      wegen: eerst('exit_branch_elements', 'guide_branch_elements'),
+      richtingen: eerst('exit_toward_elements', 'guide_toward_elements'),
       naam: naam.firstOrNull,
     );
     return bord.afrit == null &&

@@ -85,6 +85,15 @@
   "gesprokenKilometer": "{km} kilometers",
   "aangekomen": "You have arrived",
   "klaar": "Done",
+  "korteActie": "{soort, select, oprit{Take the ramp} afrit{Take the exit} rechtdoor{Keep straight} rechts{Keep right} links{Keep left} invoegen{Merge} other{}}",
+  "@korteActie": {
+    "description": "Wat je doet bij een op- of afrit, splitsing of invoegstrook, kort, in de navigatiekop.",
+    "placeholders": {
+      "soort": {
+        "type": "String"
+      }
+    }
+  },
   "afrit": "Exit {nummer}",
   "@afrit": {
     "placeholders": {
