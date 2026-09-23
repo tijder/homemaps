@@ -11,6 +11,8 @@ import 'dart:math';
 ///   de weg zelf.
 /// - Tekst wordt licht, met een donkere rand eromheen (ook waar de stijl er
 ///   geen had: donkere letters zonder rand lezen overdag goed, 's nachts niet).
+/// - Tekst óp een plaatje (het bordje met A12 erop) blijft zoals hij is: het
+///   plaatje zelf verandert niet, dus zwart op wit blijft het best leesbaar.
 ///
 /// Wat geen kleur is, of niet te lezen, blijft zoals het is.
 Map<String, dynamic> nachtstijl(Map<String, dynamic> stijl) {
@@ -23,7 +25,7 @@ Map<String, dynamic> nachtstijl(Map<String, dynamic> stijl) {
 
 Map<String, dynamic> _laag(Map<String, dynamic> laag) {
   final paint = (laag['paint'] as Map?)?.cast<String, dynamic>();
-  if (paint == null) return laag;
+  if (paint == null || _opPlaatje(laag)) return laag;
   final id = '${laag['id']}';
   final nieuw = <String, dynamic>{
     for (final MapEntry(:key, :value) in paint.entries)
@@ -45,6 +47,18 @@ Map<String, dynamic> _laag(Map<String, dynamic> laag) {
     nieuw.putIfAbsent('text-halo-width', () => 1.2);
   }
   return {...laag, 'paint': nieuw};
+}
+
+/// Een symboollaag waarvan de tekst op het plaatje staat, zoals een
+/// wegnummerbordje. Staat de tekst ernaast (een POI met zijn naam eronder),
+/// dan heeft de laag een `text-offset`.
+bool _opPlaatje(Map<String, dynamic> laag) {
+  final layout = laag['layout'];
+  return laag['type'] == 'symbol' &&
+      layout is Map &&
+      layout.containsKey('icon-image') &&
+      layout.containsKey('text-field') &&
+      !layout.containsKey('text-offset');
 }
 
 typedef Hsla = ({double h, double s, double l, double a});

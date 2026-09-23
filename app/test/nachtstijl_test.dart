@@ -99,6 +99,49 @@ void main() {
     expect(nacht['sources'], {'openmaptiles': {}});
   });
 
+  test(
+    'tekst op een bordje blijft zwart zonder rand, tekst naast een icoon niet',
+    () {
+      final nacht = nachtstijl(
+        stijl([
+          {
+            'id': 'highway-shield',
+            'type': 'symbol',
+            'layout': {
+              'icon-image': 'road_{ref_length}',
+              'text-field': '{ref}',
+            },
+            'paint': <String, dynamic>{},
+          },
+          {
+            'id': 'highway-shield-us-other',
+            'type': 'symbol',
+            'layout': {
+              'icon-image': '{network}_{ref_length}',
+              'text-field': '{ref}',
+            },
+            'paint': {'text-color': 'rgba(0, 0, 0, 1)'},
+          },
+          {
+            'id': 'poi-level-1',
+            'type': 'symbol',
+            'layout': {
+              'icon-image': '{class}_11',
+              'text-field': '{name:latin}',
+              'text-offset': [0, 0.6],
+            },
+            'paint': {'text-color': '#666', 'text-halo-color': '#ffffff'},
+          },
+        ]),
+      );
+      final lagen = [for (final laag in nacht['layers'] as List) laag['paint']];
+      expect(lagen[0], isEmpty);
+      expect(lagen[1], {'text-color': 'rgba(0, 0, 0, 1)'});
+      expect(l(lagen[2]['text-color']), greaterThan(0.6));
+      expect(l(lagen[2]['text-halo-color']), lessThan(0.1));
+    },
+  );
+
   test('kleuren in stops en expressies; de rest blijft', () {
     final nacht = nachtstijl(
       stijl([
