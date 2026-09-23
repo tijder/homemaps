@@ -1,6 +1,6 @@
 [project]
 name = "homemaps-traffic"
-version = "0.4.0"
+version = "0.5.0"
 description = "Schrijft live verkeer van NDW in Valhalla's traffic.tar"
 requires-python = ">=3.12"
 dependencies = []
