@@ -130,7 +130,7 @@ class RouteVolger {
     final segment = beste.segment;
 
     final grens = maxAfwijking + 2 * min(fix.nauwkeurigheid, 50);
-    final koers = _koers(punten[segment], punten[segment + 1]);
+    final koers = koersTussen(punten[segment], punten[segment + 1]);
     final tegen =
         fix.koers != null &&
         (fix.snelheid ?? 0) > 5 &&
@@ -180,7 +180,7 @@ class RouteVolger {
     return (
       langs: _tot[i] + beste.fractie * (_tot[i + 1] - _tot[i]),
       afstand: beste.afstand,
-      koers: _koers(route.punten[i], route.punten[i + 1]),
+      koers: koersTussen(route.punten[i], route.punten[i + 1]),
     );
   }
 
@@ -278,14 +278,6 @@ class RouteVolger {
     }
     return beste;
   }
-}
-
-double _koers(LatLng a, LatLng b) {
-  final f1 = a.latitude * pi / 180, f2 = b.latitude * pi / 180;
-  final dl = (b.longitude - a.longitude) * pi / 180;
-  final y = sin(dl) * cos(f2);
-  final x = cos(f1) * sin(f2) - sin(f1) * cos(f2) * cos(dl);
-  return (atan2(y, x) * 180 / pi + 360) % 360;
 }
 
 double hoekVerschil(double a, double b) => _hoekVerschil(a, b);

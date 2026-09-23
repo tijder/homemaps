@@ -3,8 +3,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:homemaps/l10n/app_localizations.dart';
 import 'package:homemaps/models/route.dart';
+import 'package:homemaps/navigatie/afslag_pijl.dart';
+import 'package:homemaps/utils/afstand.dart';
 import 'package:homemaps/navigatie/navigatie_provider.dart';
 import 'package:homemaps/navigatie/rijstrook_keuze.dart';
 import 'package:homemaps/navigatie/volger.dart';
@@ -480,5 +483,41 @@ void main() {
     expect(hoofdwegen(utrecht()), ['A12', 'A27']);
     // Wegnummers gaan voor straatnamen.
     expect(hoofdwegen(stroe()), ['N344', 'N303']);
+  });
+
+  group('afslagpijl', () {
+    double lengte(List<LatLng> lijn) {
+      var som = 0.0;
+      for (var i = 1; i < lijn.length; i++) {
+        som += meters(lijn[i - 1], lijn[i]);
+      }
+      return som;
+    }
+
+    test('40 m voor tot 30 m na de afslag', () {
+      final route = stroe();
+      final links = route.manoeuvres.indexWhere((m) => m.type == 15);
+      final pijl = afslagPijl(route, links)!;
+      expect(lengte(pijl), closeTo(70, 1));
+      // Het punt van de afslag ligt op de pijl.
+      final afslag = route.punten[route.manoeuvres[links].vormIndex];
+      expect(metersTotLijn(afslag, pijl), lessThan(1));
+    });
+
+    test('een rotonde: tot voorbij de uitrit', () {
+      final route = stroe();
+      final op = route.manoeuvres.indexWhere((m) => m.type == 26);
+      final pijl = afslagPijl(route, op)!;
+      final af = route.punten[route.manoeuvres[op + 1].vormIndex];
+      expect(metersTotLijn(af, pijl), lessThan(1));
+      expect(lengte(pijl), greaterThan(70));
+    });
+
+    test('geen pijl bij start, rechtdoor en bestemming', () {
+      final route = stroe();
+      expect(afslagPijl(route, 0), isNull);
+      expect(afslagPijl(route, route.manoeuvres.length - 1), isNull);
+      expect(heeftAfslagPijl(route.manoeuvres.first), isFalse);
+    });
   });
 }

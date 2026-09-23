@@ -36,3 +36,12 @@ double metersTotLijn(LatLng p, List<LatLng> lijn) {
   }
   return sqrt(beste);
 }
+
+/// De richting van [a] naar [b] in graden (0 = noord), met de klok mee.
+double koersTussen(LatLng a, LatLng b) {
+  final f1 = a.latitude * pi / 180, f2 = b.latitude * pi / 180;
+  final dl = (b.longitude - a.longitude) * pi / 180;
+  final y = sin(dl) * cos(f2);
+  final x = cos(f1) * sin(f2) - sin(f1) * cos(f2) * cos(dl);
+  return (atan2(y, x) * 180 / pi + 360) % 360;
+}

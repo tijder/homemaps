@@ -18,6 +18,7 @@ import '../l10n/app_localizations.dart';
 import '../models/plaats.dart';
 import '../models/profiel.dart';
 import '../models/route.dart';
+import '../navigatie/afslag_pijl.dart';
 import '../navigatie/navigatie_provider.dart';
 import '../navigatie/simulatie.dart';
 import '../providers/diensten.dart';
@@ -71,6 +72,13 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
   bool _volgt = true;
   Timer? _hervat;
   static const _hervatNa = Duration(seconds: 10);
+
+  /// Zo dicht bij de volgende afslag staat de pijl op de kaart.
+  static const _pijlBinnen = 1000.0;
+
+  /// De pijl van de laatste afslag; pas een nieuwe bij een andere afslag of
+  /// route, zodat de kaart hem niet bij elke fix opnieuw tekent.
+  ({RouteOptie route, int index, List<LatLng>? lijn})? _pijl;
 
   /// Het bottomsheet op een smal scherm: laag (alleen de samenvatting en de
   /// gekozen route), half (alle routes en Start) of bijna vol.
@@ -463,6 +471,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
       gereden: nav != null && stand != null
           ? [...nav.route.punten.take(stand.segment + 1), stand.opRoute]
           : null,
+      pijl: _pijlVoor(nav),
       onZelfBewogen: _zelfBewogen,
       verkeer: ref.watch(verkeerProvider).value,
       // Een file zegt de fietser en de wandelaar niets; een dichte weg wel.
@@ -1067,6 +1076,27 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
         ),
       ),
     );
+  }
+
+  /// De pijl bij de volgende afslag, als die dichtbij is.
+  List<LatLng>? _pijlVoor(NavigatieToestand? nav) {
+    final stand = nav?.stand;
+    if (nav == null ||
+        stand == null ||
+        nav.aangekomen ||
+        nav.herberekent ||
+        stand.totVolgende > _pijlBinnen) {
+      return null;
+    }
+    final oud = _pijl;
+    if (oud != null &&
+        identical(oud.route, nav.route) &&
+        oud.index == stand.volgende) {
+      return oud.lijn;
+    }
+    final lijn = afslagPijl(nav.route, stand.volgende);
+    _pijl = (route: nav.route, index: stand.volgende, lijn: lijn);
+    return lijn;
   }
 
   /// Tijdens navigatie: de rest van de routebeschrijving, vanaf de volgende

@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../models/plaats.dart';
 import '../models/route.dart';
+import '../navigatie/afslag_pijl.dart';
 import '../providers/locatie.dart';
 import '../utils/afstand.dart';
 
@@ -28,6 +30,7 @@ class Kaart extends StatefulWidget {
     this.locatie,
     this.volg,
     this.gereden,
+    this.pijl,
     this.navigeert = false,
     this.onZelfBewogen,
     this.verkeer,
@@ -69,6 +72,10 @@ class Kaart extends StatefulWidget {
   /// de blauwe lijn heen.
   final List<LatLng>? gereden;
 
+  /// Het stukje route rond de volgende afslag, als pijl op de kaart (zie
+  /// [afslagPijl]); null zonder pijl.
+  final List<LatLng>? pijl;
+
   /// Tijdens navigatie ligt het midden van de kaart lager (zie [volg]), ook
   /// als je even zelf rondkijkt; daarna gaat de kaart weer plat en noord-boven.
   final bool navigeert;
@@ -97,6 +104,7 @@ class _KaartState extends State<Kaart> {
   static const _aansluitBron = 'aansluiting';
   static const _verkeerBron = 'verkeer';
   static const _geredenBron = 'gereden';
+  static const _pijlBron = 'pijl';
 
   /// Kleiner dan dit is het gat tussen een punt en de weg niet het tonen waard.
   static const _minAansluiting = 15.0;
@@ -125,6 +133,7 @@ class _KaartState extends State<Kaart> {
     if (!_stijlKlaar) return;
     if (oud.locatie != widget.locatie) _toonLocatie();
     if (oud.gereden != widget.gereden) _tekenGereden();
+    if (oud.pijl != widget.pijl) _tekenPijl();
     if (oud.navigeert != widget.navigeert) _zetRand();
     if (widget.volg != null && oud.volg != widget.volg) _volg();
     if (oud.verkeer != widget.verkeer ||
@@ -211,6 +220,54 @@ class _KaartState extends State<Kaart> {
       ),
       enableInteraction: false,
     );
+    // De pijl bij de volgende afslag: wit met een donkere rand over de route,
+    // met een punt aan het eind, zoals bij Google en Apple Maps.
+    await c.addGeoJsonSource(_pijlBron, _leeg);
+    await c.addLineLayer(
+      _pijlBron,
+      'pijl-rand',
+      const LineLayerProperties(
+        lineColor: '#0d47a1',
+        lineWidth: 11,
+        lineCap: 'round',
+        lineJoin: 'round',
+      ),
+      filter: ['==', '\$type', 'LineString'],
+      enableInteraction: false,
+    );
+    await c.addLineLayer(
+      _pijlBron,
+      'pijl',
+      const LineLayerProperties(
+        lineColor: '#ffffff',
+        lineWidth: 6,
+        lineCap: 'round',
+        lineJoin: 'round',
+      ),
+      filter: ['==', '\$type', 'LineString'],
+      enableInteraction: false,
+    );
+    try {
+      await c.addImage(_pijlKopBeeld, await _pijlKop());
+      await c.addSymbolLayer(
+        _pijlBron,
+        'pijl-kop',
+        const SymbolLayerProperties(
+          iconImage: _pijlKopBeeld,
+          iconSize: 0.5,
+          iconAnchor: 'bottom',
+          iconRotate: [Expressions.get, 'koers'],
+          iconRotationAlignment: 'map',
+          iconPitchAlignment: 'map',
+          iconAllowOverlap: true,
+          iconIgnorePlacement: true,
+        ),
+        filter: ['==', '\$type', 'Point'],
+        enableInteraction: false,
+      );
+    } catch (_) {
+      // Zonder punt is de lijn nog steeds de pijl.
+    }
     // Van waar je klikte naar waar de route de weg oppakt: Valhalla legt een punt
     // naast de weg op de dichtstbijzijnde weg, en zonder dit lijntje lijkt de
     // route dan zomaar ergens anders te beginnen.
@@ -231,6 +288,7 @@ class _KaartState extends State<Kaart> {
     _ingepast = 0;
     await _tekenVerkeer();
     await _tekenGereden();
+    await _tekenPijl();
     await _toonLocatie();
     await _teken();
   }
@@ -253,6 +311,70 @@ class _KaartState extends State<Kaart> {
               ],
             },
           },
+      ],
+    });
+  }
+
+  static const _pijlKopBeeld = 'pijl-kop';
+
+  /// De punt van de pijl: een witte driehoek met een donkere rand, naar boven
+  /// (noord); de laag draait hem met de koers mee.
+  static Future<Uint8List> _pijlKop() async {
+    const maat = 48.0;
+    final opname = ui.PictureRecorder();
+    final doek = Canvas(opname);
+    final pad = Path()
+      ..moveTo(maat / 2, 5)
+      ..lineTo(maat - 5, maat - 3)
+      ..lineTo(5, maat - 3)
+      ..close();
+    doek
+      ..drawPath(
+        pad,
+        Paint()
+          ..color = const Color(0xFF0D47A1)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 6
+          ..strokeJoin = StrokeJoin.round,
+      )
+      ..drawPath(pad, Paint()..color = Colors.white);
+    final beeld = await opname.endRecording().toImage(
+      maat.toInt(),
+      maat.toInt(),
+    );
+    final png = await beeld.toByteData(format: ui.ImageByteFormat.png);
+    return png!.buffer.asUint8List();
+  }
+
+  Future<void> _tekenPijl() async {
+    final c = _controller;
+    if (c == null || !_stijlKlaar) return;
+    final lijn = widget.pijl;
+    await c.setGeoJsonSource(_pijlBron, {
+      'type': 'FeatureCollection',
+      'features': [
+        if (lijn != null && lijn.length > 1) ...[
+          {
+            'type': 'Feature',
+            'properties': <String, dynamic>{},
+            'geometry': {
+              'type': 'LineString',
+              'coordinates': [
+                for (final p in lijn) [p.longitude, p.latitude],
+              ],
+            },
+          },
+          {
+            'type': 'Feature',
+            'properties': {
+              'koers': koersTussen(lijn[lijn.length - 2], lijn.last),
+            },
+            'geometry': {
+              'type': 'Point',
+              'coordinates': [lijn.last.longitude, lijn.last.latitude],
+            },
+          },
+        ],
       ],
     });
   }
