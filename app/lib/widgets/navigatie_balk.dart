@@ -120,7 +120,12 @@ class NavigatieKop extends StatelessWidget {
           if (matrix != null)
             MatrixBalk(matrix.stroken)
           else if (rijstroken != null)
-            RijstrookBalk(rijstroken.stroken),
+            RijstrookBalk(
+              rijstroken.stroken,
+              // Een kruising vóór de manoeuvre: zijn eigen afstand erbij, anders
+              // lijkt het de afslag hierboven.
+              over: rijstroken.bijManoeuvre ? null : rijstroken.over,
+            ),
           if (toonDaarna)
             Container(
               color: kleuren.primary,
@@ -226,39 +231,63 @@ class WegBord extends StatelessWidget {
   }
 }
 
-/// De rijstroken bij de eerstvolgende kruising: goede vol, de rest gedimd.
+/// De rijstroken bij een kruising: goede vol, de rest gedimd. Met [over] staat
+/// links hoe ver die kruising nog is.
 class RijstrookBalk extends StatelessWidget {
-  const RijstrookBalk(this.stroken, {super.key});
+  const RijstrookBalk(this.stroken, {this.over, super.key});
 
   final List<Rijstrook> stroken;
+
+  /// Hoe ver de kruising nog is, als dat niet die van de manoeuvre is.
+  final double? over;
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final kleuren = Theme.of(context).colorScheme;
+    final goed = l.rijstrokenGoed(
+      stroken.where((s) => s.goed).length,
+      stroken.length,
+    );
+    final over = this.over;
+    final afstandTekst = over == null
+        ? null
+        : afstand(NavigatieKop._rond(over));
     return Semantics(
-      label: l.rijstrokenGoed(
-        stroken.where((s) => s.goed).length,
-        stroken.length,
-      ),
+      label: afstandTekst == null ? goed : l.rijstrokenOver(afstandTekst, goed),
+      excludeSemantics: true,
       child: Container(
         color: kleuren.primary,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            for (final (i, strook) in stroken.indexed) ...[
-              if (i > 0)
-                Container(
-                  width: 1,
-                  height: 28,
-                  color: kleuren.onPrimary.withValues(alpha: 0.3),
+            if (afstandTekst != null)
+              Text(
+                afstandTekst,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: kleuren.onPrimary,
+                  fontWeight: FontWeight.w600,
                 ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: _strook(strook, kleuren),
               ),
-            ],
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (final (i, strook) in stroken.indexed) ...[
+                    if (i > 0)
+                      Container(
+                        width: 1,
+                        height: 28,
+                        color: kleuren.onPrimary.withValues(alpha: 0.3),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: _strook(strook, kleuren),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ],
         ),
       ),

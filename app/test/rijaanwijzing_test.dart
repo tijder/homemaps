@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:homemaps/l10n/app_localizations.dart';
 import 'package:homemaps/models/route.dart';
 import 'package:homemaps/navigatie/navigatie_provider.dart';
+import 'package:homemaps/navigatie/rijstrook_keuze.dart';
 import 'package:homemaps/navigatie/volger.dart';
 import 'package:homemaps/services/valhalla_service.dart';
 import 'package:homemaps/widgets/manoeuvre_pictogram.dart';
@@ -207,6 +208,7 @@ void main() {
             stand: stand,
             rijstroken: (
               over: 350,
+              bijManoeuvre: true,
               stroken: const [
                 Rijstrook(richtingen: ['straight'], goed: false),
                 Rijstrook(
@@ -235,5 +237,94 @@ void main() {
       findsNWidgets(2),
     );
     expect(find.bySemanticsLabel('2 goede rijstroken van 3'), findsOneWidget);
+  });
+
+  group('welke rijstroken in de kop', () {
+    const splitsing = [
+      Rijstrook(richtingen: ['straight'], goed: true),
+      Rijstrook(richtingen: ['straight'], goed: true),
+      Rijstrook(richtingen: ['right'], goed: false),
+    ];
+    const afrit = [
+      Rijstrook(richtingen: ['straight'], goed: false),
+      Rijstrook(richtingen: ['right'], goed: true),
+    ];
+    // Een afrit waar je niet af moet op 1200 m, de jouwe op 1800 m.
+    const kruisingen = [
+      (langs: 1200.0, stroken: splitsing),
+      (langs: 1800.0, stroken: afrit),
+    ];
+    RijstrookKeuze? bij(double langs, {double? kmu = 100}) => kiesRijstroken(
+      kruisingen,
+      langs: langs,
+      manoeuvre: 1800,
+      snelheid: kmu == null ? null : kmu / 3.6,
+    );
+
+    test('ver voor de afrit nog niets, ook niet de afrit ervoor', () {
+      expect(bij(0), isNull);
+      expect(bij(700), isNull);
+    });
+
+    test('vlak voor een afrit ervoor: die, met zijn eigen afstand', () {
+      final keuze = bij(900)!;
+      expect(keuze.stroken, same(splitsing));
+      expect(keuze.bijManoeuvre, isFalse);
+      expect(keuze.over, 300);
+    });
+
+    test('daarna de stroken van de afrit zelf', () {
+      final keuze = bij(1250)!;
+      expect(keuze.stroken, same(afrit));
+      expect(keuze.bijManoeuvre, isTrue);
+      expect(keuze.over, 550);
+    });
+
+    test('hoe langzamer, hoe later', () {
+      // 50 km/u: ongeveer 500 m van tevoren.
+      expect(bij(1250, kmu: 50), isNull);
+      expect(bij(1350, kmu: 50)!.stroken, same(afrit));
+      // Stapvoets toch minstens 300 m.
+      expect(bij(1500, kmu: 5)!.stroken, same(afrit));
+      // Geen snelheid: het maximum.
+      expect(bij(1250, kmu: null)!.stroken, same(afrit));
+    });
+
+    test('elke strook goed: niets te kiezen', () {
+      expect(
+        kiesRijstroken(
+          [
+            (
+              langs: 500.0,
+              stroken: splitsing
+                  .map((s) => Rijstrook(richtingen: s.richtingen, goed: true))
+                  .toList(),
+            ),
+          ],
+          langs: 400,
+          manoeuvre: 500,
+        ),
+        isNull,
+      );
+    });
+  });
+
+  testWidgets('rijstroken van een kruising ervoor: met afstand', (
+    tester,
+  ) async {
+    const stroken = [
+      Rijstrook(richtingen: ['straight'], goed: true),
+      Rijstrook(richtingen: ['right'], goed: false),
+    ];
+    await tester.pumpWidget(app(const RijstrookBalk(stroken, over: 312)));
+    expect(find.text('300 m'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Over 300 m: 1 goede rijstrook van 2'),
+      findsOneWidget,
+    );
+
+    await tester.pumpWidget(app(const RijstrookBalk(stroken)));
+    expect(find.text('300 m'), findsNothing);
+    expect(find.bySemanticsLabel('1 goede rijstrook van 2'), findsOneWidget);
   });
 }

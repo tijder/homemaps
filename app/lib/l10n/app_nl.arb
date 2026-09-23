@@ -172,6 +172,17 @@
       }
     }
   },
+  "rijstrokenOver": "Over {afstand}: {stroken}",
+  "@rijstrokenOver": {
+    "placeholders": {
+      "afstand": {
+        "type": "String"
+      },
+      "stroken": {
+        "type": "String"
+      }
+    }
+  },
   "rijstrokenGoed": "{goed, plural, =1{1 goede rijstrook} other{{goed} goede rijstroken}} van {totaal}",
   "@rijstrokenGoed": {
     "placeholders": {

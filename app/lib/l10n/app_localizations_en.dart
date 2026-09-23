@@ -312,6 +312,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String rijstrokenOver(String afstand, String stroken) {
+    return 'In $afstand: $stroken';
+  }
+
+  @override
   String rijstrokenGoed(int goed, int totaal) {
     String _temp0 = intl.Intl.pluralLogic(
       goed,

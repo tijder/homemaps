@@ -93,6 +93,17 @@
       }
     }
   },
+  "rijstrokenOver": "In {afstand}: {stroken}",
+  "@rijstrokenOver": {
+    "placeholders": {
+      "afstand": {
+        "type": "String"
+      },
+      "stroken": {
+        "type": "String"
+      }
+    }
+  },
   "rijstrokenGoed": "{goed, plural, =1{1 correct lane} other{{goed} correct lanes}} of {totaal}",
   "@rijstrokenGoed": {
     "placeholders": {

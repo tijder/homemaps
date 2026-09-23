@@ -20,6 +20,7 @@ import '../utils/msi.dart';
 import '../utils/snelheid_tijden.dart';
 import '../utils/tijdelijke_snelheden.dart';
 import 'aankondiger.dart';
+import 'rijstrook_keuze.dart';
 import 'simulatie.dart';
 import 'stem.dart';
 import 'volger.dart';
@@ -138,9 +139,9 @@ class NavigatieToestand {
   /// Waar [limiet] vandaan komt.
   final LimietBron limietBron;
 
-  /// De rijstroken bij de eerstvolgende kruising waar het ertoe doet welke je
-  /// neemt, en hoe ver die nog is. Null als er niets te kiezen valt.
-  final ({double over, List<Rijstrook> stroken})? rijstroken;
+  /// De rijstroken die in de kop horen (zie [kiesRijstroken]), en hoe ver die
+  /// kruising nog is. Null als er (nog) niets te kiezen valt.
+  final RijstrookKeuze? rijstroken;
 
   /// De matrixborden op het eerstvolgende portaal waar iets op staat, per
   /// strook van links naar rechts (zie [Portaal]), en hoe ver het nog is.
@@ -157,7 +158,7 @@ class NavigatieToestand {
     Voorstel? Function()? voorstel,
     int? Function()? limiet,
     LimietBron? limietBron,
-    ({double over, List<Rijstrook> stroken})? Function()? rijstroken,
+    RijstrookKeuze? Function()? rijstroken,
     ({double over, List<String> stroken})? Function()? matrix,
   }) => NavigatieToestand(
     route: route ?? this.route,
@@ -221,9 +222,6 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
   /// De kruisingen met rijstroken op de huidige route, op volgorde langs de
   /// route (zie [ValhallaService.rijstroken]); leeg tot ze binnen zijn.
   List<({double langs, List<Rijstrook> stroken})> _rijstroken = const [];
-
-  /// Zo ver vooruit staan de rijstroken al in beeld.
-  static const rijstrookVooruit = 2000.0;
 
   /// Afgewezen routes (op hun lengte), om niet steeds dezelfde voor te stellen.
   final _afgewezen = <int>{};
@@ -470,28 +468,6 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
     ];
   }
 
-  /// De eerstvolgende kruising vóór of bij de volgende manoeuvre waar niet
-  /// elke strook goed is. Zijn ze allemaal goed, dan valt er niets te kiezen.
-  ({double over, List<Rijstrook> stroken})? _rijstrookAdvies(
-    NavStand stand,
-    RouteVolger volger,
-  ) {
-    final grens = min(
-      stand.langs + rijstrookVooruit,
-      volger.totManoeuvre(stand.volgende) + 10,
-    );
-    for (final kruising in _rijstroken) {
-      if (kruising.langs < stand.langs) continue;
-      if (kruising.langs > grens) break;
-      if (kruising.stroken.length < 2 ||
-          kruising.stroken.every((s) => s.goed)) {
-        continue;
-      }
-      return (over: kruising.langs - stand.langs, stroken: kruising.stroken);
-    }
-    return null;
-  }
-
   void _bijFix(LocatieFix fix) {
     final nu = state, volger = _volger, aankondiger = _aankondiger;
     if (nu == null || volger == null || aankondiger == null || nu.aangekomen) {
@@ -543,7 +519,12 @@ class NavigatieNotifier extends Notifier<NavigatieToestand?> {
       limiet: () => limiet.kmu,
       limietBron: limiet.bron,
       matrix: () => volgendPortaal(_portalen, stand.langs),
-      rijstroken: () => _rijstrookAdvies(stand, volger),
+      rijstroken: () => kiesRijstroken(
+        _rijstroken,
+        langs: stand.langs,
+        manoeuvre: volger.totManoeuvre(stand.volgende),
+        snelheid: fix.snelheid,
+      ),
     );
     if (stand.aangekomen) {
       // Klaar: geen scherm-aan en geen achtergronddienst meer. Het scherm laat

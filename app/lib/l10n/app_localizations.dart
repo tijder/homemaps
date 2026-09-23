@@ -614,6 +614,12 @@ abstract class AppLocalizations {
   /// **'Afrit {nummer}'**
   String afrit(String nummer);
 
+  /// No description provided for @rijstrokenOver.
+  ///
+  /// In nl, this message translates to:
+  /// **'Over {afstand}: {stroken}'**
+  String rijstrokenOver(String afstand, String stroken);
+
   /// No description provided for @rijstrokenGoed.
   ///
   /// In nl, this message translates to:
