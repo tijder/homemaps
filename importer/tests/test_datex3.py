@@ -68,8 +68,8 @@ def test_meldingen_ongeval_en_pech_geldig_nu():
     with open(FIXTURES / "meldingen.xml", "rb") as stroom:
         meldingen = {m.id: m for m in datex3.lees_meldingen(stroom, nu)}
     # VOORBIJ is afgelopen; VERGETEN is al dagen niet bijgewerkt. LANG staat er
-    # al twee dagen, maar is net nog bijgewerkt.
-    assert set(meldingen) == {"ONGEVAL", "PECH", "LANG"}
+    # al twee dagen, maar is net nog bijgewerkt. ONZEKER is niet bevestigd.
+    assert set(meldingen) == {"ONGEVAL", "PECH", "LANG", "BEVESTIGD"}
     assert meldingen["ONGEVAL"].soort == "ongeval"
     assert meldingen["ONGEVAL"].punt == (52.1, 5.1)
     assert meldingen["ONGEVAL"].koers == 141

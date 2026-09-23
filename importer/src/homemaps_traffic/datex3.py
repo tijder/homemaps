@@ -249,6 +249,12 @@ MELDINGSOORTEN = {
 # er meestal binnen een paar uur weer af.
 MELDING_VERLOOPT = timedelta(hours=12)
 
+# NDW geeft bij zijn eigen meldingen aan hoe zeker ze zijn
+# (persistenceEvidenceLevel: 40, 80 of 100). Op 40 staat vrijwel alles wat
+# automatisch is gezien en nog niet bevestigd: het land door meer dan honderd
+# "pechgevallen". Pas vanaf hier telt een melding mee; zonder niveau altijd.
+MELDING_ZEKER = 80
+
 
 @dataclass(frozen=True)
 class Melding:
@@ -278,6 +284,9 @@ def lees_meldingen(stroom: BinaryIO, nu: datetime | None = None) -> Iterator[Mel
         )
         bijgewerkt = _tijd(_tekst(record, "situationRecordVersionTime")) or sinds
         if bijgewerkt and nu - bijgewerkt > MELDING_VERLOOPT:
+            continue
+        zeker = _tekst(record, "persistenceEvidenceLevel")
+        if zeker and float(zeker) < MELDING_ZEKER:
             continue
         yield Melding(
             record.attrib["id"],

@@ -432,6 +432,8 @@ class _KaartState extends State<Kaart> {
     );
     // Ongevallen, pechgevallen en voorwerpen op de weg: punten, bovenop de
     // lijnen. Met een ruime, vrijwel onzichtbare cirkel eromheen voor de tik.
+    // Pas van dichtbij: het land door zijn het er zo honderd, en onderweg
+    // waarschuwt de navigatie toch voor wat op je route ligt.
     await c.addCircleLayer(
       _verkeerBron,
       'verkeer-melding',
@@ -458,7 +460,7 @@ class _KaartState extends State<Kaart> {
         circleStrokeWidth: 2,
       ),
       filter: soort(['ongeval', 'pech', 'obstakel']),
-      minzoom: 8,
+      minzoom: _meldingVanaf,
     );
     await c.addCircleLayer(
       _verkeerBron,
@@ -469,9 +471,11 @@ class _KaartState extends State<Kaart> {
         circleOpacity: 0.01,
       ),
       filter: soort(['ongeval', 'pech', 'obstakel']),
-      minzoom: 8,
+      minzoom: _meldingVanaf,
     );
   }
+
+  static const _meldingVanaf = 11.0;
 
   static const _opKaartZonderVertraging = {
     'dicht',

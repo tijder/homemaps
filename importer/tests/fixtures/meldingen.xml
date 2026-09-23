@@ -24,5 +24,15 @@
       <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-20T07:00:00Z</com:overallStartTime></com:validityTimeSpecification></sit:validity>
       <sit:locationReference xsi:type="loc:PointLocation"><loc:pointByCoordinates><loc:pointCoordinates><loc:latitude>52.5</loc:latitude><loc:longitude>5.5</loc:longitude></loc:pointCoordinates></loc:pointByCoordinates></sit:locationReference>
     </sit:situationRecord></sit:situation>
+    <sit:situation id="S6"><sit:situationRecord xsi:type="sit:VehicleObstruction" id="ONZEKER" version="1">
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-22T14:50:00Z</com:overallStartTime></com:validityTimeSpecification></sit:validity>
+      <sit:locationReference xsi:type="loc:PointLocation"><loc:pointByCoordinates><loc:pointCoordinates><loc:latitude>52.6</loc:latitude><loc:longitude>5.6</loc:longitude></loc:pointCoordinates></loc:pointByCoordinates></sit:locationReference>
+      <sit:_situationRecordExtension><sit:situationRecordExtended><srx:observationDetermination xmlns:srx="http://datex2.eu/schema/3/situationRecordExtension"><srx:persistenceEvidenceLevel>40</srx:persistenceEvidenceLevel></srx:observationDetermination></sit:situationRecordExtended></sit:_situationRecordExtension>
+    </sit:situationRecord></sit:situation>
+    <sit:situation id="S7"><sit:situationRecord xsi:type="sit:Accident" id="BEVESTIGD" version="1">
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-22T14:50:00Z</com:overallStartTime></com:validityTimeSpecification></sit:validity>
+      <sit:locationReference xsi:type="loc:PointLocation"><loc:pointByCoordinates><loc:pointCoordinates><loc:latitude>52.7</loc:latitude><loc:longitude>5.7</loc:longitude></loc:pointCoordinates></loc:pointByCoordinates></sit:locationReference>
+      <sit:_situationRecordExtension><sit:situationRecordExtended><srx:observationDetermination xmlns:srx="http://datex2.eu/schema/3/situationRecordExtension"><srx:persistenceEvidenceLevel>80</srx:persistenceEvidenceLevel></srx:observationDetermination></sit:situationRecordExtended></sit:_situationRecordExtension>
+    </sit:situationRecord></sit:situation>
   </mc:payload>
 </mc:messageContainer>
