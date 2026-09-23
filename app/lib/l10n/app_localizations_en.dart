@@ -123,6 +123,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stijlDonker => 'Dark';
 
   @override
+  String get themaAutomatisch => 'Automatic';
+
+  @override
+  String get themaDag => 'Always day';
+
+  @override
+  String get themaNacht => 'Always night';
+
+  @override
   String get instellingen => 'Settings';
 
   @override

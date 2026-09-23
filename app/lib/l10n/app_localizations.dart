@@ -314,6 +314,24 @@ abstract class AppLocalizations {
   /// **'Donker'**
   String get stijlDonker;
 
+  /// No description provided for @themaAutomatisch.
+  ///
+  /// In nl, this message translates to:
+  /// **'Automatisch'**
+  String get themaAutomatisch;
+
+  /// No description provided for @themaDag.
+  ///
+  /// In nl, this message translates to:
+  /// **'Altijd dag'**
+  String get themaDag;
+
+  /// No description provided for @themaNacht.
+  ///
+  /// In nl, this message translates to:
+  /// **'Altijd nacht'**
+  String get themaNacht;
+
   /// No description provided for @instellingen.
   ///
   /// In nl, this message translates to:

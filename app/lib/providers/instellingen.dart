@@ -3,11 +3,16 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import '../models/profiel.dart';
 
+/// Dag- of nachtversie van de kaart: met de telefoon mee, of altijd één van
+/// de twee.
+enum KaartThema { automatisch, dag, nacht }
+
 /// Wat de gebruiker instelt en wat een herstart moet overleven.
 class Instellingen {
   const Instellingen({
     this.server = '',
     this.stijl = 'osm-bright',
+    this.thema = KaartThema.automatisch,
     this.profiel = Profiel.auto,
     this.liveVerkeer = true,
     this.vermijdSnelwegen = false,
@@ -20,6 +25,9 @@ class Instellingen {
   /// Alleen op Android nodig: op het web is de server de eigen origin.
   final String server;
   final String stijl;
+
+  /// Alleen voor de stijl "Kaart"; "Licht" en "Donker" zijn al een keuze.
+  final KaartThema thema;
   final Profiel profiel;
   final bool liveVerkeer;
   final bool vermijdSnelwegen;
@@ -36,6 +44,7 @@ class Instellingen {
   Instellingen kopie({
     String? server,
     String? stijl,
+    KaartThema? thema,
     Profiel? profiel,
     bool? liveVerkeer,
     bool? vermijdSnelwegen,
@@ -46,6 +55,7 @@ class Instellingen {
   }) => Instellingen(
     server: server ?? this.server,
     stijl: stijl ?? this.stijl,
+    thema: thema ?? this.thema,
     profiel: profiel ?? this.profiel,
     liveVerkeer: liveVerkeer ?? this.liveVerkeer,
     vermijdSnelwegen: vermijdSnelwegen ?? this.vermijdSnelwegen,
@@ -75,6 +85,10 @@ class InstellingenNotifier extends Notifier<Instellingen> {
     return Instellingen(
       server: doos.get('server', defaultValue: '') as String,
       stijl: doos.get('stijl', defaultValue: 'osm-bright') as String,
+      thema: KaartThema.values.firstWhere(
+        (t) => t.name == doos.get('thema'),
+        orElse: () => KaartThema.automatisch,
+      ),
       profiel: Profiel.values.firstWhere(
         (p) => p.name == doos.get('profiel'),
         orElse: () => Profiel.auto,
@@ -94,6 +108,7 @@ class InstellingenNotifier extends Notifier<Instellingen> {
     ref.read(instellingenDoosProvider)?.putAll({
       'server': nieuw.server,
       'stijl': nieuw.stijl,
+      'thema': nieuw.thema.name,
       'profiel': nieuw.profiel.name,
       'liveVerkeer': nieuw.liveVerkeer,
       'vermijdSnelwegen': nieuw.vermijdSnelwegen,

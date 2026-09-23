@@ -57,6 +57,9 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
   static const _verkeer = 'verkeer';
   static const _locatie = 'locatie';
 
+  /// Keuzes voor dag of nacht bij de stijl "Kaart": `thema:` + [KaartThema].
+  static const _thema = 'thema:';
+
   MapLibreMapController? _kaart;
   ({Offset plek, LatLng punt})? _menu;
   ({Offset plek, Map<String, dynamic> info})? _melding;
@@ -408,12 +411,16 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
           )
         : fix;
 
-    // Staat de telefoon op donker, dan de nachtversie van de gewone kaart.
-    // Tot die er is (of als hij niet lukt) de gewone.
+    // 's Nachts (vast, of als de telefoon op donker staat) de nachtversie van
+    // de gewone kaart. Tot die er is (of als hij niet lukt) de gewone.
     final stijlUrl = config.stijlUrl(instellingen.stijl);
-    final nacht =
-        instellingen.stijl == _stijlen[0] &&
-            MediaQuery.platformBrightnessOf(context) == Brightness.dark
+    final isNacht = switch (instellingen.thema) {
+      KaartThema.automatisch =>
+        MediaQuery.platformBrightnessOf(context) == Brightness.dark,
+      KaartThema.dag => false,
+      KaartThema.nacht => true,
+    };
+    final nacht = instellingen.stijl == _stijlen[0] && isNacht
         ? ref.watch(nachtStijlProvider(stijlUrl)).value
         : null;
     final kaart = Kaart(
@@ -497,6 +504,12 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                               ? instellingen.kopie(
                                   verkeerOpKaart: !instellingen.verkeerOpKaart,
                                 )
+                              : keuze.startsWith(_thema)
+                              ? instellingen.kopie(
+                                  thema: KaartThema.values.byName(
+                                    keuze.substring(_thema.length),
+                                  ),
+                                )
                               : instellingen.kopie(stijl: keuze),
                         );
                   },
@@ -510,6 +523,19 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                         value: stijl,
                         child: PointerInterceptor(child: Text(naam)),
                       ),
+                    if (instellingen.stijl == _stijlen[0]) ...[
+                      const PopupMenuDivider(),
+                      for (final (thema, naam) in [
+                        (KaartThema.automatisch, l.themaAutomatisch),
+                        (KaartThema.dag, l.themaDag),
+                        (KaartThema.nacht, l.themaNacht),
+                      ])
+                        CheckedPopupMenuItem(
+                          value: '$_thema${thema.name}',
+                          checked: instellingen.thema == thema,
+                          child: PointerInterceptor(child: Text(naam)),
+                        ),
+                    ],
                     const PopupMenuDivider(),
                     CheckedPopupMenuItem(
                       value: _verkeer,

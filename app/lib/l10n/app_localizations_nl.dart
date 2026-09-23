@@ -124,6 +124,15 @@ class AppLocalizationsNl extends AppLocalizations {
   String get stijlDonker => 'Donker';
 
   @override
+  String get themaAutomatisch => 'Automatisch';
+
+  @override
+  String get themaDag => 'Altijd dag';
+
+  @override
+  String get themaNacht => 'Altijd nacht';
+
+  @override
   String get instellingen => 'Instellingen';
 
   @override
