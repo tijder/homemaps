@@ -11,6 +11,7 @@ import io
 import struct
 import sys
 import zipfile
+from datetime import UTC, datetime
 from pathlib import Path
 
 NS = (
@@ -26,6 +27,9 @@ NS = (
 FILE = "42.5361 1.5828 42.5670 1.5990"
 # 136 m eenrichtingsstraat in Andorra la Vella (de tegenrichting matcht dus niet).
 DICHT = "42.507193 1.526786 42.507478 1.528365"
+# Een melding die lang niet is bijgewerkt laat de importer weg; het ongeval is
+# dus net bijgewerkt.
+NU = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 FEEDS = {
     "reistijden_configuratie_meetlocaties": f"""<mc:messageContainer {NS}><mc:payload>
@@ -46,6 +50,7 @@ FEEDS = {
 </sit:situationRecord></sit:situation></mc:payload></mc:messageContainer>""",
     "veiligheidsgerelateerde_berichten_srti": f"""<mc:messageContainer {NS}><mc:payload>
 <sit:situation id="O"><sit:situationRecord xsi:type="sit:Accident" id="NEP_ONGEVAL" version="1">
+<sit:situationRecordVersionTime>{NU}</sit:situationRecordVersionTime>
 <sit:validity><com:validityTimeSpecification><com:overallStartTime>2020-01-01T00:00:00Z</com:overallStartTime></com:validityTimeSpecification></sit:validity>
 <sit:locationReference xsi:type="loc:PointLocation"><loc:pointByCoordinates><loc:pointCoordinates><loc:latitude>42.55</loc:latitude><loc:longitude>1.59</loc:longitude></loc:pointCoordinates></loc:pointByCoordinates></sit:locationReference>
 </sit:situationRecord></sit:situation></mc:payload></mc:messageContainer>""",
