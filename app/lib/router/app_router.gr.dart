@@ -57,3 +57,19 @@ class LocatieDelenRoute extends PageRouteInfo<void> {
     },
   );
 }
+
+/// generated route for
+/// [OverScreen]
+class OverRoute extends PageRouteInfo<void> {
+  const OverRoute({List<PageRouteInfo>? children})
+    : super(OverRoute.name, initialChildren: children);
+
+  static const String name = 'OverRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const OverScreen();
+    },
+  );
+}

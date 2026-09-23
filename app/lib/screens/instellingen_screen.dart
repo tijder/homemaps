@@ -82,9 +82,13 @@ class _InstellingenScreenState extends ConsumerState<InstellingenScreen> {
           const Divider(height: 32),
           const _LocatieDelen(),
           const Divider(height: 32),
-          Text(l.over, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Text(l.overTekst),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.info_outline),
+            title: Text(l.overHomeMaps),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.router.push(const OverRoute()),
+          ),
         ],
       ),
     );

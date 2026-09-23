@@ -156,10 +156,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get over => 'Over';
 
   @override
-  String get overTekst =>
-      'Kaart © OpenMapTiles © OpenStreetMap-bijdragers. Routes: Valhalla. Zoeken: Photon. Verkeer: NDW open data.';
-
-  @override
   String get noordBoven => 'Noorden boven';
 
   @override
@@ -685,4 +681,40 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get navigatieMeldingDelen =>
       'HomeMaps volgt je locatie voor de route en deelt hem met je server.';
+
+  @override
+  String get overHomeMaps => 'Over HomeMaps';
+
+  @override
+  String versie(String versie) {
+    return 'Versie $versie';
+  }
+
+  @override
+  String get overBeschrijving =>
+      'Navigatie op je eigen server: kaart, routes, zoeken en verkeer.';
+
+  @override
+  String get bronnen => 'Gegevens en software';
+
+  @override
+  String get bronKaartgegevens => 'Kaartgegevens © OpenStreetMap-bijdragers';
+
+  @override
+  String get bronTegels => 'Kaarttegels en -stijl';
+
+  @override
+  String get bronRoutes => 'Routes en navigatie';
+
+  @override
+  String get bronZoeken => 'Zoeken';
+
+  @override
+  String get bronVerkeer => 'Verkeer, werk en matrixborden';
+
+  @override
+  String get broncode => 'Broncode';
+
+  @override
+  String get licenties => 'Licenties';
 }

@@ -63,7 +63,6 @@
   "opslaan": "Opslaan",
   "serverNodig": "Stel eerst het adres van je server in.",
   "over": "Over",
-  "overTekst": "Kaart © OpenMapTiles © OpenStreetMap-bijdragers. Routes: Valhalla. Zoeken: Photon. Verkeer: NDW open data.",
   "noordBoven": "Noorden boven",
   "zoekHier": "Zoek op de kaart",
   "route": "Route",
@@ -435,5 +434,23 @@
   "deelGestopt": "Gestopt tot je de instellingen wijzigt.",
   "deelWisWachtrij": "Wachtrij leegmaken",
   "deelVoorbeeld": "Voorbeeld",
-  "navigatieMeldingDelen": "HomeMaps volgt je locatie voor de route en deelt hem met je server."
+  "navigatieMeldingDelen": "HomeMaps volgt je locatie voor de route en deelt hem met je server.",
+  "overHomeMaps": "Over HomeMaps",
+  "versie": "Versie {versie}",
+  "@versie": {
+    "placeholders": {
+      "versie": {
+        "type": "String"
+      }
+    }
+  },
+  "overBeschrijving": "Navigatie op je eigen server: kaart, routes, zoeken en verkeer.",
+  "bronnen": "Gegevens en software",
+  "bronKaartgegevens": "Kaartgegevens © OpenStreetMap-bijdragers",
+  "bronTegels": "Kaarttegels en -stijl",
+  "bronRoutes": "Routes en navigatie",
+  "bronZoeken": "Zoeken",
+  "bronVerkeer": "Verkeer, werk en matrixborden",
+  "broncode": "Broncode",
+  "licenties": "Licenties"
 }

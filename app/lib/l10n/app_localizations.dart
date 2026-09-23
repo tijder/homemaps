@@ -374,12 +374,6 @@ abstract class AppLocalizations {
   /// **'Over'**
   String get over;
 
-  /// No description provided for @overTekst.
-  ///
-  /// In nl, this message translates to:
-  /// **'Kaart © OpenMapTiles © OpenStreetMap-bijdragers. Routes: Valhalla. Zoeken: Photon. Verkeer: NDW open data.'**
-  String get overTekst;
-
   /// No description provided for @noordBoven.
   ///
   /// In nl, this message translates to:
@@ -1153,6 +1147,72 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'HomeMaps volgt je locatie voor de route en deelt hem met je server.'**
   String get navigatieMeldingDelen;
+
+  /// No description provided for @overHomeMaps.
+  ///
+  /// In nl, this message translates to:
+  /// **'Over HomeMaps'**
+  String get overHomeMaps;
+
+  /// No description provided for @versie.
+  ///
+  /// In nl, this message translates to:
+  /// **'Versie {versie}'**
+  String versie(String versie);
+
+  /// No description provided for @overBeschrijving.
+  ///
+  /// In nl, this message translates to:
+  /// **'Navigatie op je eigen server: kaart, routes, zoeken en verkeer.'**
+  String get overBeschrijving;
+
+  /// No description provided for @bronnen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Gegevens en software'**
+  String get bronnen;
+
+  /// No description provided for @bronKaartgegevens.
+  ///
+  /// In nl, this message translates to:
+  /// **'Kaartgegevens © OpenStreetMap-bijdragers'**
+  String get bronKaartgegevens;
+
+  /// No description provided for @bronTegels.
+  ///
+  /// In nl, this message translates to:
+  /// **'Kaarttegels en -stijl'**
+  String get bronTegels;
+
+  /// No description provided for @bronRoutes.
+  ///
+  /// In nl, this message translates to:
+  /// **'Routes en navigatie'**
+  String get bronRoutes;
+
+  /// No description provided for @bronZoeken.
+  ///
+  /// In nl, this message translates to:
+  /// **'Zoeken'**
+  String get bronZoeken;
+
+  /// No description provided for @bronVerkeer.
+  ///
+  /// In nl, this message translates to:
+  /// **'Verkeer, werk en matrixborden'**
+  String get bronVerkeer;
+
+  /// No description provided for @broncode.
+  ///
+  /// In nl, this message translates to:
+  /// **'Broncode'**
+  String get broncode;
+
+  /// No description provided for @licenties.
+  ///
+  /// In nl, this message translates to:
+  /// **'Licenties'**
+  String get licenties;
 }
 
 class _AppLocalizationsDelegate
