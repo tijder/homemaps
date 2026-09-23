@@ -7,7 +7,7 @@ via iterparse en elk afgehandeld element wordt direct weer losgelaten.
 import gzip
 from collections.abc import Iterator
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import BinaryIO
 from xml.etree.ElementTree import Element, iterparse
 
@@ -242,6 +242,14 @@ MELDINGSOORTEN = {
 }
 
 
+# Een melding zonder eind blijft staan tot de bron hem intrekt. Pijlwagens en
+# botsabsorbers van wegwerkbedrijven (ook als VehicleObstruction) worden dat
+# lang niet altijd: ze staan er dan dagen, soms weken. Wat zo lang niet is
+# bijgewerkt, is niet meer te vertrouwen. Pech en ongevallen van NDW zelf zijn
+# er meestal binnen een paar uur weer af.
+MELDING_VERLOOPT = timedelta(hours=12)
+
+
 @dataclass(frozen=True)
 class Melding:
     """Een veiligheidsmelding (SRTI): ongeval, pechgeval of iets op de weg, op
@@ -265,12 +273,18 @@ def lees_meldingen(stroom: BinaryIO, nu: datetime | None = None) -> Iterator[Mel
             continue
         koers = _tekst(record, "bearing")
         specificatie = _eerste(record, "validityTimeSpecification")
+        sinds = (
+            _tijd(_tekst(specificatie, "overallStartTime")) if specificatie is not None else None
+        )
+        bijgewerkt = _tijd(_tekst(record, "situationRecordVersionTime")) or sinds
+        if bijgewerkt and nu - bijgewerkt > MELDING_VERLOOPT:
+            continue
         yield Melding(
             record.attrib["id"],
             soort,
             (float(lat), float(lon)),
             float(koers) if koers else None,
-            _tijd(_tekst(specificatie, "overallStartTime")) if specificatie is not None else None,
+            sinds,
         )
 
 

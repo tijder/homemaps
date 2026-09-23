@@ -14,5 +14,15 @@
       <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-22T10:00:00Z</com:overallStartTime><com:overallEndTime>2026-09-22T11:00:00Z</com:overallEndTime></com:validityTimeSpecification></sit:validity>
       <sit:locationReference xsi:type="loc:PointLocation"><loc:pointByCoordinates><loc:pointCoordinates><loc:latitude>52.3</loc:latitude><loc:longitude>5.3</loc:longitude></loc:pointCoordinates></loc:pointByCoordinates></sit:locationReference>
     </sit:situationRecord></sit:situation>
+    <sit:situation id="S4"><sit:situationRecord xsi:type="sit:VehicleObstruction" id="VERGETEN" version="3">
+      <sit:situationRecordVersionTime>2026-09-19T08:00:00Z</sit:situationRecordVersionTime>
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-18T07:00:00Z</com:overallStartTime></com:validityTimeSpecification></sit:validity>
+      <sit:locationReference xsi:type="loc:PointLocation"><loc:pointByCoordinates><loc:pointCoordinates><loc:latitude>52.4</loc:latitude><loc:longitude>5.4</loc:longitude></loc:pointCoordinates></loc:pointByCoordinates></sit:locationReference>
+    </sit:situationRecord></sit:situation>
+    <sit:situation id="S5"><sit:situationRecord xsi:type="sit:VehicleObstruction" id="LANG" version="7">
+      <sit:situationRecordVersionTime>2026-09-22T13:00:00Z</sit:situationRecordVersionTime>
+      <sit:validity><com:validityTimeSpecification><com:overallStartTime>2026-09-20T07:00:00Z</com:overallStartTime></com:validityTimeSpecification></sit:validity>
+      <sit:locationReference xsi:type="loc:PointLocation"><loc:pointByCoordinates><loc:pointCoordinates><loc:latitude>52.5</loc:latitude><loc:longitude>5.5</loc:longitude></loc:pointCoordinates></loc:pointByCoordinates></sit:locationReference>
+    </sit:situationRecord></sit:situation>
   </mc:payload>
 </mc:messageContainer>
