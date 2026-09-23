@@ -93,7 +93,7 @@ class Voorstel {
   final DateTime verloopt;
 
   /// De weg waar het verschil in zit: de langste manoeuvre met een naam, voor
-  /// "via N303".
+  /// "via N303" (het wegnummer als het er een heeft).
   String? get via {
     Manoeuvre? langste;
     for (final m in route.manoeuvres) {
@@ -102,7 +102,8 @@ class Voorstel {
         langste = m;
       }
     }
-    return langste?.straten.first;
+    final straten = langste?.straten;
+    return straten == null ? null : hoofdnummer(straten) ?? straten.first;
   }
 }
 

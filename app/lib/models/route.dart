@@ -112,6 +112,37 @@ String? hoofdnummer(List<String> namen) =>
     namen.where((n) => isWegnummer(n) && !n.startsWith('E')).firstOrNull ??
     namen.where(isWegnummer).firstOrNull;
 
+/// De wegen waar een route vooral over gaat, voor "via A12, A27": per weg
+/// (het wegnummer, anders de naam) de meters opgeteld, de langste [max], in de
+/// volgorde van de route. Wegnummers gaan voor; een weg van minder dan 5% van
+/// de route telt niet mee.
+List<String> hoofdwegen(RouteOptie route, {int max = 2}) {
+  final meters = <String, double>{};
+  for (final m in route.manoeuvres) {
+    if (m.straten.isEmpty) continue;
+    final weg = hoofdnummer(m.straten) ?? m.straten.first;
+    meters[weg] = (meters[weg] ?? 0) + m.meters;
+  }
+  final genoeg = [
+    for (final e in meters.entries)
+      if (e.value >= route.meters * 0.05) e,
+  ];
+  int nummerEerst(MapEntry<String, double> a, MapEntry<String, double> b) {
+    final na = isWegnummer(a.key), nb = isWegnummer(b.key);
+    if (na != nb) return na ? -1 : 1;
+    return b.value.compareTo(a.value);
+  }
+
+  final gekozen = {
+    for (final e in (genoeg..sort(nummerEerst)).take(max)) e.key,
+  };
+  // De map houdt de volgorde waarin de wegen voor het eerst voorkomen.
+  return [
+    for (final weg in meters.keys)
+      if (gekozen.contains(weg)) weg,
+  ];
+}
+
 /// De bewegwijzering bij een manoeuvre, zoals Valhalla die in `sign` geeft.
 class Bord {
   const Bord({

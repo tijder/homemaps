@@ -474,4 +474,11 @@ void main() {
     expect(find.text('Afrit 15'), findsOneWidget);
     expect(find.textContaining('Sla rechtsaf naar Meerndijk'), findsOneWidget);
   });
+
+  test('hoofdwegen: via A12 en A27, in de volgorde van de route', () {
+    expect(hoofdwegen(utrecht(), max: 3), ['A12', 'A27', 'A28']);
+    expect(hoofdwegen(utrecht()), ['A12', 'A27']);
+    // Wegnummers gaan voor straatnamen.
+    expect(hoofdwegen(stroe()), ['N344', 'N303']);
+  });
 }

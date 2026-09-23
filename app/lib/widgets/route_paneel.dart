@@ -488,7 +488,9 @@ class _RouteKaartje extends StatelessWidget {
       Duration(seconds: route.seconden.round()),
     );
     final taal = Localizations.localeOf(context).languageCode;
+    final via = hoofdwegen(route);
     final extra = [
+      if (via.isNotEmpty) l.voorstelVia(via.join(', ')),
       l.aankomstOm(DateFormat.Hm(taal).format(aankomst)),
       if (route.hoogtes.length > 1)
         l.stijgingDaling(route.stijging.round(), route.daling.round()),
