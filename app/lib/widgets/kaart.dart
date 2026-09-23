@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -151,7 +150,7 @@ class _KaartState extends State<Kaart> {
     await c.addGeoJsonSource(_verkeerBron, _leeg);
     await c.addGeoJsonSource(_routeBron, _leeg);
     await c.addGeoJsonSource(_aansluitBron, _leeg);
-    await _verkeerLagen(c, onderTekst: eersteTekstlaag(await c.getStyle()));
+    await _verkeerLagen(c, onderTekst: await _eersteTekstlaag(c));
     // Alternatieven grijs en onderop; de gekozen route blauw met een witte rand.
     await c.addLineLayer(
       _routeBron,
@@ -477,6 +476,23 @@ class _KaartState extends State<Kaart> {
 
   static const _meldingVanaf = 11.0;
 
+  /// De eerste laag van de stijl met tekst of symbolen: wat eronder komt, loopt
+  /// niet over namen en wegnummers heen. Null als er geen is of als het niet
+  /// lukt; dan komt het bovenop. Niet via getStyle(): dat werkt op het web
+  /// onder wasm niet (de plugin haalt de stijl daar anders op).
+  Future<String?> _eersteTekstlaag(MapLibreMapController c) async {
+    try {
+      for (final id in await c.getLayerIds()) {
+        if (id is! String) continue;
+        final laag = await c.getLayerProperties(id);
+        if (laag?['type'] == 'symbol') return id;
+      }
+    } on Exception {
+      return null;
+    }
+    return null;
+  }
+
   static const _opKaartZonderVertraging = {
     'dicht',
     'werk',
@@ -710,20 +726,4 @@ class _KaartState extends State<Kaart> {
     onMapLongClick: (scherm, punt) =>
         widget.onLangIngedrukt(_logisch(scherm), punt),
   );
-}
-
-/// De eerste laag met tekst of symbolen in een kaartstijl (als JSON): wat
-/// eronder komt, loopt niet over namen en wegnummers heen. Null als de stijl
-/// er geen heeft of niet te lezen is; dan komt het bovenop.
-String? eersteTekstlaag(String? stijl) {
-  if (stijl == null) return null;
-  try {
-    final lagen = (jsonDecode(stijl) as Map)['layers'] as List? ?? const [];
-    for (final laag in lagen) {
-      if (laag is Map && laag['type'] == 'symbol') return laag['id'] as String?;
-    }
-  } on FormatException {
-    return null;
-  }
-  return null;
 }
