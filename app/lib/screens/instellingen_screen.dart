@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/instellingen.dart';
+import '../providers/locatie_delen.dart';
+import '../router/app_router.dart';
 import '../providers/plekken.dart';
 
 @RoutePage()
@@ -78,6 +80,8 @@ class _InstellingenScreenState extends ConsumerState<InstellingenScreen> {
           ],
           _Plekken(),
           const Divider(height: 32),
+          const _LocatieDelen(),
+          const Divider(height: 32),
           Text(l.over, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           Text(l.overTekst),
@@ -141,6 +145,33 @@ class _Plekken extends ConsumerWidget {
                 ),
         ),
       ],
+    );
+  }
+}
+
+/// De ingang naar "Locatie delen", met hoe het ervoor staat.
+class _LocatieDelen extends ConsumerWidget {
+  const _LocatieDelen();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final instellingen = ref.watch(deelInstellingenProvider);
+    final status = ref.watch(locatieDelerProvider);
+    final onder = !instellingen.aan
+        ? l.deelUit
+        : [
+            instellingen.sjabloon.naam ?? l.deelAangepast,
+            if (status.fout case final fout?) l.deelFout(fout),
+            if (status.inWachtrij > 0) l.deelInWachtrij(status.inWachtrij),
+          ].join(' · ');
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: const Icon(Icons.share_location),
+      title: Text(l.locatieDelen),
+      subtitle: Text(onder),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => context.router.push(const LocatieDelenRoute()),
     );
   }
 }

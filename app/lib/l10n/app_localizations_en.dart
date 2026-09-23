@@ -549,4 +549,138 @@ class AppLocalizationsEn extends AppLocalizations {
   String tussenstopToegevoegd(String naam) {
     return 'Stop: $naam';
   }
+
+  @override
+  String get locatieDelen => 'Location sharing';
+
+  @override
+  String get locatieDelenUitleg =>
+      'Send your position to your own server, like Colota does. Only while navigating.';
+
+  @override
+  String get locatieDelenAan => 'Share while navigating';
+
+  @override
+  String get deelUit => 'Off';
+
+  @override
+  String get deelServer => 'Server';
+
+  @override
+  String get deelAangepast => 'Custom server';
+
+  @override
+  String deelSjabloonUitleg(String sjabloon) {
+    String _temp0 = intl.Intl.selectLogic(sjabloon, {
+      'dawarich': 'OwnTracks-compatible format for Dawarich',
+      'geopulse': 'Colota format for GeoPulse',
+      'overland': 'Overland: points in batches (GeoJSON)',
+      'owntracks': 'Standard OwnTracks HTTP format',
+      'phonetrack': 'Nextcloud PhoneTrack',
+      'reitti': 'OwnTracks-compatible format for Reitti',
+      'traccar': 'Traccar, OsmAnd protocol',
+      'other': 'Your own field names',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get deelUrl => 'Address (URL)';
+
+  @override
+  String get deelUrlOngeldig =>
+      'Enter an address starting with http:// or https://.';
+
+  @override
+  String get deelUrlWeb => 'In the browser the server must allow CORS.';
+
+  @override
+  String get deelMethode => 'Method';
+
+  @override
+  String get deelInlog => 'Authentication';
+
+  @override
+  String get deelInlogGeen => 'None';
+
+  @override
+  String get deelGebruiker => 'Username';
+
+  @override
+  String get deelWachtwoord => 'Password';
+
+  @override
+  String get deelToken => 'Token';
+
+  @override
+  String get deelVeldnamen => 'Field names';
+
+  @override
+  String get deelVeldnamenUitleg =>
+      'One per line as field=name, e.g. lat=latitude. Fields: lat, lon, acc, alt, vel, tst, bear.';
+
+  @override
+  String get deelExtraVelden => 'Fixed fields';
+
+  @override
+  String get deelExtraVeldenUitleg =>
+      'One per line as name=value; sent with every point.';
+
+  @override
+  String get deelInterval => 'Every … seconds';
+
+  @override
+  String get deelMinAfstand => 'Or after … metres';
+
+  @override
+  String get deelTesten => 'Test connection';
+
+  @override
+  String get deelTestGelukt => 'The server received the point.';
+
+  @override
+  String deelTestMislukt(String fout) {
+    return 'Failed: $fout';
+  }
+
+  @override
+  String get deelStatus => 'Status';
+
+  @override
+  String deelLaatst(String tijd) {
+    return 'Last sent at $tijd';
+  }
+
+  @override
+  String get deelNogNiets => 'Nothing sent yet';
+
+  @override
+  String deelInWachtrij(int aantal) {
+    String _temp0 = intl.Intl.pluralLogic(
+      aantal,
+      locale: localeName,
+      other: '$aantal points queued',
+      one: '1 point queued',
+      zero: 'Queue empty',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String deelFout(String fout) {
+    return 'Error: $fout';
+  }
+
+  @override
+  String get deelGestopt => 'Stopped until you change the settings.';
+
+  @override
+  String get deelWisWachtrij => 'Clear queue';
+
+  @override
+  String get deelVoorbeeld => 'Example';
+
+  @override
+  String get navigatieMeldingDelen =>
+      'HomeMaps follows your location for the route and shares it with your server.';
 }

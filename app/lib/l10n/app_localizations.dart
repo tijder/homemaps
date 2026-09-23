@@ -949,6 +949,210 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'Tussenstop: {naam}'**
   String tussenstopToegevoegd(String naam);
+
+  /// No description provided for @locatieDelen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Locatie delen'**
+  String get locatieDelen;
+
+  /// No description provided for @locatieDelenUitleg.
+  ///
+  /// In nl, this message translates to:
+  /// **'Stuur je positie naar je eigen server, zoals Colota dat doet. Alleen tijdens het navigeren.'**
+  String get locatieDelenUitleg;
+
+  /// No description provided for @locatieDelenAan.
+  ///
+  /// In nl, this message translates to:
+  /// **'Delen tijdens navigeren'**
+  String get locatieDelenAan;
+
+  /// No description provided for @deelUit.
+  ///
+  /// In nl, this message translates to:
+  /// **'Uit'**
+  String get deelUit;
+
+  /// No description provided for @deelServer.
+  ///
+  /// In nl, this message translates to:
+  /// **'Server'**
+  String get deelServer;
+
+  /// No description provided for @deelAangepast.
+  ///
+  /// In nl, this message translates to:
+  /// **'Eigen server'**
+  String get deelAangepast;
+
+  /// No description provided for @deelSjabloonUitleg.
+  ///
+  /// In nl, this message translates to:
+  /// **'{sjabloon, select, dawarich{OwnTracks-formaat voor Dawarich} geopulse{Colota-formaat voor GeoPulse} overland{Overland: punten in batches (GeoJSON)} owntracks{Standaard OwnTracks over HTTP} phonetrack{Nextcloud PhoneTrack} reitti{OwnTracks-formaat voor Reitti} traccar{Traccar, OsmAnd-protocol} other{Je eigen veldnamen}}'**
+  String deelSjabloonUitleg(String sjabloon);
+
+  /// No description provided for @deelUrl.
+  ///
+  /// In nl, this message translates to:
+  /// **'Adres (URL)'**
+  String get deelUrl;
+
+  /// No description provided for @deelUrlOngeldig.
+  ///
+  /// In nl, this message translates to:
+  /// **'Vul een adres in dat met http:// of https:// begint.'**
+  String get deelUrlOngeldig;
+
+  /// No description provided for @deelUrlWeb.
+  ///
+  /// In nl, this message translates to:
+  /// **'In de browser moet de server CORS toestaan.'**
+  String get deelUrlWeb;
+
+  /// No description provided for @deelMethode.
+  ///
+  /// In nl, this message translates to:
+  /// **'Methode'**
+  String get deelMethode;
+
+  /// No description provided for @deelInlog.
+  ///
+  /// In nl, this message translates to:
+  /// **'Inloggen'**
+  String get deelInlog;
+
+  /// No description provided for @deelInlogGeen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Geen'**
+  String get deelInlogGeen;
+
+  /// No description provided for @deelGebruiker.
+  ///
+  /// In nl, this message translates to:
+  /// **'Gebruikersnaam'**
+  String get deelGebruiker;
+
+  /// No description provided for @deelWachtwoord.
+  ///
+  /// In nl, this message translates to:
+  /// **'Wachtwoord'**
+  String get deelWachtwoord;
+
+  /// No description provided for @deelToken.
+  ///
+  /// In nl, this message translates to:
+  /// **'Token'**
+  String get deelToken;
+
+  /// No description provided for @deelVeldnamen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Veldnamen'**
+  String get deelVeldnamen;
+
+  /// No description provided for @deelVeldnamenUitleg.
+  ///
+  /// In nl, this message translates to:
+  /// **'Per regel veld=naam, bijvoorbeeld lat=latitude. Velden: lat, lon, acc, alt, vel, tst, bear.'**
+  String get deelVeldnamenUitleg;
+
+  /// No description provided for @deelExtraVelden.
+  ///
+  /// In nl, this message translates to:
+  /// **'Vaste velden'**
+  String get deelExtraVelden;
+
+  /// No description provided for @deelExtraVeldenUitleg.
+  ///
+  /// In nl, this message translates to:
+  /// **'Per regel naam=waarde; die gaan bij elk punt mee.'**
+  String get deelExtraVeldenUitleg;
+
+  /// No description provided for @deelInterval.
+  ///
+  /// In nl, this message translates to:
+  /// **'Elke … seconden'**
+  String get deelInterval;
+
+  /// No description provided for @deelMinAfstand.
+  ///
+  /// In nl, this message translates to:
+  /// **'Of na … meter'**
+  String get deelMinAfstand;
+
+  /// No description provided for @deelTesten.
+  ///
+  /// In nl, this message translates to:
+  /// **'Verbinding testen'**
+  String get deelTesten;
+
+  /// No description provided for @deelTestGelukt.
+  ///
+  /// In nl, this message translates to:
+  /// **'De server heeft het punt ontvangen.'**
+  String get deelTestGelukt;
+
+  /// No description provided for @deelTestMislukt.
+  ///
+  /// In nl, this message translates to:
+  /// **'Niet gelukt: {fout}'**
+  String deelTestMislukt(String fout);
+
+  /// No description provided for @deelStatus.
+  ///
+  /// In nl, this message translates to:
+  /// **'Status'**
+  String get deelStatus;
+
+  /// No description provided for @deelLaatst.
+  ///
+  /// In nl, this message translates to:
+  /// **'Laatst verstuurd om {tijd}'**
+  String deelLaatst(String tijd);
+
+  /// No description provided for @deelNogNiets.
+  ///
+  /// In nl, this message translates to:
+  /// **'Nog niets verstuurd'**
+  String get deelNogNiets;
+
+  /// No description provided for @deelInWachtrij.
+  ///
+  /// In nl, this message translates to:
+  /// **'{aantal, plural, =0{Niets in de wachtrij} =1{1 punt in de wachtrij} other{{aantal} punten in de wachtrij}}'**
+  String deelInWachtrij(int aantal);
+
+  /// No description provided for @deelFout.
+  ///
+  /// In nl, this message translates to:
+  /// **'Fout: {fout}'**
+  String deelFout(String fout);
+
+  /// No description provided for @deelGestopt.
+  ///
+  /// In nl, this message translates to:
+  /// **'Gestopt tot je de instellingen wijzigt.'**
+  String get deelGestopt;
+
+  /// No description provided for @deelWisWachtrij.
+  ///
+  /// In nl, this message translates to:
+  /// **'Wachtrij leegmaken'**
+  String get deelWisWachtrij;
+
+  /// No description provided for @deelVoorbeeld.
+  ///
+  /// In nl, this message translates to:
+  /// **'Voorbeeld'**
+  String get deelVoorbeeld;
+
+  /// No description provided for @navigatieMeldingDelen.
+  ///
+  /// In nl, this message translates to:
+  /// **'HomeMaps volgt je locatie voor de route en deelt hem met je server.'**
+  String get navigatieMeldingDelen;
 }
 
 class _AppLocalizationsDelegate

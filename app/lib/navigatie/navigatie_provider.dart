@@ -51,8 +51,14 @@ class NavTeksten {
   /// "Let op: ongeval over 2 kilometer." voor een melding op de route.
   final String Function(String soort, double meters) waarschuwing;
 
-  /// [taal] zoals Valhalla hem kent ('nl-NL', 'en-US').
-  factory NavTeksten.uit(AppLocalizations l, String taal, String bestemming) {
+  /// [taal] zoals Valhalla hem kent ('nl-NL', 'en-US'). Met [delen] zegt de
+  /// melding dat de locatie naar de eigen server gaat.
+  factory NavTeksten.uit(
+    AppLocalizations l,
+    String taal,
+    String bestemming, {
+    bool delen = false,
+  }) {
     final getal = NumberFormat('#0.#', taal.replaceAll('-', '_'));
     String gesproken(double meters) => meters < 1000
         // Op 50 m: "over 437 meter" klinkt als een meetfout.
@@ -61,7 +67,7 @@ class NavTeksten {
     return NavTeksten(
       taal: taal,
       meldingTitel: l.navigatieMeldingTitel(bestemming),
-      meldingTekst: l.navigatieMeldingTekst,
+      meldingTekst: delen ? l.navigatieMeldingDelen : l.navigatieMeldingTekst,
       herberekenen: l.herberekenen,
       snellereRoute: l.snellereRoute,
       waarschuwing: (soort, meters) => l.waarschuwingOpRoute(

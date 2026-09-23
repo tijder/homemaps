@@ -10,6 +10,7 @@ import 'navigatie/simulatie.dart';
 import 'providers/diensten.dart';
 import 'providers/instellingen.dart';
 import 'providers/locatie.dart';
+import 'providers/locatie_delen.dart';
 import 'router/app_router.dart';
 
 Future<void> main() async {
@@ -29,17 +30,22 @@ Future<void> main() async {
     await BrowserContextMenu.disableContextMenu();
   }
   final doos = await openInstellingen();
+  final wachtrij = await openDeelWachtrij();
   // Navigatie testen zonder te rijden: ?simulatie=lat,lon (zie SimulatieBron).
   final simulatie = kIsWeb ? SimulatieBron.uitUrl(Uri.base) : null;
+  final container = ProviderContainer(
+    overrides: [
+      instellingenDoosProvider.overrideWithValue(doos),
+      deelWachtrijDoosProvider.overrideWithValue(wachtrij),
+      webConfigProvider.overrideWithValue(webConfig),
+      if (simulatie != null) locatieBronProvider.overrideWithValue(simulatie),
+    ],
+  );
+  // Locatie delen luistert zelf naar de navigatie; hij moet er vanaf het begin
+  // zijn, ook om een wachtrij van de vorige keer alsnog te versturen.
+  container.read(locatieDelerProvider);
   runApp(
-    ProviderScope(
-      overrides: [
-        instellingenDoosProvider.overrideWithValue(doos),
-        webConfigProvider.overrideWithValue(webConfig),
-        if (simulatie != null) locatieBronProvider.overrideWithValue(simulatie),
-      ],
-      child: const HomeMapsApp(),
-    ),
+    UncontrolledProviderScope(container: container, child: const HomeMapsApp()),
   );
 }
 

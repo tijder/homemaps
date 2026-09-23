@@ -24,6 +24,7 @@ import '../navigatie/simulatie.dart';
 import '../providers/diensten.dart';
 import '../providers/instellingen.dart';
 import '../providers/locatie.dart';
+import '../providers/locatie_delen.dart';
 import '../providers/planner.dart';
 import '../providers/plekken.dart';
 import '../utils/afstand.dart';
@@ -187,6 +188,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
             l,
             ref.read(plannerProvider.notifier).taal,
             doelen.last.weergave(l),
+            delen: ref.read(deelInstellingenProvider).aan,
           ),
         );
   }
@@ -1070,12 +1072,21 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                 },
                 onDempen: acties.dempen,
                 onZoekLangs: () => _zoekLangsRoute(nav),
+                deelt: _deelt(),
+                onDelen: () => context.router.push(const LocatieDelenRoute()),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  /// Voor het pictogram in de voet: null als locatie delen uit staat, `true`
+  /// als het versturen misgaat (de punten wachten dan in de wachtrij).
+  bool? _deelt() {
+    if (!ref.watch(deelInstellingenProvider).aan) return null;
+    return ref.watch(locatieDelerProvider).fout != null;
   }
 
   /// De pijl bij de volgende afslag, als die dichtbij is.

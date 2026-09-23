@@ -41,3 +41,19 @@ class KaartRoute extends PageRouteInfo<void> {
     },
   );
 }
+
+/// generated route for
+/// [LocatieDelenScreen]
+class LocatieDelenRoute extends PageRouteInfo<void> {
+  const LocatieDelenRoute({List<PageRouteInfo>? children})
+    : super(LocatieDelenRoute.name, initialChildren: children);
+
+  static const String name = 'LocatieDelenRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const LocatieDelenScreen();
+    },
+  );
+}

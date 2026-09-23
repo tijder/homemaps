@@ -429,11 +429,18 @@ class NavigatieVoet extends StatelessWidget {
     required this.onStop,
     required this.onDempen,
     this.onZoekLangs,
+    this.deelt,
+    this.onDelen,
   });
 
   final NavigatieToestand nav;
   final VoidCallback onStop;
   final ValueChanged<bool> onDempen;
+
+  /// Locatie delen: null als het uit staat, `false` als het loopt, `true` als
+  /// het versturen misgaat.
+  final bool? deelt;
+  final VoidCallback? onDelen;
 
   /// "Langs de route" (tanken, laden, ...): een stop toevoegen.
   final VoidCallback? onZoekLangs;
@@ -480,6 +487,15 @@ class NavigatieVoet extends StatelessWidget {
                 tooltip: l.langsDeRoute,
                 icon: const Icon(Icons.local_gas_station_outlined),
                 onPressed: onZoekLangs,
+              ),
+            if (!nav.aangekomen && deelt != null)
+              IconButton(
+                tooltip: l.locatieDelen,
+                icon: Icon(
+                  Icons.share_location,
+                  color: deelt! ? const Color(0xFFE65100) : null,
+                ),
+                onPressed: onDelen,
               ),
             if (!nav.aangekomen)
               IconButton(

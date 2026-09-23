@@ -366,5 +366,74 @@
         "type": "String"
       }
     }
-  }
+  },
+  "locatieDelen": "Locatie delen",
+  "locatieDelenUitleg": "Stuur je positie naar je eigen server, zoals Colota dat doet. Alleen tijdens het navigeren.",
+  "locatieDelenAan": "Delen tijdens navigeren",
+  "deelUit": "Uit",
+  "deelServer": "Server",
+  "deelAangepast": "Eigen server",
+  "deelSjabloonUitleg": "{sjabloon, select, dawarich{OwnTracks-formaat voor Dawarich} geopulse{Colota-formaat voor GeoPulse} overland{Overland: punten in batches (GeoJSON)} owntracks{Standaard OwnTracks over HTTP} phonetrack{Nextcloud PhoneTrack} reitti{OwnTracks-formaat voor Reitti} traccar{Traccar, OsmAnd-protocol} other{Je eigen veldnamen}}",
+  "@deelSjabloonUitleg": {
+    "placeholders": {
+      "sjabloon": {
+        "type": "String"
+      }
+    }
+  },
+  "deelUrl": "Adres (URL)",
+  "deelUrlOngeldig": "Vul een adres in dat met http:// of https:// begint.",
+  "deelUrlWeb": "In de browser moet de server CORS toestaan.",
+  "deelMethode": "Methode",
+  "deelInlog": "Inloggen",
+  "deelInlogGeen": "Geen",
+  "deelGebruiker": "Gebruikersnaam",
+  "deelWachtwoord": "Wachtwoord",
+  "deelToken": "Token",
+  "deelVeldnamen": "Veldnamen",
+  "deelVeldnamenUitleg": "Per regel veld=naam, bijvoorbeeld lat=latitude. Velden: lat, lon, acc, alt, vel, tst, bear.",
+  "deelExtraVelden": "Vaste velden",
+  "deelExtraVeldenUitleg": "Per regel naam=waarde; die gaan bij elk punt mee.",
+  "deelInterval": "Elke … seconden",
+  "deelMinAfstand": "Of na … meter",
+  "deelTesten": "Verbinding testen",
+  "deelTestGelukt": "De server heeft het punt ontvangen.",
+  "deelTestMislukt": "Niet gelukt: {fout}",
+  "@deelTestMislukt": {
+    "placeholders": {
+      "fout": {
+        "type": "String"
+      }
+    }
+  },
+  "deelStatus": "Status",
+  "deelLaatst": "Laatst verstuurd om {tijd}",
+  "@deelLaatst": {
+    "placeholders": {
+      "tijd": {
+        "type": "String"
+      }
+    }
+  },
+  "deelNogNiets": "Nog niets verstuurd",
+  "deelInWachtrij": "{aantal, plural, =0{Niets in de wachtrij} =1{1 punt in de wachtrij} other{{aantal} punten in de wachtrij}}",
+  "@deelInWachtrij": {
+    "placeholders": {
+      "aantal": {
+        "type": "int"
+      }
+    }
+  },
+  "deelFout": "Fout: {fout}",
+  "@deelFout": {
+    "placeholders": {
+      "fout": {
+        "type": "String"
+      }
+    }
+  },
+  "deelGestopt": "Gestopt tot je de instellingen wijzigt.",
+  "deelWisWachtrij": "Wachtrij leegmaken",
+  "deelVoorbeeld": "Voorbeeld",
+  "navigatieMeldingDelen": "HomeMaps volgt je locatie voor de route en deelt hem met je server."
 }

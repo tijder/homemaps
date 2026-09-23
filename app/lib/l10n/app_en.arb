@@ -176,5 +176,74 @@
   "langsEten": "Food",
   "langsNiets": "Nothing found within a kilometre of the route.",
   "langsAfstand": "{afstand} from the route",
-  "tussenstopToegevoegd": "Stop: {naam}"
+  "tussenstopToegevoegd": "Stop: {naam}",
+  "locatieDelen": "Location sharing",
+  "locatieDelenUitleg": "Send your position to your own server, like Colota does. Only while navigating.",
+  "locatieDelenAan": "Share while navigating",
+  "deelUit": "Off",
+  "deelServer": "Server",
+  "deelAangepast": "Custom server",
+  "deelSjabloonUitleg": "{sjabloon, select, dawarich{OwnTracks-compatible format for Dawarich} geopulse{Colota format for GeoPulse} overland{Overland: points in batches (GeoJSON)} owntracks{Standard OwnTracks HTTP format} phonetrack{Nextcloud PhoneTrack} reitti{OwnTracks-compatible format for Reitti} traccar{Traccar, OsmAnd protocol} other{Your own field names}}",
+  "@deelSjabloonUitleg": {
+    "placeholders": {
+      "sjabloon": {
+        "type": "String"
+      }
+    }
+  },
+  "deelUrl": "Address (URL)",
+  "deelUrlOngeldig": "Enter an address starting with http:// or https://.",
+  "deelUrlWeb": "In the browser the server must allow CORS.",
+  "deelMethode": "Method",
+  "deelInlog": "Authentication",
+  "deelInlogGeen": "None",
+  "deelGebruiker": "Username",
+  "deelWachtwoord": "Password",
+  "deelToken": "Token",
+  "deelVeldnamen": "Field names",
+  "deelVeldnamenUitleg": "One per line as field=name, e.g. lat=latitude. Fields: lat, lon, acc, alt, vel, tst, bear.",
+  "deelExtraVelden": "Fixed fields",
+  "deelExtraVeldenUitleg": "One per line as name=value; sent with every point.",
+  "deelInterval": "Every … seconds",
+  "deelMinAfstand": "Or after … metres",
+  "deelTesten": "Test connection",
+  "deelTestGelukt": "The server received the point.",
+  "deelTestMislukt": "Failed: {fout}",
+  "@deelTestMislukt": {
+    "placeholders": {
+      "fout": {
+        "type": "String"
+      }
+    }
+  },
+  "deelStatus": "Status",
+  "deelLaatst": "Last sent at {tijd}",
+  "@deelLaatst": {
+    "placeholders": {
+      "tijd": {
+        "type": "String"
+      }
+    }
+  },
+  "deelNogNiets": "Nothing sent yet",
+  "deelInWachtrij": "{aantal, plural, =0{Queue empty} =1{1 point queued} other{{aantal} points queued}}",
+  "@deelInWachtrij": {
+    "placeholders": {
+      "aantal": {
+        "type": "int"
+      }
+    }
+  },
+  "deelFout": "Error: {fout}",
+  "@deelFout": {
+    "placeholders": {
+      "fout": {
+        "type": "String"
+      }
+    }
+  },
+  "deelGestopt": "Stopped until you change the settings.",
+  "deelWisWachtrij": "Clear queue",
+  "deelVoorbeeld": "Example",
+  "navigatieMeldingDelen": "HomeMaps follows your location for the route and shares it with your server."
 }
