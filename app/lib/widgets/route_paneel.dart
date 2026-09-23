@@ -7,7 +7,6 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import '../l10n/app_localizations.dart';
 import 'langs_route.dart';
 import 'locatie_reden.dart';
-import 'manoeuvre_pictogram.dart';
 import '../models/plaats.dart';
 import '../models/profiel.dart';
 import '../models/route.dart';
@@ -18,6 +17,7 @@ import '../services/valhalla_service.dart';
 import '../utils/geplande_afsluitingen.dart';
 import '../utils/opmaak.dart';
 import 'hoogteprofiel.dart';
+import 'stappen_lijst.dart';
 import 'zoekveld.dart';
 
 /// Het paneel naast (breed scherm) of onder (smal scherm) de kaart: de punten,
@@ -456,16 +456,8 @@ class _RoutePaneelState extends ConsumerState<RoutePaneel> {
         ],
         const SizedBox(height: 12),
         Text(l.instructies, style: Theme.of(context).textTheme.titleSmall),
-        for (final manoeuvre in route.manoeuvres)
-          ListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            leading: ManoeuvreIcoon(manoeuvre),
-            title: Text(manoeuvre.instructie),
-            trailing: manoeuvre.meters > 0
-                ? Text(afstand(manoeuvre.meters))
-                : null,
-          ),
+        const SizedBox(height: 4),
+        StappenLijst(route),
       ],
     );
   }

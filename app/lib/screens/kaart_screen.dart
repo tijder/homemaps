@@ -32,6 +32,7 @@ import '../utils/muis_stub.dart'
     if (dart.library.js_interop) '../utils/muis_web.dart';
 import '../utils/testhaak_stub.dart'
     if (dart.library.js_interop) '../utils/testhaak_web.dart';
+import '../widgets/stappen_lijst.dart';
 import '../widgets/kaart.dart';
 import '../widgets/langs_route.dart';
 import '../widgets/locatie_reden.dart';
@@ -996,7 +997,14 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
               ? CrossAxisAlignment.start
               : CrossAxisAlignment.stretch,
           children: [
-            blok(NavigatieKop(nav)),
+            blok(
+              NavigatieKop(
+                nav,
+                onTap: nav.stand == null || nav.aangekomen
+                    ? null
+                    : () => _toonStappen(nav),
+              ),
+            ),
             const Spacer(),
             // Linksonder: snelheid (auto), en "Hervatten" als je zelf
             // rondkijkt.
@@ -1056,6 +1064,44 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Tijdens navigatie: de rest van de routebeschrijving, vanaf de volgende
+  /// manoeuvre.
+  void _toonStappen(NavigatieToestand nav) {
+    final stand = nav.stand;
+    if (stand == null) return;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => PointerInterceptor(
+        child: SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * 0.7,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    AppLocalizations.of(context).instructies,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  StappenLijst(
+                    nav.route,
+                    vanaf: stand.volgende,
+                    totVolgende: stand.totVolgende,
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

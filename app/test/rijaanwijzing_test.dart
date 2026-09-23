@@ -11,6 +11,7 @@ import 'package:homemaps/navigatie/volger.dart';
 import 'package:homemaps/services/valhalla_service.dart';
 import 'package:homemaps/widgets/manoeuvre_pictogram.dart';
 import 'package:homemaps/widgets/navigatie_balk.dart';
+import 'package:homemaps/widgets/stappen_lijst.dart';
 
 import 'navigatie_test.dart' show stroe;
 
@@ -411,5 +412,66 @@ void main() {
     expect(find.text('A12'), findsOneWidget);
     expect(find.textContaining('Amersfoort'), findsOneWidget);
     expect(find.textContaining('Houd links aan'), findsNothing);
+  });
+
+  test('stappenlijst: rotonde af en doorgaan zonder eigen regel', () {
+    final route = stroe();
+    final stappen = StappenLijst.stappen(route);
+    // Twee rotondes: alleen "op" (26) krijgt een regel, met het stuk tot
+    // voorbij de uitrit erbij.
+    expect(stappen.where((s) => s.manoeuvre.type == 27), isEmpty);
+    expect(stappen.where((s) => s.manoeuvre.type == 26), hasLength(2));
+    // Samen nog steeds de hele route.
+    expect(
+      stappen.fold(0.0, (som, s) => som + s.meters),
+      closeTo(route.manoeuvres.fold(0.0, (som, m) => som + m.meters), 1),
+    );
+
+    // Onderweg: hoe ver elke stap nog is, oplopend vanaf de volgende.
+    final onderweg = StappenLijst.stappen(route, vanaf: 2, totVolgende: 120);
+    expect(onderweg.first.manoeuvre, same(route.manoeuvres[2]));
+    expect(onderweg.first.meters, 120);
+    expect(onderweg[1].meters, 120 + route.manoeuvres[2].meters);
+  });
+
+  testWidgets('tik op de kop: de routebeschrijving', (tester) async {
+    final route = utrecht();
+    var getikt = 0;
+    await tester.pumpWidget(
+      app(
+        NavigatieKop(
+          NavigatieToestand(
+            route: route,
+            doelen: const [],
+            stand: NavStand(
+              opRoute: route.punten.first,
+              segment: 0,
+              langs: 0,
+              afwijking: 0,
+              routeKoers: 0,
+              volgende: 1,
+              totVolgende: 200,
+              restMeters: 20000,
+              restSeconden: 900,
+              vanRoute: false,
+              aangekomen: false,
+            ),
+          ),
+          onTap: () => getikt++,
+        ),
+      ),
+    );
+    await tester.tap(find.byType(NavigatieKop));
+    expect(getikt, 1);
+
+    await tester.pumpWidget(
+      app(SingleChildScrollView(child: StappenLijst(route))),
+    );
+    // De afrit en de splitsingen kort, met hun bord.
+    expect(find.text('Afslag nemen'), findsNothing);
+    expect(find.text('Afrit nemen'), findsNWidgets(3));
+    expect(find.text('Links aanhouden'), findsOneWidget);
+    expect(find.text('Afrit 15'), findsOneWidget);
+    expect(find.textContaining('Sla rechtsaf naar Meerndijk'), findsOneWidget);
   });
 }

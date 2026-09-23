@@ -10,9 +10,12 @@ import 'manoeuvre_pictogram.dart';
 /// Bovenaan tijdens navigatie: de volgende manoeuvre, groot, en de manoeuvre
 /// daarna klein als die er vlak achteraan komt.
 class NavigatieKop extends StatelessWidget {
-  const NavigatieKop(this.nav, {super.key});
+  const NavigatieKop(this.nav, {this.onTap, super.key});
 
   final NavigatieToestand nav;
+
+  /// Tik op de kop: de rest van de routebeschrijving.
+  final VoidCallback? onTap;
 
   /// Komt de manoeuvre daarna binnen zoveel meter, dan staat hij er al bij.
   static const _daarnaBinnen = 300.0;
@@ -80,48 +83,51 @@ class NavigatieKop extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
-            child: Row(
-              children: [
-                pictogram,
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        titel,
-                        style: tekst.headlineMedium?.copyWith(
-                          color: kleuren.onPrimaryContainer,
-                          fontWeight: FontWeight.w600,
+          InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
+              child: Row(
+                children: [
+                  pictogram,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          titel,
+                          style: tekst.headlineMedium?.copyWith(
+                            color: kleuren.onPrimaryContainer,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      if (bord != null) ...[
-                        if (actie != null)
+                        if (bord != null) ...[
+                          if (actie != null)
+                            Text(
+                              actie,
+                              style: tekst.titleMedium?.copyWith(
+                                color: kleuren.onPrimaryContainer,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          const SizedBox(height: 6),
+                          WegBord(bord),
+                        ] else if (onder != null)
                           Text(
-                            actie,
+                            onder,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: tekst.titleMedium?.copyWith(
                               color: kleuren.onPrimaryContainer,
-                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        const SizedBox(height: 6),
-                        WegBord(bord),
-                      ] else if (onder != null)
-                        Text(
-                          onder,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: tekst.titleMedium?.copyWith(
-                            color: kleuren.onPrimaryContainer,
-                          ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           // De matrixborden gaan voor: daar staat wat nu geldt.
