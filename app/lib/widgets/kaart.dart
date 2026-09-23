@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -150,7 +151,7 @@ class _KaartState extends State<Kaart> {
     await c.addGeoJsonSource(_verkeerBron, _leeg);
     await c.addGeoJsonSource(_routeBron, _leeg);
     await c.addGeoJsonSource(_aansluitBron, _leeg);
-    await _verkeerLagen(c);
+    await _verkeerLagen(c, onderTekst: eersteTekstlaag(await c.getStyle()));
     // Alternatieven grijs en onderop; de gekozen route blauw met een witte rand.
     await c.addLineLayer(
       _routeBron,
@@ -319,11 +320,16 @@ class _KaartState extends State<Kaart> {
     );
   }
 
-  /// Onder de routes, zodat een route over een file heen leesbaar blijft. Een
-  /// afsluiting is rood met witte streepjes, werk oranje gestreept, files rood en
-  /// langzaam verkeer oranje. Pas vanaf een zoom waarop je wegen onderscheidt:
-  /// landelijk zijn het er honderden.
-  Future<void> _verkeerLagen(MapLibreMapController c) async {
+  /// Onder de routes, zodat een route over een file heen leesbaar blijft, en
+  /// de lijnen ook onder de namen en wegnummers van de kaart ([onderTekst]).
+  /// De meldingen (punten) blijven erboven. Een afsluiting is rood met witte
+  /// streepjes, werk oranje gestreept, files rood en langzaam verkeer oranje.
+  /// Pas vanaf een zoom waarop je wegen onderscheidt: landelijk zijn het er
+  /// honderden.
+  Future<void> _verkeerLagen(
+    MapLibreMapController c, {
+    String? onderTekst,
+  }) async {
     List<Object> breedte(double laag, double hoog) => [
       'interpolate',
       ['linear'],
@@ -371,6 +377,7 @@ class _KaartState extends State<Kaart> {
       ),
       filter: soort(['traag', 'file']),
       minzoom: 7,
+      belowLayerId: onderTekst,
     );
     await c.addLineLayer(
       _verkeerBron,
@@ -382,6 +389,7 @@ class _KaartState extends State<Kaart> {
       ),
       filter: soort(['werk']),
       minzoom: 9,
+      belowLayerId: onderTekst,
     );
     await c.addLineLayer(
       _verkeerBron,
@@ -393,6 +401,7 @@ class _KaartState extends State<Kaart> {
       ),
       filter: soort(['dicht']),
       minzoom: 9,
+      belowLayerId: onderTekst,
     );
     await c.addLineLayer(
       _verkeerBron,
@@ -405,6 +414,7 @@ class _KaartState extends State<Kaart> {
       filter: soort(['dicht']),
       minzoom: 9,
       enableInteraction: false,
+      belowLayerId: onderTekst,
     );
     // Een lijn van een paar pixels raak je met een vinger niet: een brede,
     // vrijwel onzichtbare lijn eroverheen vangt de tik. Een fractie zichtbaar
@@ -418,6 +428,7 @@ class _KaartState extends State<Kaart> {
         lineOpacity: 0.01,
       ),
       minzoom: 9,
+      belowLayerId: onderTekst,
     );
     // Ongevallen, pechgevallen en voorwerpen op de weg: punten, bovenop de
     // lijnen. Met een ruime, vrijwel onzichtbare cirkel eromheen voor de tik.
@@ -695,4 +706,20 @@ class _KaartState extends State<Kaart> {
     onMapLongClick: (scherm, punt) =>
         widget.onLangIngedrukt(_logisch(scherm), punt),
   );
+}
+
+/// De eerste laag met tekst of symbolen in een kaartstijl (als JSON): wat
+/// eronder komt, loopt niet over namen en wegnummers heen. Null als de stijl
+/// er geen heeft of niet te lezen is; dan komt het bovenop.
+String? eersteTekstlaag(String? stijl) {
+  if (stijl == null) return null;
+  try {
+    final lagen = (jsonDecode(stijl) as Map)['layers'] as List? ?? const [];
+    for (final laag in lagen) {
+      if (laag is Map && laag['type'] == 'symbol') return laag['id'] as String?;
+    }
+  } on FormatException {
+    return null;
+  }
+  return null;
 }
