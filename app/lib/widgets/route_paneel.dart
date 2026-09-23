@@ -507,7 +507,9 @@ class _RouteKaartje extends StatelessWidget {
         children: [
           ListTile(
             onTap: onTap,
-            title: Text('${duur(route.seconden)} · ${afstand(route.meters)}'),
+            title: Text(
+              '${duur(route.seconden)} · ${afstand(route.meters, l.localeName)}',
+            ),
             subtitle: Text([titel, ...extra].join(' · ')),
             selected: gekozen,
             trailing: _vertraging(context, route),

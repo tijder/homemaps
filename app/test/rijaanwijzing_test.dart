@@ -8,6 +8,7 @@ import 'package:homemaps/l10n/app_localizations.dart';
 import 'package:homemaps/models/route.dart';
 import 'package:homemaps/navigatie/afslag_pijl.dart';
 import 'package:homemaps/utils/afstand.dart';
+import 'package:homemaps/utils/opmaak.dart';
 import 'package:homemaps/navigatie/navigatie_provider.dart';
 import 'package:homemaps/navigatie/rijstrook_keuze.dart';
 import 'package:homemaps/navigatie/volger.dart';
@@ -472,7 +473,9 @@ void main() {
     );
     // De afrit en de splitsingen kort, met hun bord.
     expect(find.text('Afslag nemen'), findsNothing);
-    expect(find.text('Afrit nemen'), findsNWidgets(3));
+    // Afrit 2 staat er één keer, al splitst Valhalla hem in tweeën.
+    expect(find.text('Afrit nemen'), findsNWidgets(2));
+    expect(find.text('Afrit 2'), findsOneWidget);
     expect(find.text('Links aanhouden'), findsOneWidget);
     expect(find.text('Afrit 15'), findsOneWidget);
     expect(find.textContaining('Sla rechtsaf naar Meerndijk'), findsOneWidget);
@@ -519,5 +522,18 @@ void main() {
       expect(afslagPijl(route, route.manoeuvres.length - 1), isNull);
       expect(heeftAfslagPijl(route.manoeuvres.first), isFalse);
     });
+  });
+
+  test('afstand: komma in het Nederlands, onderweg afgerond', () {
+    expect(afstand(2600, 'nl'), '2,6 km');
+    expect(afstand(2600, 'en'), '2.6 km');
+    expect(afstand(816), '816 m');
+    expect(afstand(15300, 'nl'), '15 km');
+    expect(rondAfstand(816), 800);
+    expect(rondAfstand(87), 90);
+
+    final route = utrecht();
+    final onderweg = StappenLijst.stappen(route, totVolgende: 816);
+    expect(onderweg.where((s) => s.manoeuvre.bord?.afrit == '2'), hasLength(1));
   });
 }

@@ -123,7 +123,9 @@ class _LangsRouteZoekerState extends ConsumerState<LangsRouteZoeker> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       subtitle: Text(
-                        l.langsAfstand(afstand(t.afstandTotRoute)),
+                        l.langsAfstand(
+                          afstand(t.afstandTotRoute, l.localeName),
+                        ),
                       ),
                       trailing: t.omwegSeconden == null
                           ? null

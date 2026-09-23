@@ -47,11 +47,18 @@ class StappenLijst extends StatelessWidget {
     return uit;
   }
 
-  /// Doorgaan (7, 8) zonder bord, en rotonde af (27) na rotonde op (26): die
-  /// zeggen niets wat de regel ervoor niet al zegt.
+  /// Doorgaan (7, 8) zonder bord, rotonde af (27) na rotonde op (26), en een
+  /// tweede afrit met hetzelfde nummer (Valhalla splitst de afritstrook soms
+  /// in tweeën): die zeggen niets wat de regel ervoor niet al zegt.
   static bool _zonderEigenRegel(Manoeuvre m, Manoeuvre vorige) =>
       ((m.type == 7 || m.type == 8) && m.bord == null) ||
-      (m.type == 27 && vorige.type == 26);
+      (m.type == 27 && vorige.type == 26) ||
+      (_isAfrit(m) &&
+          _isAfrit(vorige) &&
+          m.bord?.afrit != null &&
+          m.bord?.afrit == vorige.bord?.afrit);
+
+  static bool _isAfrit(Manoeuvre m) => m.type == 20 || m.type == 21;
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +112,13 @@ class StappenLijst extends StatelessWidget {
           ),
           if (meters > 0 || totVolgende != null) ...[
             const SizedBox(width: 12),
-            Text(afstand(meters), style: tekst.bodyMedium),
+            Text(
+              afstand(
+                totVolgende == null ? meters : rondAfstand(meters),
+                l.localeName,
+              ),
+              style: tekst.bodyMedium,
+            ),
           ],
         ],
       ),

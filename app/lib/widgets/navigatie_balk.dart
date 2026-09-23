@@ -47,7 +47,7 @@ class NavigatieKop extends StatelessWidget {
               size: 56,
               color: kleuren.onPrimaryContainer,
             ),
-            afstand(_rond(stand.totVolgende)),
+            afstand(rondAfstand(stand.totVolgende), l.localeName),
             manoeuvres[stand.volgende].instructie,
           );
     // Bij een op- of afrit, splitsing of invoegstrook, zoals bij Google en
@@ -162,14 +162,6 @@ class NavigatieKop extends StatelessWidget {
 
   static Widget _icoon(IconData pictogram, ColorScheme kleuren) =>
       Icon(pictogram, size: 56, color: kleuren.onPrimaryContainer);
-
-  /// Een afstand die niet bij elke meter verspringt: onder de 100 m op 10 m,
-  /// daarboven op 50 m.
-  static double _rond(double meters) => meters < 100
-      ? (meters / 10).round() * 10
-      : meters < 1000
-      ? (meters / 50).round() * 50
-      : meters;
 }
 
 /// Kort wat je doet bij een op- of afrit, splitsing of invoegstrook ("Links
@@ -281,7 +273,7 @@ class RijstrookBalk extends StatelessWidget {
     final over = this.over;
     final afstandTekst = over == null
         ? null
-        : afstand(NavigatieKop._rond(over));
+        : afstand(rondAfstand(over), l.localeName);
     return Semantics(
       label: afstandTekst == null ? goed : l.rijstrokenOver(afstandTekst, goed),
       excludeSemantics: true,
@@ -477,7 +469,7 @@ class NavigatieVoet extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '${duur(seconden)} · ${afstand(meters)}',
+                          '${duur(seconden)} · ${afstand(meters, l.localeName)}',
                           style: tekst.bodyMedium,
                         ),
                       ],
