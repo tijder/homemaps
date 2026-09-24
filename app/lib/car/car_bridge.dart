@@ -699,7 +699,7 @@ class CarBridge implements CarFlutterApi {
           _l,
           iconKey: iconKey,
           metersToNext: toNext,
-          then: then,
+          then: [?then],
           lanes: lanes?.perLane,
           lanesIconKey: lanes == null ? null : laneKey,
           lanesAhead: lanes == null || lanes.atManeuver ? null : lanes.ahead,

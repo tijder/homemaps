@@ -169,8 +169,9 @@ class CarManeuver {
   double metersToNext;
 
   /// The maneuver right after this one, if it follows within a few hundred
-  /// meters.
-  CarManeuver? then;
+  /// meters: at most one. (A list, not a nullable field: Swift structs can't
+  /// contain themselves.)
+  List<CarManeuver> then;
   List<CarLane>? lanes;
 
   /// The lane bar as an image, registered earlier.

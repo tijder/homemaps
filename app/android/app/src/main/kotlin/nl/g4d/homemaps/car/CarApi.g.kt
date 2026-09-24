@@ -499,9 +499,10 @@ data class CarManeuver (
   val metersToNext: Double,
   /**
    * The maneuver right after this one, if it follows within a few hundred
-   * meters.
+   * meters: at most one. (A list, not a nullable field: Swift structs can't
+   * contain themselves.)
    */
-  val then: CarManeuver? = null,
+  val then: List<CarManeuver>,
   val lanes: List<CarLane>? = null,
   /** The lane bar as an image, registered earlier. */
   val lanesIconKey: String? = null,
@@ -520,7 +521,7 @@ data class CarManeuver (
       val sign = pigeonVar_list[6] as CarRoadSign?
       val iconKey = pigeonVar_list[7] as String
       val metersToNext = pigeonVar_list[8] as Double
-      val then = pigeonVar_list[9] as CarManeuver?
+      val then = pigeonVar_list[9] as List<CarManeuver>
       val lanes = pigeonVar_list[10] as List<CarLane>?
       val lanesIconKey = pigeonVar_list[11] as String?
       val lanesAhead = pigeonVar_list[12] as Double?
