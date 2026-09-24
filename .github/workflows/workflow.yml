@@ -112,6 +112,32 @@ jobs:
           name: android-apk
           path: app/build/app/outputs/flutter-apk/app-release.apk
 
+  # Alleen of het compileert: ondertekenen en TestFlight doet release.yml. Zo valt
+  # een wijziging die iOS breekt op zonder dat er iemand een Mac bij hoeft te pakken.
+  ios:
+    name: App (iOS)
+    if: ${{ github.event_name == 'pull_request' || !startsWith(github.event.head_commit.message, 'chore(release):') }}
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: app/pubspec.yaml
+          cache: true
+      - name: Cache pub dependencies
+        uses: actions/cache@v6
+        with:
+          path: ~/.pub-cache
+          # Geen restore-keys, om dezelfde reden als in de job hierboven.
+          key: pub-${{ runner.os }}-${{ hashFiles('app/pubspec.lock') }}
+      - run: flutter pub get
+      - name: Build iOS
+        run: flutter build ios --release --no-codesign
+
   importer:
     name: Importer (lint, test)
     if: ${{ github.event_name == 'pull_request' || !startsWith(github.event.head_commit.message, 'chore(release):') }}
