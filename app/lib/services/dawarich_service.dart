@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 
 import '../models/dawarich.dart';
@@ -19,8 +21,12 @@ enum DawarichFoutSoort {
   /// Familie zit niet in dit abonnement (Dawarich Cloud).
   geenAbonnement,
 
-  /// Geen Dawarich, of niet te bereiken (op het web ook: geen CORS).
+  /// Niet te bereiken (op het web ook: geen CORS).
   verbinding,
+
+  /// Er antwoordt iets, maar niet de API van Dawarich: een ander adres, of
+  /// een inlogproxy (zoals Authelia) die `/api/v1` niet doorlaat.
+  geenDawarich,
 
   /// Een ander antwoord dan verwacht.
   onbekend,
@@ -76,6 +82,30 @@ class DawarichService {
     return s.replaceFirst(RegExp(r'/+$'), '');
   }
 
+  /// Waar Dawarich na het inloggen op de website heen stuurt als de client
+  /// `android` of `ios` is: `/auth/ios/success?token=<JWT>`.
+  static bool isHandoff(Uri uri) =>
+      uri.path.endsWith('/auth/ios/success') &&
+      (uri.queryParameters['token']?.isNotEmpty ?? false);
+
+  /// De API-sleutel uit dat adres. De JWT heeft `{api_key, exp}` als inhoud;
+  /// Dawarich controleert de handtekening zelf ook niet, net als zijn eigen
+  /// apps. Null als er geen sleutel in zit.
+  static String? sleutelUitHandoff(Uri uri) {
+    if (!isHandoff(uri)) return null;
+    final delen = uri.queryParameters['token']!.split('.');
+    if (delen.length != 3) return null;
+    try {
+      final inhoud = jsonDecode(
+        utf8.decode(base64Url.decode(base64Url.normalize(delen[1]))),
+      );
+      final sleutel = inhoud is Map ? inhoud['api_key'] : null;
+      return sleutel is String && sleutel.isNotEmpty ? sleutel : null;
+    } on FormatException {
+      return null;
+    }
+  }
+
   Future<Response<dynamic>> _vraag(
     String methode,
     String server,
@@ -110,9 +140,36 @@ class DawarichService {
     if (data is Map) return data.cast<String, dynamic>();
     // Geen JSON: waarschijnlijk geen Dawarich op dit adres.
     throw DawarichFout(
-      DawarichFoutSoort.verbinding,
+      DawarichFoutSoort.geenDawarich,
       'HTTP ${antwoord.statusCode}',
     );
+  }
+
+  /// De versie uit het antwoord; in de browser alleen als de server de
+  /// header vrijgeeft (CORS).
+  static String? _versie(Response<dynamic> antwoord) =>
+      antwoord.headers.value('x-dawarich-version');
+
+  /// Is hier een Dawarich? `GET /health` kan zonder inloggen. Geeft de
+  /// versie, als die te lezen is.
+  Future<({String? versie})> verbind(String server) async {
+    final antwoord = await _vraag('GET', server, 'health');
+    if (antwoord.statusCode != 200 || _json(antwoord)['status'] != 'ok') {
+      throw DawarichFout(
+        DawarichFoutSoort.geenDawarich,
+        'HTTP ${antwoord.statusCode}',
+      );
+    }
+    return (versie: _versie(antwoord));
+  }
+
+  /// Werkt de sleutel nog? Geeft de versie; [DawarichFoutSoort.inlog] als de
+  /// sleutel niet (meer) geldt.
+  Future<({String? versie})> controleer(String server, String sleutel) async {
+    final antwoord = await _vraag('GET', server, 'users/me', sleutel: sleutel);
+    if (antwoord.statusCode != 200) _fout(antwoord);
+    _json(antwoord);
+    return (versie: _versie(antwoord));
   }
 
   static Never _fout(Response<dynamic> antwoord) {

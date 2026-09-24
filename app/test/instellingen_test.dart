@@ -94,7 +94,7 @@ void main() {
     tester,
   ) async {
     await toon(tester, maat: const Size(1400, 1000), categorie: 'dawarich');
-    expect(find.text('E-mail en wachtwoord'), findsOneWidget);
+    expect(find.text('Verbinden'), findsOneWidget);
     final gekozen = tester
         .widgetList<ListTile>(find.byType(ListTile))
         .where((t) => t.selected);

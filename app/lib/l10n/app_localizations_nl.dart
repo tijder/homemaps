@@ -724,7 +724,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get dawarichUitleg =>
-      'Log in bij je eigen Dawarich-server om je locatie met je familie te delen, onderweg je rit bij te houden en familieleden op de kaart te zien.';
+      'Vul het adres van je eigen Dawarich in. Daarna log je in, en kun je je locatie met je familie delen, onderweg je rit bijhouden en familieleden op de kaart zien.';
 
   @override
   String get dawarichNietIngelogd => 'Niet ingelogd';
@@ -733,10 +733,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dawarichServer => 'Server';
 
   @override
-  String get dawarichMetWachtwoord => 'E-mail en wachtwoord';
-
-  @override
-  String get dawarichMetSleutel => 'API-sleutel';
+  String get dawarichMetSleutel => 'Met een API-sleutel';
 
   @override
   String get dawarichEmail => 'E-mail';
@@ -749,7 +746,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get dawarichSleutelUitleg =>
-      'Te vinden in Dawarich onder Instellingen. Gebruik dit als je server alleen OIDC kent.';
+      'Te vinden in Dawarich onder Instellingen.';
 
   @override
   String get dawarichInloggen => 'Inloggen';
@@ -769,10 +766,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get annuleren => 'Annuleren';
-
-  @override
-  String get dawarichWeb =>
-      'In de browser moet Dawarich CORS toestaan voor dit adres.';
 
   @override
   String get dawarichFoutInlog => 'Onjuiste gegevens.';
@@ -957,4 +950,73 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get deelPunten => 'Punten';
+
+  @override
+  String get dawarichWebsiteUitleg =>
+      'Ook voor OIDC, zoals Keycloak of Authentik. Niet met Google.';
+
+  @override
+  String get dawarichWebsiteInloggen => 'Via de Dawarich-website';
+
+  @override
+  String get dawarichWebsiteTitel => 'Inloggen bij Dawarich';
+
+  @override
+  String dawarichWebsiteFout(String fout) {
+    return 'De pagina laadt niet: $fout';
+  }
+
+  @override
+  String get dawarichFoutCors =>
+      'Dawarich is niet te bereiken vanuit de browser. Dawarich staat dat zelf niet toe (CORS); voeg in je reverse proxy CORS-headers toe voor /api/v1, of gebruik de Android-app.';
+
+  @override
+  String get dawarichFoutGeenDawarich =>
+      'Op dit adres antwoordt geen Dawarich. Staat er een inlogproxy voor (zoals Authelia), laat dan /api/v1 door.';
+
+  @override
+  String get dawarichStapServer => 'Server';
+
+  @override
+  String get dawarichVerbinden => 'Verbinden';
+
+  @override
+  String get dawarichVerbonden => 'Verbonden';
+
+  @override
+  String dawarichVerbondenVersie(String versie) {
+    return 'Verbonden · Dawarich $versie';
+  }
+
+  @override
+  String get dawarichWijzigen => 'Wijzigen';
+
+  @override
+  String get dawarichStapInloggen => 'Inloggen';
+
+  @override
+  String get dawarichAndereManieren => 'Andere manieren';
+
+  @override
+  String get dawarichUitloggenVraag => 'Uitloggen bij Dawarich?';
+
+  @override
+  String get dawarichUitloggenUitleg =>
+      'Delen tijdens het navigeren stopt, en de familie verdwijnt van de kaart.';
+
+  @override
+  String get dawarichControleren => 'Verbinding controleren…';
+
+  @override
+  String get dawarichSessieVerlopen => 'Sessie verlopen';
+
+  @override
+  String get dawarichSessieVerlopenUitleg =>
+      'Je API-sleutel werkt niet meer. Log opnieuw in.';
+
+  @override
+  String get dawarichNietBereikbaar => 'Niet bereikbaar';
+
+  @override
+  String get dawarichOpnieuwInloggen => 'Opnieuw inloggen';
 }

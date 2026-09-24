@@ -721,7 +721,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dawarichUitleg =>
-      'Sign in to your own Dawarich server to share your location with your family, record your trips while navigating and see family members on the map.';
+      'Enter the address of your own Dawarich. Then sign in, and you can share your location with your family, record your trips while navigating and see family members on the map.';
 
   @override
   String get dawarichNietIngelogd => 'Not signed in';
@@ -730,10 +730,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dawarichServer => 'Server';
 
   @override
-  String get dawarichMetWachtwoord => 'Email and password';
-
-  @override
-  String get dawarichMetSleutel => 'API key';
+  String get dawarichMetSleutel => 'With an API key';
 
   @override
   String get dawarichEmail => 'Email';
@@ -745,8 +742,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dawarichSleutel => 'API key';
 
   @override
-  String get dawarichSleutelUitleg =>
-      'Found in Dawarich under Settings. Use this if your server only supports OIDC.';
+  String get dawarichSleutelUitleg => 'Found in Dawarich under Settings.';
 
   @override
   String get dawarichInloggen => 'Sign in';
@@ -766,10 +762,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get annuleren => 'Cancel';
-
-  @override
-  String get dawarichWeb =>
-      'In the browser, Dawarich must allow CORS for this address.';
 
   @override
   String get dawarichFoutInlog => 'Incorrect credentials.';
@@ -954,4 +946,73 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deelPunten => 'Points';
+
+  @override
+  String get dawarichWebsiteUitleg =>
+      'Also for OIDC, such as Keycloak or Authentik. Not with Google.';
+
+  @override
+  String get dawarichWebsiteInloggen => 'Via the Dawarich website';
+
+  @override
+  String get dawarichWebsiteTitel => 'Sign in to Dawarich';
+
+  @override
+  String dawarichWebsiteFout(String fout) {
+    return 'The page does not load: $fout';
+  }
+
+  @override
+  String get dawarichFoutCors =>
+      'Dawarich cannot be reached from the browser. Dawarich does not allow this itself (CORS); add CORS headers for /api/v1 in your reverse proxy, or use the Android app.';
+
+  @override
+  String get dawarichFoutGeenDawarich =>
+      'No Dawarich answers at this address. If a login proxy (such as Authelia) is in front of it, let /api/v1 through.';
+
+  @override
+  String get dawarichStapServer => 'Server';
+
+  @override
+  String get dawarichVerbinden => 'Connect';
+
+  @override
+  String get dawarichVerbonden => 'Connected';
+
+  @override
+  String dawarichVerbondenVersie(String versie) {
+    return 'Connected · Dawarich $versie';
+  }
+
+  @override
+  String get dawarichWijzigen => 'Change';
+
+  @override
+  String get dawarichStapInloggen => 'Sign in';
+
+  @override
+  String get dawarichAndereManieren => 'Other ways';
+
+  @override
+  String get dawarichUitloggenVraag => 'Sign out of Dawarich?';
+
+  @override
+  String get dawarichUitloggenUitleg =>
+      'Sharing while navigating stops, and your family disappears from the map.';
+
+  @override
+  String get dawarichControleren => 'Checking connection…';
+
+  @override
+  String get dawarichSessieVerlopen => 'Session expired';
+
+  @override
+  String get dawarichSessieVerlopenUitleg =>
+      'Your API key no longer works. Sign in again.';
+
+  @override
+  String get dawarichNietBereikbaar => 'Not reachable';
+
+  @override
+  String get dawarichOpnieuwInloggen => 'Sign in again';
 }

@@ -31,6 +31,14 @@ bool deeltViaDawarich(DeelInstellingen deel, DawarichAccount? account) =>
 /// Het ingelogde Dawarich-account, of null.
 class DawarichNotifier extends Notifier<DawarichAccount?> {
   static const _sleutel = 'dawarich';
+  static const _vorigeSleutel = 'dawarichVorigeServer';
+
+  /// De server van de vorige keer, om na uitloggen niet opnieuw te hoeven
+  /// typen.
+  String? get vorigeServer =>
+      ref.read(instellingenDoosProvider)?.get(_vorigeSleutel) as String? ??
+      _vorige;
+  String? _vorige;
 
   String? _api;
 
@@ -60,6 +68,10 @@ class DawarichNotifier extends Notifier<DawarichAccount?> {
   Future<void> _bewaar(DawarichAccount? account) async {
     state = account;
     final doos = ref.read(instellingenDoosProvider);
+    if (account != null) {
+      _vorige = account.server;
+      await doos?.put(_vorigeSleutel, account.server);
+    }
     await (account == null
         ? doos?.delete(_sleutel)
         : doos?.put(_sleutel, account.naarMap()));
@@ -167,6 +179,29 @@ class DawarichNotifier extends Notifier<DawarichAccount?> {
 final dawarichProvider = NotifierProvider<DawarichNotifier, DawarichAccount?>(
   DawarichNotifier.new,
 );
+
+/// Werkt de verbinding met het ingelogde account? De versie van Dawarich,
+/// of een [DawarichFout]: [DawarichFoutSoort.inlog] als de sleutel niet meer
+/// geldt. Null als je niet bent ingelogd.
+final dawarichVerbindingProvider =
+    FutureProvider.autoDispose<({String? versie})?>(
+      (ref) async {
+        final account = ref.watch(dawarichProvider);
+        if (account == null) return null;
+        final notifier = ref.read(dawarichProvider.notifier);
+        await notifier.geladen;
+        final sleutel = notifier.sleutel;
+        if (sleutel == null) {
+          throw const DawarichFout(DawarichFoutSoort.inlog);
+        }
+        return ref
+            .read(dawarichServiceProvider)
+            .controleer(account.server, sleutel);
+      },
+      // Niet vanzelf opnieuw: een verlopen sleutel wordt er niet beter van, en
+      // bij "niet bereikbaar" is er de knop.
+      retry: (_, _) => null,
+    );
 
 /// Jouw plek in de familie; null als je niet bent ingelogd. Een
 /// [DawarichFout] met [DawarichFoutSoort.geenFamilie] als je in geen familie

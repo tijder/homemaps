@@ -454,22 +454,20 @@
   "broncode": "Broncode",
   "licenties": "Licenties",
   "dawarich": "Dawarich",
-  "dawarichUitleg": "Log in bij je eigen Dawarich-server om je locatie met je familie te delen, onderweg je rit bij te houden en familieleden op de kaart te zien.",
+  "dawarichUitleg": "Vul het adres van je eigen Dawarich in. Daarna log je in, en kun je je locatie met je familie delen, onderweg je rit bijhouden en familieleden op de kaart zien.",
   "dawarichNietIngelogd": "Niet ingelogd",
   "dawarichServer": "Server",
-  "dawarichMetWachtwoord": "E-mail en wachtwoord",
-  "dawarichMetSleutel": "API-sleutel",
+  "dawarichMetSleutel": "Met een API-sleutel",
   "dawarichEmail": "E-mail",
   "dawarichWachtwoord": "Wachtwoord",
   "dawarichSleutel": "API-sleutel",
-  "dawarichSleutelUitleg": "Te vinden in Dawarich onder Instellingen. Gebruik dit als je server alleen OIDC kent.",
+  "dawarichSleutelUitleg": "Te vinden in Dawarich onder Instellingen.",
   "dawarichInloggen": "Inloggen",
   "dawarichUitloggen": "Uitloggen",
   "dawarichCode": "Code voor tweestapsverificatie",
   "dawarichCodeUitleg": "De code uit je authenticator-app, of een back-upcode.",
   "dawarichBevestig": "Bevestigen",
   "annuleren": "Annuleren",
-  "dawarichWeb": "In de browser moet Dawarich CORS toestaan voor dit adres.",
   "dawarichFoutInlog": "Onjuiste gegevens.",
   "dawarichFoutWachtwoordUit": "Deze server staat inloggen met een wachtwoord niet toe. Gebruik een API-sleutel.",
   "dawarichFoutGeblokkeerd": "Te vaak een verkeerde code. Probeer het later opnieuw.",
@@ -576,5 +574,39 @@
   "dawarichAccount": "Account",
   "dawarichNavigeren": "Navigeren",
   "deelVerbinding": "Verbinding",
-  "deelPunten": "Punten"
+  "deelPunten": "Punten",
+  "dawarichWebsiteUitleg": "Ook voor OIDC, zoals Keycloak of Authentik. Niet met Google.",
+  "dawarichWebsiteInloggen": "Via de Dawarich-website",
+  "dawarichWebsiteTitel": "Inloggen bij Dawarich",
+  "dawarichWebsiteFout": "De pagina laadt niet: {fout}",
+  "@dawarichWebsiteFout": {
+    "placeholders": {
+      "fout": {
+        "type": "String"
+      }
+    }
+  },
+  "dawarichFoutCors": "Dawarich is niet te bereiken vanuit de browser. Dawarich staat dat zelf niet toe (CORS); voeg in je reverse proxy CORS-headers toe voor /api/v1, of gebruik de Android-app.",
+  "dawarichFoutGeenDawarich": "Op dit adres antwoordt geen Dawarich. Staat er een inlogproxy voor (zoals Authelia), laat dan /api/v1 door.",
+  "dawarichStapServer": "Server",
+  "dawarichVerbinden": "Verbinden",
+  "dawarichVerbonden": "Verbonden",
+  "dawarichVerbondenVersie": "Verbonden · Dawarich {versie}",
+  "@dawarichVerbondenVersie": {
+    "placeholders": {
+      "versie": {
+        "type": "String"
+      }
+    }
+  },
+  "dawarichWijzigen": "Wijzigen",
+  "dawarichStapInloggen": "Inloggen",
+  "dawarichAndereManieren": "Andere manieren",
+  "dawarichUitloggenVraag": "Uitloggen bij Dawarich?",
+  "dawarichUitloggenUitleg": "Delen tijdens het navigeren stopt, en de familie verdwijnt van de kaart.",
+  "dawarichControleren": "Verbinding controleren…",
+  "dawarichSessieVerlopen": "Sessie verlopen",
+  "dawarichSessieVerlopenUitleg": "Je API-sleutel werkt niet meer. Log opnieuw in.",
+  "dawarichNietBereikbaar": "Niet bereikbaar",
+  "dawarichOpnieuwInloggen": "Opnieuw inloggen"
 }

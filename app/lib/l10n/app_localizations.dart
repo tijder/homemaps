@@ -1223,7 +1223,7 @@ abstract class AppLocalizations {
   /// No description provided for @dawarichUitleg.
   ///
   /// In nl, this message translates to:
-  /// **'Log in bij je eigen Dawarich-server om je locatie met je familie te delen, onderweg je rit bij te houden en familieleden op de kaart te zien.'**
+  /// **'Vul het adres van je eigen Dawarich in. Daarna log je in, en kun je je locatie met je familie delen, onderweg je rit bijhouden en familieleden op de kaart zien.'**
   String get dawarichUitleg;
 
   /// No description provided for @dawarichNietIngelogd.
@@ -1238,16 +1238,10 @@ abstract class AppLocalizations {
   /// **'Server'**
   String get dawarichServer;
 
-  /// No description provided for @dawarichMetWachtwoord.
-  ///
-  /// In nl, this message translates to:
-  /// **'E-mail en wachtwoord'**
-  String get dawarichMetWachtwoord;
-
   /// No description provided for @dawarichMetSleutel.
   ///
   /// In nl, this message translates to:
-  /// **'API-sleutel'**
+  /// **'Met een API-sleutel'**
   String get dawarichMetSleutel;
 
   /// No description provided for @dawarichEmail.
@@ -1271,7 +1265,7 @@ abstract class AppLocalizations {
   /// No description provided for @dawarichSleutelUitleg.
   ///
   /// In nl, this message translates to:
-  /// **'Te vinden in Dawarich onder Instellingen. Gebruik dit als je server alleen OIDC kent.'**
+  /// **'Te vinden in Dawarich onder Instellingen.'**
   String get dawarichSleutelUitleg;
 
   /// No description provided for @dawarichInloggen.
@@ -1309,12 +1303,6 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'Annuleren'**
   String get annuleren;
-
-  /// No description provided for @dawarichWeb.
-  ///
-  /// In nl, this message translates to:
-  /// **'In de browser moet Dawarich CORS toestaan voor dit adres.'**
-  String get dawarichWeb;
 
   /// No description provided for @dawarichFoutInlog.
   ///
@@ -1579,6 +1567,126 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'Punten'**
   String get deelPunten;
+
+  /// No description provided for @dawarichWebsiteUitleg.
+  ///
+  /// In nl, this message translates to:
+  /// **'Ook voor OIDC, zoals Keycloak of Authentik. Niet met Google.'**
+  String get dawarichWebsiteUitleg;
+
+  /// No description provided for @dawarichWebsiteInloggen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Via de Dawarich-website'**
+  String get dawarichWebsiteInloggen;
+
+  /// No description provided for @dawarichWebsiteTitel.
+  ///
+  /// In nl, this message translates to:
+  /// **'Inloggen bij Dawarich'**
+  String get dawarichWebsiteTitel;
+
+  /// No description provided for @dawarichWebsiteFout.
+  ///
+  /// In nl, this message translates to:
+  /// **'De pagina laadt niet: {fout}'**
+  String dawarichWebsiteFout(String fout);
+
+  /// No description provided for @dawarichFoutCors.
+  ///
+  /// In nl, this message translates to:
+  /// **'Dawarich is niet te bereiken vanuit de browser. Dawarich staat dat zelf niet toe (CORS); voeg in je reverse proxy CORS-headers toe voor /api/v1, of gebruik de Android-app.'**
+  String get dawarichFoutCors;
+
+  /// No description provided for @dawarichFoutGeenDawarich.
+  ///
+  /// In nl, this message translates to:
+  /// **'Op dit adres antwoordt geen Dawarich. Staat er een inlogproxy voor (zoals Authelia), laat dan /api/v1 door.'**
+  String get dawarichFoutGeenDawarich;
+
+  /// No description provided for @dawarichStapServer.
+  ///
+  /// In nl, this message translates to:
+  /// **'Server'**
+  String get dawarichStapServer;
+
+  /// No description provided for @dawarichVerbinden.
+  ///
+  /// In nl, this message translates to:
+  /// **'Verbinden'**
+  String get dawarichVerbinden;
+
+  /// No description provided for @dawarichVerbonden.
+  ///
+  /// In nl, this message translates to:
+  /// **'Verbonden'**
+  String get dawarichVerbonden;
+
+  /// No description provided for @dawarichVerbondenVersie.
+  ///
+  /// In nl, this message translates to:
+  /// **'Verbonden · Dawarich {versie}'**
+  String dawarichVerbondenVersie(String versie);
+
+  /// No description provided for @dawarichWijzigen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Wijzigen'**
+  String get dawarichWijzigen;
+
+  /// No description provided for @dawarichStapInloggen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Inloggen'**
+  String get dawarichStapInloggen;
+
+  /// No description provided for @dawarichAndereManieren.
+  ///
+  /// In nl, this message translates to:
+  /// **'Andere manieren'**
+  String get dawarichAndereManieren;
+
+  /// No description provided for @dawarichUitloggenVraag.
+  ///
+  /// In nl, this message translates to:
+  /// **'Uitloggen bij Dawarich?'**
+  String get dawarichUitloggenVraag;
+
+  /// No description provided for @dawarichUitloggenUitleg.
+  ///
+  /// In nl, this message translates to:
+  /// **'Delen tijdens het navigeren stopt, en de familie verdwijnt van de kaart.'**
+  String get dawarichUitloggenUitleg;
+
+  /// No description provided for @dawarichControleren.
+  ///
+  /// In nl, this message translates to:
+  /// **'Verbinding controleren…'**
+  String get dawarichControleren;
+
+  /// No description provided for @dawarichSessieVerlopen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Sessie verlopen'**
+  String get dawarichSessieVerlopen;
+
+  /// No description provided for @dawarichSessieVerlopenUitleg.
+  ///
+  /// In nl, this message translates to:
+  /// **'Je API-sleutel werkt niet meer. Log opnieuw in.'**
+  String get dawarichSessieVerlopenUitleg;
+
+  /// No description provided for @dawarichNietBereikbaar.
+  ///
+  /// In nl, this message translates to:
+  /// **'Niet bereikbaar'**
+  String get dawarichNietBereikbaar;
+
+  /// No description provided for @dawarichOpnieuwInloggen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Opnieuw inloggen'**
+  String get dawarichOpnieuwInloggen;
 }
 
 class _AppLocalizationsDelegate
