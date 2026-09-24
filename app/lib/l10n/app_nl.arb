@@ -542,5 +542,23 @@
         "type": "int"
       }
     }
-  }
+  },
+  "familieUrenGeleden": "{uren, plural, =1{1 uur geleden} other{{uren} uur geleden}}",
+  "@familieUrenGeleden": {
+    "placeholders": {
+      "uren": {
+        "type": "int"
+      }
+    }
+  },
+  "familieDagenGeleden": "{dagen, plural, =1{1 dag geleden} other{{dagen} dagen geleden}}",
+  "@familieDagenGeleden": {
+    "placeholders": {
+      "dagen": {
+        "type": "int"
+      }
+    }
+  },
+  "familieVolgen": "Volgen",
+  "familieVolgt": "Wordt gevolgd"
 }

@@ -22,6 +22,13 @@ void main() {
     planner = container.read(plannerProvider.notifier);
   });
 
+  test('een bewegende plaats vervangen brengt hem niet opnieuw in beeld', () {
+    planner.toonPlaats(plaats('Partner', 52.09));
+    planner.vervangPlaats(plaats('Partner', 52.10));
+    expect(state().gevonden?.punt, const LatLng(52.10, 5));
+    expect(state().beeldVersie, 1);
+  });
+
   test('zoeken eerst: een plaats kiezen opent nog geen route', () {
     planner.toonPlaats(plaats('Dom', 52.09));
     expect(state().routeModus, isFalse);

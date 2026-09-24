@@ -13,6 +13,7 @@ import 'package:homemaps/providers/diensten.dart';
 import 'package:homemaps/providers/locatie_delen.dart';
 import 'package:homemaps/screens/dawarich_screen.dart';
 import 'package:homemaps/services/dawarich_service.dart';
+import 'package:homemaps/utils/opmaak.dart';
 
 const server = 'https://dawarich.test';
 
@@ -294,6 +295,24 @@ void main() {
       expect(c.read(familieLocatiesProvider), isEmpty);
     });
 
+    test('volgen haalt meteen en daarna elke 5 seconden', () async {
+      final notifier = c.read(dawarichProvider.notifier);
+      await notifier.inloggen(server, 'ik@thuis.nl', 'ww');
+      await notifier.zetToonFamilie(true);
+      c.listen(familieLocatiesProvider, (_, _) {});
+      await c.read(familieLocatiesProvider.notifier).haal();
+      int opgehaald() => nep.verzoeken
+          .where((v) => v.uri.path == '/api/v1/families/locations')
+          .length;
+      final voor = opgehaald();
+      c.read(gevolgdLidProvider.notifier).volg(2);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(opgehaald(), voor + 1);
+      expect(c.read(familieLocatiesProvider).single.userId, 2);
+      c.read(gevolgdLidProvider.notifier).stop();
+      expect(c.read(gevolgdLidProvider), isNull);
+    });
+
     test('familie delen zet het en haalt de status opnieuw', () async {
       nep.antwoorden['PATCH /api/v1/families/sharing'] = (
         200,
@@ -306,6 +325,19 @@ void main() {
       await c.read(familieProvider.notifier).zetDelen(false);
       expect(nep.verzoeken.where((v) => v.method == 'PATCH'), hasLength(1));
     });
+  });
+
+  test('geleden in minuten, uren of dagen', () async {
+    final l = await AppLocalizations.delegate.load(const Locale('nl'));
+    expect(geleden(l, const Duration(seconds: 20)), 'zojuist');
+    expect(geleden(l, const Duration(minutes: 1)), '1 minuut geleden');
+    expect(geleden(l, const Duration(minutes: 59)), '59 minuten geleden');
+    expect(geleden(l, const Duration(minutes: 60)), '1 uur geleden');
+    expect(geleden(l, const Duration(hours: 5, minutes: 50)), '5 uur geleden');
+    expect(geleden(l, const Duration(hours: 24)), '1 dag geleden');
+    expect(geleden(l, const Duration(days: 3)), '3 dagen geleden');
+    // Een klok die iets voorloopt: niet "-1 minuten".
+    expect(geleden(l, const Duration(seconds: -30)), 'zojuist');
   });
 
   group('het scherm', () {

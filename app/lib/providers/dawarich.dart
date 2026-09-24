@@ -204,18 +204,52 @@ final familieProvider = AsyncNotifierProvider<FamilieNotifier, FamilieStatus?>(
 /// een API-sleutel geen live kanaal.
 const familieInterval = Duration(seconds: 30);
 
+/// Zo vaak als je een familielid volgt.
+const familieIntervalVolgen = Duration(seconds: 5);
+
+/// Het familielid dat de kaart volgt (zijn `user_id`), of null.
+class GevolgdLidNotifier extends Notifier<int?> {
+  @override
+  int? build() => null;
+
+  void volg(int userId) => state = userId;
+
+  void stop() => state = null;
+}
+
+final gevolgdLidProvider = NotifierProvider<GevolgdLidNotifier, int?>(
+  GevolgdLidNotifier.new,
+);
+
 /// De familieleden die hun locatie delen, voor op de kaart; leeg als dat uit
-/// staat. Alleen opgehaald als de app op de voorgrond is. Mislukt het, dan
-/// blijven de vorige plekken staan (ze worden vanzelf grijs).
+/// staat. Alleen opgehaald als de app op de voorgrond is, en vaker als je
+/// iemand volgt. Mislukt het, dan blijven de vorige plekken staan (ze worden
+/// vanzelf grijs).
 class FamilieLocatiesNotifier extends Notifier<List<FamilieLocatie>> {
+  bool _bezig = false;
+
   @override
   List<FamilieLocatie> build() {
     final account = ref.watch(dawarichProvider);
     if (account == null || !account.toonFamilie) return const [];
-    final tik = Timer.periodic(familieInterval, (_) => haal());
+    Timer? tik;
+    void plan(int? gevolgd) {
+      tik?.cancel();
+      tik = Timer.periodic(
+        gevolgd == null ? familieInterval : familieIntervalVolgen,
+        (_) => haal(),
+      );
+    }
+
+    plan(ref.read(gevolgdLidProvider));
+    // Niet watch: dan begint de lijst opnieuw leeg en knipperen de markeringen.
+    ref.listen(gevolgdLidProvider, (_, gevolgd) {
+      plan(gevolgd);
+      if (gevolgd != null) haal();
+    });
     final levensloop = AppLifecycleListener(onResume: haal);
     ref.onDispose(() {
-      tik.cancel();
+      tik?.cancel();
       levensloop.dispose();
     });
     Future.microtask(haal);
@@ -223,6 +257,16 @@ class FamilieLocatiesNotifier extends Notifier<List<FamilieLocatie>> {
   }
 
   Future<void> haal() async {
+    if (_bezig) return;
+    _bezig = true;
+    try {
+      await _haal();
+    } finally {
+      _bezig = false;
+    }
+  }
+
+  Future<void> _haal() async {
     final staat = WidgetsBinding.instance.lifecycleState;
     if (staat != null && staat != AppLifecycleState.resumed) return;
     final account = ref.read(dawarichProvider);

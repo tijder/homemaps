@@ -878,4 +878,32 @@ class AppLocalizationsNl extends AppLocalizations {
   String familieBatterij(int procent) {
     return 'batterij $procent%';
   }
+
+  @override
+  String familieUrenGeleden(int uren) {
+    String _temp0 = intl.Intl.pluralLogic(
+      uren,
+      locale: localeName,
+      other: '$uren uur geleden',
+      one: '1 uur geleden',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String familieDagenGeleden(int dagen) {
+    String _temp0 = intl.Intl.pluralLogic(
+      dagen,
+      locale: localeName,
+      other: '$dagen dagen geleden',
+      one: '1 dag geleden',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get familieVolgen => 'Volgen';
+
+  @override
+  String get familieVolgt => 'Wordt gevolgd';
 }

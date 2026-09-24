@@ -15,6 +15,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/dawarich.dart';
 import '../models/plaats.dart';
 import '../models/profiel.dart';
 import '../models/route.dart';
@@ -30,6 +31,7 @@ import '../providers/planner.dart';
 import '../providers/plekken.dart';
 import '../utils/afstand.dart';
 import '../utils/geo_link.dart';
+import '../utils/opmaak.dart' show geleden;
 import '../router/app_router.dart';
 import '../utils/muis_stub.dart'
     if (dart.library.js_interop) '../utils/muis_web.dart';
@@ -98,6 +100,57 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
 
   LatLng? _midden() => _kaart?.cameraPosition?.target;
 
+  /// Het kaartje van het gevolgde familielid; zolang dat openstaat, volgt de
+  /// kaart hem.
+  Plaats? _familiePlaats;
+
+  /// Je schoof zelf aan de kaart: het kaartje blijft bijwerken, de camera
+  /// niet, tot "Volgen".
+  bool _familieVrij = false;
+
+  Plaats _alsPlaats(FamilieLocatie lid, AppLocalizations l) => Plaats(
+    naam: lid.email,
+    omschrijving: [
+      geleden(l, DateTime.now().difference(lid.tijd)),
+      if (lid.batterij case final procent?) l.familieBatterij(procent),
+    ].join(' · '),
+    punt: lid.punt,
+  );
+
+  /// Op een familielid getikt: zijn kaartje, en de kaart volgt hem.
+  void _volgFamilie(FamilieLocatie lid) {
+    final plaats = _alsPlaats(lid, AppLocalizations.of(context));
+    setState(() {
+      _familiePlaats = plaats;
+      _familieVrij = false;
+    });
+    ref.read(gevolgdLidProvider.notifier).volg(lid.userId);
+    ref.read(plannerProvider.notifier).toonPlaats(plaats);
+  }
+
+  void _stopFamilie() {
+    _familiePlaats = null;
+    ref.read(gevolgdLidProvider.notifier).stop();
+  }
+
+  /// Nieuwe plekken van de familie: het gevolgde lid bijwerken.
+  void _familieBijgewerkt(List<FamilieLocatie> familie) {
+    final id = ref.read(gevolgdLidProvider);
+    if (id == null) return;
+    final lid = familie.where((f) => f.userId == id).firstOrNull;
+    // Deelt niet meer, of de familie staat uit.
+    if (lid == null) {
+      _stopFamilie();
+      return;
+    }
+    final plaats = _alsPlaats(lid, AppLocalizations.of(context));
+    _familiePlaats = plaats;
+    ref.read(plannerProvider.notifier).vervangPlaats(plaats);
+    if (!_familieVrij) {
+      _kaart?.animateCamera(CameraUpdate.newLatLng(lid.punt));
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -151,6 +204,9 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
   }
 
   void _zelfBewogen() {
+    if (_familiePlaats != null && !_familieVrij) {
+      setState(() => _familieVrij = true);
+    }
     if (ref.read(navigatieProvider) == null) return;
     _hervat?.cancel();
     _hervat = Timer(_hervatNa, () {
@@ -382,6 +438,17 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    ref.listen(familieLocatiesProvider, (_, familie) {
+      _familieBijgewerkt(familie);
+    });
+    // Een ander kaartje, of een route: niet meer volgen.
+    ref.listen(plannerProvider, (_, p) {
+      if (_familiePlaats != null &&
+          (p.routeModus || !identical(p.gevonden, _familiePlaats))) {
+        _stopFamilie();
+      }
+    });
+
     final planner = ref.watch(plannerProvider);
     final instellingen = ref.watch(instellingenProvider);
     final locatieStand = ref.watch(locatieProvider.select((t) => t.stand));
@@ -483,24 +550,9 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
         () => _melding = (plek: Offset(scherm.x, scherm.y), info: info),
       ),
       familie: ref.watch(familieLocatiesProvider),
-      // Een familielid is een plek als een zoekresultaat: met "Route" erheen.
-      onFamilieGetikt: nav != null
-          ? null
-          : (lid) => ref
-                .read(plannerProvider.notifier)
-                .toonPlaats(
-                  Plaats(
-                    naam: lid.email,
-                    omschrijving: [
-                      l.familieGeleden(
-                        DateTime.now().difference(lid.tijd).inMinutes,
-                      ),
-                      if (lid.batterij case final procent?)
-                        l.familieBatterij(procent),
-                    ].join(' · '),
-                    punt: lid.punt,
-                  ),
-                ),
+      // Een familielid is een plek als een zoekresultaat, met "Route" erheen,
+      // en de kaart volgt hem.
+      onFamilieGetikt: nav != null ? null : _volgFamilie,
       rand: breed
           ? const EdgeInsets.only(left: _paneelBreedte)
           : EdgeInsets.only(
@@ -801,7 +853,27 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                           icon: const Icon(Icons.directions),
                           label: Text(l.route),
                         ),
-                        if (!gevonden.mijnLocatie) ...[
+                        if (identical(gevonden, _familiePlaats))
+                          _familieVrij
+                              ? OutlinedButton.icon(
+                                  onPressed: () {
+                                    setState(() => _familieVrij = false);
+                                    _kaart?.animateCamera(
+                                      CameraUpdate.newLatLng(gevonden.punt),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.my_location),
+                                  label: Text(l.familieVolgen),
+                                )
+                              : Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.my_location, size: 18),
+                                    const SizedBox(width: 4),
+                                    Text(l.familieVolgt),
+                                  ],
+                                )
+                        else if (!gevonden.mijnLocatie) ...[
                           _BewaarKnop(
                             plaats: gevonden,
                             huidig: ref.watch(plekkenProvider).thuis,

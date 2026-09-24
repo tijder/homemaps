@@ -110,6 +110,11 @@ class PlannerNotifier extends Notifier<PlannerState> {
     beeldVersie: state.beeldVersie + 1,
   );
 
+  /// Dezelfde plaats met nieuwe gegevens (een familielid dat beweegt), zonder
+  /// hem opnieuw in beeld te brengen.
+  void vervangPlaats(Plaats plaats) =>
+      state = state.kopie(gevonden: () => plaats);
+
   void sluitPlaats() => state = state.kopie(gevonden: () => null);
 
   /// "Route" op de gevonden plaats: die wordt de bestemming. Staat je locatie

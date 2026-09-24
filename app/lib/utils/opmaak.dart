@@ -1,4 +1,8 @@
+import 'dart:math';
+
 import 'package:intl/intl.dart';
+
+import '../l10n/app_localizations.dart';
 
 /// "650 m", "2,6 km" (in het Engels "2.6 km"), "15 km".
 String afstand(double meters, [String? taal]) {
@@ -22,4 +26,12 @@ String duur(double seconden) {
   final minuten = (seconden / 60).round();
   if (minuten < 60) return '$minuten min';
   return '${minuten ~/ 60} u ${(minuten % 60).toString().padLeft(2, '0')}';
+}
+
+/// Hoe lang iets geleden is, in de grootste eenheid die past: "zojuist",
+/// "12 minuten geleden", "3 uur geleden", "2 dagen geleden".
+String geleden(AppLocalizations l, Duration tijd) {
+  if (tijd.inMinutes < 60) return l.familieGeleden(max(tijd.inMinutes, 0));
+  if (tijd.inHours < 24) return l.familieUrenGeleden(tijd.inHours);
+  return l.familieDagenGeleden(tijd.inDays);
 }

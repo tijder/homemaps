@@ -1459,6 +1459,30 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'batterij {procent}%'**
   String familieBatterij(int procent);
+
+  /// No description provided for @familieUrenGeleden.
+  ///
+  /// In nl, this message translates to:
+  /// **'{uren, plural, =1{1 uur geleden} other{{uren} uur geleden}}'**
+  String familieUrenGeleden(int uren);
+
+  /// No description provided for @familieDagenGeleden.
+  ///
+  /// In nl, this message translates to:
+  /// **'{dagen, plural, =1{1 dag geleden} other{{dagen} dagen geleden}}'**
+  String familieDagenGeleden(int dagen);
+
+  /// No description provided for @familieVolgen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Volgen'**
+  String get familieVolgen;
+
+  /// No description provided for @familieVolgt.
+  ///
+  /// In nl, this message translates to:
+  /// **'Wordt gevolgd'**
+  String get familieVolgt;
 }
 
 class _AppLocalizationsDelegate

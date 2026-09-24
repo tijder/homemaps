@@ -303,5 +303,9 @@
   "dawarichFamilieDeelt": "family sharing",
   "deelViaDawarich": "Set up through your Dawarich account.",
   "familieGeleden": "{minuten, plural, =0{just now} =1{1 minute ago} other{{minuten} minutes ago}}",
-  "familieBatterij": "battery {procent}%"
+  "familieBatterij": "battery {procent}%",
+  "familieUrenGeleden": "{uren, plural, =1{1 hour ago} other{{uren} hours ago}}",
+  "familieDagenGeleden": "{dagen, plural, =1{1 day ago} other{{dagen} days ago}}",
+  "familieVolgen": "Follow",
+  "familieVolgt": "Following"
 }
