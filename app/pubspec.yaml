@@ -121,8 +121,10 @@ flutter:
 # Het icoon komt uit tool/maak_icoon.py; daarna `dart run flutter_launcher_icons`.
 flutter_launcher_icons:
   android: true
-  ios: false
+  ios: true
   image_path: assets/icon/icon.png
+  image_path_ios: assets/icon/icon-ios.png
+  remove_alpha_ios: true
   min_sdk_android: 21
   adaptive_icon_background: assets/icon/icon-achtergrond.png
   adaptive_icon_foreground: assets/icon/icon-voorgrond.png

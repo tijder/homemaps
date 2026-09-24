@@ -3,7 +3,7 @@ gestippelde route. Alles is code, zodat kleur en vorm aan te passen zijn zonder
 tekenprogramma.
 
     python3 tool/maak_icoon.py            # schrijft assets/icon/*.png
-    dart run flutter_launcher_icons       # maakt er Android- en web-iconen van
+    dart run flutter_launcher_icons       # maakt er Android-, iOS- en web-iconen van
 
 Vereist Pillow.
 """
@@ -105,6 +105,8 @@ def main():
     pin_laag = teken_voorgrond(groot, groot * 0.62)
     achtergrond.alpha_composite(schaduw(pin_laag, groot))
     achtergrond.alpha_composite(pin_laag)
+    # iOS rondt zelf af en weigert iconen met transparantie: hetzelfde beeld tot de rand.
+    achtergrond.convert("RGB").resize((MAAT, MAAT), Image.LANCZOS).save(UIT / "icon-ios.png")
     masker = Image.new("L", (groot, groot), 0)
     ImageDraw.Draw(masker).rounded_rectangle((0, 0, groot, groot), radius=groot * 0.22, fill=255)
     achtergrond.putalpha(masker)
@@ -120,7 +122,7 @@ def main():
     samen.alpha_composite(schaduw(voorgrond, groot))
     samen.alpha_composite(voorgrond)
     samen.resize((MAAT, MAAT), Image.LANCZOS).save(UIT / "icon-voorgrond.png")
-    for naam in ("icon", "icon-achtergrond", "icon-voorgrond"):
+    for naam in ("icon", "icon-ios", "icon-achtergrond", "icon-voorgrond"):
         print(UIT / f"{naam}.png")
 
 
