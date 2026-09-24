@@ -256,7 +256,7 @@ class Importer:
         self.pbf_gelezen: float | None = None  # mtime van de laatst gelezen PBF
         tileset = valhalla.tileset()
         self.locaties = MatchCache(cache_dir / "meetlocaties.json", tileset)
-        self.afsluitingen = MatchCache(cache_dir / "afsluitingen.json", tileset)
+        self.afsluitingen = MatchCache(cache_dir / "afsluitingen.json", tileset, alleen_bedekt=True)
         self.snelheden = MatchCache(cache_dir / "snelheden.json", tileset)
         self.geschreven: set[int] = set()
         # Wat een vorige instantie schreef is onbekend, dus alles eerst leeg.

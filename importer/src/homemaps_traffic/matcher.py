@@ -102,7 +102,9 @@ class Valhalla:
     def tileset(self) -> int:
         return int(self._vraag("/status").get("tileset_last_modified", 0))
 
-    def match(self, punten: Iterable[Punt], max_omweg: float = 1.6) -> Match | None:
+    def match(
+        self, punten: Iterable[Punt], max_omweg: float = 1.6, *, alleen_bedekt: bool = False
+    ) -> Match | None:
         """None als er geen geloofwaardige route is; dat is een definitief antwoord
         en mag in de cache. Een tijdelijke fout (verbinding weg, time-out) komt er
         als OSError uit, zodat de aanroeper het later opnieuw probeert.
@@ -110,12 +112,41 @@ class Valhalla:
         `max_omweg`: een route die veel langer is dan de lijn zelf is een andere
         weg (het punt viel op de verkeerde rijbaan of een parallelweg), en dan is
         geen match beter dan een foute.
+
+        `alleen_bedekt` is voor afsluitingen: die zetten een edge altijd helemaal
+        dicht, ook als de lijn er maar een randje van raakt. Een lijn over een
+        afrit begint vaak op de hoofdrijbaan, net voorbij waar de afrit in OSM
+        afbuigt. Daarom:
+        - telt een edge aan het begin of eind alleen mee als de lijn er minstens
+          de helft van beslaat (zie `_bedekt`);
+        - wordt de lijn zelf ge-map-matcht als routeren geen geloofwaardige route
+          geeft: van dat punt op de hoofdrijbaan naar de afrit is het anders een
+          omweg van kilometers.
         """
         punten = _ontdubbel(punten)
         if len(punten) < 2:
             return None
         lijn = sum(hemelsbreed(a, b) for a, b in zip(punten, punten[1:], strict=False))
+        try:
+            gevonden = self._routeer(punten, lijn, max_omweg)
+            if gevonden is None and alleen_bedekt:
+                gevonden = self._snap(punten, lijn)
+        except (KeyError, ValueError) as fout:
+            log.debug("onverwacht antwoord: %s", fout)
+            return None
+        if gevonden is None:
+            return None
+        match, delen = gevonden
+        if alleen_bedekt:
+            match = _bedekt(match, delen)
+        return match
+
+    def _routeer(
+        self, punten: list[Punt], lijn: float, max_omweg: float
+    ) -> tuple[Match, list[float]] | None:
+        """De route door de punten, met per edge welk deel ervan bereden wordt."""
         edges: list[tuple[int, float, int]] = []
+        delen: list[float] = []
         vorm: list[str] = []
         lengte = 0.0
         try:
@@ -150,31 +181,88 @@ class Valhalla:
                             "encoded_polyline": leg["shape"],
                             "costing": "auto",
                             "shape_match": "walk_or_snap",
-                            "filters": {
-                                "attributes": ["edge.id", "edge.length", "edge.way_id"],
-                                "action": "include",
-                            },
+                            "filters": {"attributes": SPOOR_ATTRIBUTEN, "action": "include"},
                         },
                     )
-                    for edge in spoor["edges"]:
-                        nieuw = (
-                            int(edge["id"]),
-                            edge["length"] * 1000,
-                            int(edge.get("way_id", 0)),
-                        )
-                        if not edges or edges[-1][0] != nieuw[0]:
-                            edges.append(nieuw)
+                    _voeg_toe(edges, delen, spoor["edges"])
         except urllib.error.HTTPError as fout:
             # Een 4xx is "geen route": het punt ligt buiten de tileset of op een
             # weg waar een auto niet komt. Een 5xx is Valhalla's probleem.
             if fout.code >= 500:
                 raise
-            log.debug("geen match: %s", fout)
+            log.debug("geen route: %s", fout)
             return None
-        except (KeyError, ValueError) as fout:
-            log.debug("onverwacht antwoord: %s", fout)
+        return (Match(tuple(edges), lengte, tuple(vorm)), delen) if edges else None
+
+    def _snap(self, punten: list[Punt], lijn: float) -> tuple[Match, list[float]] | None:
+        """De lijn zelf ge-map-matcht. Alleen geloofwaardig als het gematchte stuk
+        ongeveer even lang is als de lijn: waar de weg anders ligt dan in OSM
+        (werk aan een nieuw knooppunt) blijft er maar een flard van over."""
+        try:
+            spoor = self._vraag(
+                "/trace_attributes",
+                {
+                    "shape": [{"lat": lat, "lon": lon} for lat, lon in punten],
+                    "costing": "auto",
+                    "shape_match": "map_snap",
+                    # NDW's lijn ligt op de weg; een ruime straal pakt de
+                    # parallelweg of de andere rijbaan.
+                    "trace_options": {"search_radius": 25},
+                    "filters": {"attributes": [*SPOOR_ATTRIBUTEN, "shape"], "action": "include"},
+                },
+            )
+        except urllib.error.HTTPError as fout:
+            if fout.code >= 500:
+                raise
+            log.debug("geen map-match: %s", fout)
             return None
-        return Match(tuple(edges), lengte, tuple(vorm)) if edges else None
+        edges: list[tuple[int, float, int]] = []
+        delen: list[float] = []
+        _voeg_toe(edges, delen, spoor["edges"])
+        lengte = sum(edge["length"] for edge in spoor["edges"]) * 1000
+        if not edges or not 0.8 * lijn - 20 <= lengte <= 1.25 * lijn + 20:
+            return None
+        return Match(tuple(edges), lengte, (spoor["shape"],)), delen
+
+
+# `edge.length` is het bereden stuk; de percent_along's (alleen op de eerste en
+# laatste edge van een spoor) zeggen waar op de edge het begint en eindigt.
+SPOOR_ATTRIBUTEN = [
+    "edge.id",
+    "edge.length",
+    "edge.way_id",
+    "edge.source_percent_along",
+    "edge.target_percent_along",
+]
+
+
+def _voeg_toe(edges: list, delen: list[float], spoor: list[dict]) -> None:
+    """De edges van een spoor achter [edges], met in [delen] welk deel van elke
+    edge bereden wordt. Een edge waar twee legs op elkaar aansluiten komt één
+    keer; zijn delen tellen op."""
+    for edge in spoor:
+        nieuw = (int(edge["id"]), edge["length"] * 1000, int(edge.get("way_id", 0)))
+        deel = edge.get("target_percent_along", 1.0) - edge.get("source_percent_along", 0.0)
+        if edges and edges[-1][0] == nieuw[0]:
+            delen[-1] += deel
+        else:
+            edges.append(nieuw)
+            delen.append(deel)
+
+
+def _bedekt(match: Match, delen: list[float]) -> Match:
+    """Zonder de edges aan begin en eind waar de lijn minder dan de helft van
+    beslaat. Een afsluiting midden op één edge laat die edge staan: blijft er
+    niets over, dan de edge die het meest bedekt is. Voor de routeplanner maakt
+    een paar meter minder niet uit; de afsluiting blokkeert de doorgang nog."""
+    houd = [
+        edge
+        for i, (edge, deel) in enumerate(zip(match.edges, delen, strict=True))
+        if 0 < i < len(delen) - 1 or deel >= 0.5
+    ]
+    if not houd:
+        houd = [max(zip(match.edges, delen, strict=True), key=lambda paar: paar[1])[0]]
+    return Match(tuple(houd), match.lengte_m, match.vorm)
 
 
 def _ontdubbel(punten: Iterable[Punt]) -> list[Punt]:
@@ -188,15 +276,21 @@ def _ontdubbel(punten: Iterable[Punt]) -> list[Punt]:
 
 
 class MatchCache:
-    """sleutel ("<id>@<versie>") -> Match of None (bekend onmatchbaar)."""
+    """sleutel ("<id>@<versie>") -> Match of None (bekend onmatchbaar).
 
-    def __init__(self, pad: Path, tileset: int):
+    `alleen_bedekt` gaat door naar `Valhalla.match` en staat in het bestand: een
+    cache die met de andere regel is gematcht, vervalt."""
+
+    def __init__(self, pad: Path, tileset: int, alleen_bedekt: bool = False):
         self.pad = pad
         self.tileset = tileset
+        self.alleen_bedekt = alleen_bedekt
         self.matches: dict[str, Match | None] = {}
         try:
             data = json.loads(pad.read_text())
-            if data.get("tileset") == tileset:
+            if data.get("alleen_bedekt", False) != alleen_bedekt:
+                log.info("%s: andere matchregel, cache vervalt", pad.name)
+            elif data.get("tileset") == tileset:
                 # Een match van vóór de routevorm ("v") gaat eruit en wordt
                 # opnieuw gematcht: zonder vorm kan hij niet op de kaart.
                 self.matches = {
@@ -216,6 +310,7 @@ class MatchCache:
     def bewaar(self) -> None:
         data = {
             "tileset": self.tileset,
+            "alleen_bedekt": self.alleen_bedekt,
             "matches": {
                 sleutel: match.naar_json() if match else None
                 for sleutel, match in self.matches.items()
@@ -237,7 +332,7 @@ class MatchCache:
 
         def probeer(sleutel: str):
             try:
-                return valhalla.match(items[sleutel])
+                return valhalla.match(items[sleutel], alleen_bedekt=self.alleen_bedekt)
             except (OSError, http.client.HTTPException) as fout:
                 return fout
 

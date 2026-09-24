@@ -3,7 +3,7 @@ import urllib.error
 
 import pytest
 
-from homemaps_traffic.matcher import Match, MatchCache, Valhalla, _ontdubbel
+from homemaps_traffic.matcher import Match, MatchCache, Valhalla, _bedekt, _ontdubbel
 
 
 class NepValhalla(Valhalla):
@@ -47,6 +47,88 @@ def test_lange_lijn_gaat_in_blokken_van_twintig():
     assert routes[1]["locations"][0] == routes[0]["locations"][-1]
 
 
+def test_afrit_die_op_de_hoofdrijbaan_begint():
+    """Het eerste punt ligt net voorbij waar de afrit afbuigt: routeren geeft een
+    omweg. De map-match pakt het randje hoofdrijbaan (A) en de afrit (B); alleen
+    de afrit gaat dicht."""
+    lijn = [(52.0, 5.0), (52.0, 5.001), (52.0, 5.0084)]  # ~570 m
+
+    def antwoorden(pad, body):
+        if pad == "/route":
+            return _route(29.5)
+        assert body["shape_match"] == "map_snap"
+        return {
+            "edges": [
+                {"id": 1, "length": 0.03, "way_id": 6, "source_percent_along": 0.9},
+                {"id": 2, "length": 0.54, "way_id": 7},
+            ],
+            "shape": "vorm",
+        }
+
+    valhalla = NepValhalla(antwoorden)
+    assert valhalla.match(lijn) is None  # zonder alleen_bedekt: geen terugval
+    match = valhalla.match(lijn, alleen_bedekt=True)
+    assert [edge[0] for edge in match.edges] == [2]
+    assert match.vorm == ("vorm",)
+
+
+def test_map_match_die_maar_een_flard_vindt_telt_niet():
+    def antwoorden(pad, _):
+        if pad == "/route":
+            return _route(29.5)
+        return {"edges": [{"id": 1, "length": 0.05, "way_id": 7}], "shape": "v"}
+
+    assert NepValhalla(antwoorden).match([(52.0, 5.0), (52.0, 5.0146)], alleen_bedekt=True) is None
+
+
+def test_bedekt():
+    def match(n):
+        return Match(tuple((i, 10.0, 7) for i in range(n)), 0.0)
+
+    ids = lambda m: [edge[0] for edge in m.edges]  # noqa: E731
+    # Randjes eraf, het midden blijft altijd.
+    assert ids(_bedekt(match(4), [0.1, 1.0, 1.0, 0.49])) == [1, 2]
+    assert ids(_bedekt(match(3), [0.5, 0.2, 0.6])) == [0, 1, 2]
+    # Kort werk midden op één edge: die blijft.
+    assert ids(_bedekt(match(1), [0.3])) == [0]
+    # Twee randjes: de grootste blijft.
+    assert ids(_bedekt(match(2), [0.2, 0.4])) == [1]
+
+
+def test_bedekking_telt_op_over_een_leggrens():
+    """Twee punten op dezelfde edge: de legs raken elkaar midden op edge 1, die
+    daardoor voor 0,2 + 0,5 bedekt is en blijft; los geteld
+    zou edge 2 (0,3) het winnen."""
+
+    def antwoorden(pad, body):
+        if pad == "/route":
+            return _route(0.3)
+        if body["encoded_polyline"] == "x":
+            antwoorden.leg += 1
+        if antwoorden.leg == 1:
+            return {
+                "edges": [
+                    {
+                        "id": 1,
+                        "length": 0.02,
+                        "source_percent_along": 0.3,
+                        "target_percent_along": 0.5,
+                    }
+                ]
+            }
+        return {
+            "edges": [
+                {"id": 1, "length": 0.05, "source_percent_along": 0.5},
+                {"id": 2, "length": 0.03, "target_percent_along": 0.3},
+            ]
+        }
+
+    antwoorden.leg = 0
+    punten = [(52.0 + i * 0.001, 5.0) for i in range(21)]  # twee blokken
+    match = NepValhalla(antwoorden).match(punten, alleen_bedekt=True)
+    assert [edge[0] for edge in match.edges] == [1]
+
+
 def test_ontdubbel():
     assert _ontdubbel([(1, 1), (2, 2), (2, 2), (3, 3)]) == [(1, 1), (2, 2), (3, 3)]
 
@@ -77,6 +159,8 @@ def test_geen_route_is_definitief_maar_een_weggevallen_verbinding_niet(tmp_path)
     assert MatchCache(tmp_path / "c.json", tileset=5).matches.keys() == {"a", "c"}
     # Een andere tileset: alles vervalt.
     assert MatchCache(tmp_path / "c.json", tileset=6).matches == {}
+    # Een andere matchregel ook.
+    assert MatchCache(tmp_path / "c.json", tileset=5, alleen_bedekt=True).matches == {}
 
 
 def test_match_van_voor_de_routevorm_wordt_opnieuw_gematcht(tmp_path):
