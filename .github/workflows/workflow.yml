@@ -207,7 +207,17 @@ jobs:
           pip install playwright
           playwright install --with-deps chromium
       - name: Bring up the cluster and test it
+        # Op main ook de schermafdrukken voor de App Store: release.yml neemt ze mee.
+        env:
+          SCHERMAFDRUKKEN: ${{ github.ref == 'refs/heads/main' && '1' || '' }}
         run: ci/up.sh
+      - name: Schermafdrukken voor de App Store
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v7
+        with:
+          name: app-store-schermafdrukken
+          path: ci/e2e/uitvoer/appstore/
+          if-no-files-found: error
       - name: Schermafdrukken van de browsertoets
         if: always()
         uses: actions/upload-artifact@v7

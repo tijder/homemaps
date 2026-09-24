@@ -32,6 +32,8 @@ jobs:
       release: ${{ steps.versie.outputs.release }}
       version: ${{ steps.versie.outputs.version }}
       build: ${{ steps.versie.outputs.build }}
+      # De groene run van workflow.yml voor HEAD: daar komen de schermafdrukken vandaan.
+      run: ${{ steps.versie.outputs.run }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -50,8 +52,8 @@ jobs:
             echo "geen nieuwe commits sinds ${laatste:-het begin}"; echo "release=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
           # Alleen uitbrengen wat groen gebouwd is.
-          status=$(gh run list --workflow workflow.yml --branch main --commit "$(git rev-parse HEAD)" \
-                   --json conclusion --jq '.[0].conclusion' || true)
+          read -r status run < <(gh run list --workflow workflow.yml --branch main --commit "$(git rev-parse HEAD)" \
+                   --json conclusion,databaseId --jq '.[0] | "\(.conclusion) \(.databaseId)"' || true) || true
           if [ "$status" != "success" ]; then
             echo "::warning::de build van HEAD is '${status:-onbekend}', geen release"
             echo "release=false" >> "$GITHUB_OUTPUT"; exit 0
@@ -72,6 +74,7 @@ jobs:
             echo "version=$major.$minor.$patch"
             # Android wil een oplopend geheel getal als versionCode.
             echo "build=$(git rev-list --count HEAD)"
+            echo "run=$run"
             echo "release=true"
           } >> "$GITHUB_OUTPUT"
           echo "release v$major.$minor.$patch ($BUMP) sinds ${laatste:-het begin}"
@@ -235,9 +238,47 @@ jobs:
           xcrun altool --upload-app -f "homemaps-${VERSION}.ipa" -t ios \
             --apiKey "$KEY_ID" --apiIssuer "$ISSUER_ID"
 
+  # De schermafdrukken komen uit de e2e-job van workflow.yml (de web-app in de
+  # kind-cluster, zie ci/e2e/schermafdrukken.py): daar draait de chart al.
+  app-store:
+    name: Schermafdrukken naar App Store Connect
+    needs: gate
+    if: needs.gate.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+      - name: Haal de schermafdrukken op
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download "${{ needs.gate.outputs.run }}" -n app-store-schermafdrukken -D schermafdrukken
+          find schermafdrukken -name '*.png' | sort
+          mkdir -p uit
+          (cd schermafdrukken && zip -qr "../uit/homemaps-schermafdrukken-${{ needs.gate.outputs.version }}.zip" .)
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-schermafdrukken
+          path: uit/
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - run: pip install 'pyjwt[crypto]'
+      # Net als TestFlight mag dit mislukken: het is Apple, niet de release. Staat er
+      # geen versie klaar om in te dienen, dan maakt upload.py er een.
+      - name: Naar App Store Connect
+        continue-on-error: true
+        env:
+          APP_STORE_CONNECT_KEY_P8: ${{ secrets.APP_STORE_CONNECT_KEY_P8 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: python3 ci/appstore/upload.py schermafdrukken "${{ needs.gate.outputs.version }}"
+
   publish:
     name: Images, chart, tag en release
-    needs: [gate, app, ios]
+    needs: [gate, app, ios, app-store]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -259,6 +300,10 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: release-ios
+          path: dist
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-schermafdrukken
           path: dist
       - uses: docker/login-action@v4
         with:
@@ -347,4 +392,4 @@ jobs:
         run: |
           mv dist/app-release.apk "dist/homemaps-$VERSION.apk"
           gh release create "v$VERSION" --title "v$VERSION" --notes-file RELEASE_NOTES.md \
-            "dist/homemaps-$VERSION.apk" "dist/homemaps-$VERSION.ipa" "dist/homemaps-web-$VERSION.tar.gz" "dist/homemaps-$VERSION.tgz"
+            "dist/homemaps-$VERSION.apk" "dist/homemaps-$VERSION.ipa" "dist/homemaps-schermafdrukken-$VERSION.zip" "dist/homemaps-web-$VERSION.tar.gz" "dist/homemaps-$VERSION.tgz"

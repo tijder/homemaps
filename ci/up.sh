@@ -4,6 +4,7 @@
 # NDW-feed. Idempotent: opnieuw draaien werkt een bestaand cluster bij.
 #
 #   ci/up.sh            alles
+#   SCHERMAFDRUKKEN=1 ci/up.sh   ook de schermafdrukken voor de App Store
 #   ci/up.sh --weg      het cluster weer opruimen
 #
 # Verwacht de web-build in app/build/web (flutter build web). Werkt met docker en
@@ -117,6 +118,11 @@ if python3 -c 'import playwright' 2>/dev/null; then
   done
   # Van Andorra la Vella naar Encamp.
   python3 ci/e2e/app_browser.py "http://127.0.0.1:$TOETSPOORT" 42.5063,1.5218 42.5343,1.5801
+  # Voor de App Store (release.yml haalt ze bij de groene build van main op).
+  if [ -n "${SCHERMAFDRUKKEN:-}" ]; then
+    stap "schermafdrukken voor de App Store"
+    python3 ci/e2e/schermafdrukken.py "http://127.0.0.1:$TOETSPOORT" 42.5063,1.5218 Encamp
+  fi
   kill $DOORSTUREN 2>/dev/null || true
 else
   echo "overgeslagen: geen Playwright (pip install playwright && playwright install chromium)"

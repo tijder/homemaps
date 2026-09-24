@@ -65,6 +65,14 @@ Eenmalig bij Apple: de App ID `nl.g4d.homemaps` en een app in App Store
 Connect. Zelf bouwen kan alleen op een Mac met een signing team in Xcode
 (`cd app && flutter build ios --release`).
 
+De schermafdrukken voor de App Store (iPhone 6,7" en iPad 12,9", Nederlands en
+Engels) komen uit de web-app in de kind-cluster: `ci/e2e/schermafdrukken.py`, op
+main in de e2e-job. Bij een release zet `ci/appstore/upload.py` ze bij de versie
+die in App Store Connect klaarstaat (of maakt die aan); ze hangen ook als zip aan
+de GitHub-release. Lokaal: `SCHERMAFDRUKKEN=1 ci/up.sh`, en
+`python3 ci/appstore/upload.py ci/e2e/uitvoer/appstore <versie> --droog` om te zien
+wat er zou gebeuren.
+
 `geo:`-links uit andere apps openen HomeMaps op iOS niet: iOS kent die niet
 systeembreed.
 
