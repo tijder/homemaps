@@ -307,5 +307,21 @@
   "familieUrenGeleden": "{uren, plural, =1{1 hour ago} other{{uren} hours ago}}",
   "familieDagenGeleden": "{dagen, plural, =1{1 day ago} other{{dagen} days ago}}",
   "familieVolgen": "Follow",
-  "familieVolgt": "Following"
+  "familieVolgt": "Following",
+  "instellingenGroepKaart": "Map and route",
+  "instellingenGroepDelen": "Sharing",
+  "instellingenGroepApp": "App",
+  "instellingenKaart": "Map",
+  "dagEnNacht": "Day and night",
+  "themaAlleenKaart": "Only for the Map style; Light and Dark are already a choice.",
+  "lagen": "Layers",
+  "verkeerOpKaartUitleg": "Closures, road works and traffic jams on the map",
+  "vervoer": "Transport",
+  "vervoerUitleg": "Used to calculate a new route.",
+  "opgeslagen": "Saved",
+  "overSamenvatting": "Version, sources and licenses",
+  "dawarichAccount": "Account",
+  "dawarichNavigeren": "Navigation",
+  "deelVerbinding": "Connection",
+  "deelPunten": "Points"
 }

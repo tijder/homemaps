@@ -1,15 +1,15 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../l10n/app_localizations.dart';
-import '../models/dawarich.dart';
-import '../providers/dawarich.dart';
-import '../providers/locatie_delen.dart';
-import '../services/dawarich_service.dart';
+import '../../l10n/app_localizations.dart';
+import '../../models/dawarich.dart';
+import '../../providers/dawarich.dart';
+import '../../providers/locatie_delen.dart';
+import '../../services/dawarich_service.dart';
+import 'sectie.dart';
 
 /// Een [DawarichFout] als zin voor op het scherm.
 String dawarichFoutTekst(AppLocalizations l, Object fout) => switch (fout) {
@@ -29,18 +29,13 @@ String dawarichFoutTekst(AppLocalizations l, Object fout) => switch (fout) {
 
 /// Inloggen bij Dawarich, en daarna: familie delen, delen tijdens het
 /// navigeren en de familie op de kaart.
-@RoutePage()
-class DawarichScreen extends ConsumerWidget {
-  const DawarichScreen({super.key});
+class DawarichInstellingen extends ConsumerWidget {
+  const DawarichInstellingen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l = AppLocalizations.of(context);
     final account = ref.watch(dawarichProvider);
-    return Scaffold(
-      appBar: AppBar(title: Text(l.dawarich)),
-      body: account == null ? const _Inloggen() : _Ingelogd(account),
-    );
+    return account == null ? const _Inloggen() : _Ingelogd(account);
   }
 }
 
@@ -144,80 +139,100 @@ class _InloggenState extends ConsumerState<_Inloggen> {
           border: const OutlineInputBorder(),
         );
     return AutofillGroup(
-      child: ListView(
-        padding: const EdgeInsets.all(16),
+      child: InstellingenLijst(
         children: [
-          Text(l.dawarichUitleg),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _server,
-            keyboardType: TextInputType.url,
-            autocorrect: false,
-            decoration: veld(
-              l.dawarichServer,
-              hint: 'https://dawarich.example',
-              uitleg: kIsWeb ? l.dawarichWeb : null,
-            ).copyWith(errorText: _serverFout),
-          ),
-          const SizedBox(height: 16),
-          SegmentedButton<bool>(
-            segments: [
-              ButtonSegment(value: false, label: Text(l.dawarichMetWachtwoord)),
-              ButtonSegment(value: true, label: Text(l.dawarichMetSleutel)),
-            ],
-            selected: {_metSleutel},
-            onSelectionChanged: (keuze) =>
-                setState(() => _metSleutel = keuze.first),
-          ),
-          const SizedBox(height: 16),
-          if (_metSleutel)
-            TextField(
-              controller: _sleutel,
-              obscureText: true,
-              autocorrect: false,
-              onSubmitted: (_) => _inloggen(),
-              decoration: veld(
-                l.dawarichSleutel,
-                uitleg: l.dawarichSleutelUitleg,
+          InstellingenSectie(
+            uitleg: l.dawarichUitleg,
+            children: [
+              SectieBlok(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                      controller: _server,
+                      keyboardType: TextInputType.url,
+                      autocorrect: false,
+                      decoration: veld(
+                        l.dawarichServer,
+                        hint: 'https://dawarich.example',
+                        uitleg: kIsWeb ? l.dawarichWeb : null,
+                      ).copyWith(errorText: _serverFout),
+                    ),
+                    const SizedBox(height: 16),
+                    SegmentedButton<bool>(
+                      showSelectedIcon: false,
+                      segments: [
+                        ButtonSegment(
+                          value: false,
+                          label: Text(l.dawarichMetWachtwoord),
+                        ),
+                        ButtonSegment(
+                          value: true,
+                          label: Text(l.dawarichMetSleutel),
+                        ),
+                      ],
+                      selected: {_metSleutel},
+                      onSelectionChanged: (keuze) =>
+                          setState(() => _metSleutel = keuze.first),
+                    ),
+                    const SizedBox(height: 16),
+                    if (_metSleutel)
+                      TextField(
+                        controller: _sleutel,
+                        obscureText: true,
+                        autocorrect: false,
+                        onSubmitted: (_) => _inloggen(),
+                        decoration: veld(
+                          l.dawarichSleutel,
+                          uitleg: l.dawarichSleutelUitleg,
+                        ),
+                      )
+                    else ...[
+                      TextField(
+                        controller: _email,
+                        keyboardType: TextInputType.emailAddress,
+                        autocorrect: false,
+                        autofillHints: const [AutofillHints.email],
+                        decoration: veld(l.dawarichEmail),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _wachtwoord,
+                        obscureText: true,
+                        autocorrect: false,
+                        autofillHints: const [AutofillHints.password],
+                        onSubmitted: (_) => _inloggen(),
+                        decoration: veld(l.dawarichWachtwoord),
+                      ),
+                    ],
+                    if (_fout case final fout?) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        fout,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton(
+                        onPressed: _bezig ? null : _inloggen,
+                        child: _bezig
+                            ? const SizedBox.square(
+                                dimension: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(l.dawarichInloggen),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            )
-          else ...[
-            TextField(
-              controller: _email,
-              keyboardType: TextInputType.emailAddress,
-              autocorrect: false,
-              autofillHints: const [AutofillHints.email],
-              decoration: veld(l.dawarichEmail),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _wachtwoord,
-              obscureText: true,
-              autocorrect: false,
-              autofillHints: const [AutofillHints.password],
-              onSubmitted: (_) => _inloggen(),
-              decoration: veld(l.dawarichWachtwoord),
-            ),
-          ],
-          if (_fout case final fout?) ...[
-            const SizedBox(height: 12),
-            Text(
-              fout,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ],
-          const SizedBox(height: 16),
-          Align(
-            alignment: Alignment.centerRight,
-            child: FilledButton(
-              onPressed: _bezig ? null : _inloggen,
-              child: _bezig
-                  ? const SizedBox.square(
-                      dimension: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(l.dawarichInloggen),
-            ),
+            ],
           ),
         ],
       ),
@@ -235,38 +250,46 @@ class _Ingelogd extends ConsumerWidget {
     final l = AppLocalizations.of(context);
     final deel = ref.watch(deelInstellingenProvider);
     final notifier = ref.read(dawarichProvider.notifier);
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    return InstellingenLijst(
       children: [
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.account_circle_outlined),
-          title: Text(l.dawarichIngelogdAls(account.email)),
-          subtitle: Text(account.server),
-          trailing: TextButton(
-            onPressed: notifier.uitloggen,
-            child: Text(l.dawarichUitloggen),
-          ),
+        InstellingenSectie(
+          titel: l.dawarichAccount,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.account_circle_outlined),
+              title: Text(l.dawarichIngelogdAls(account.email)),
+              subtitle: Text(account.server),
+              trailing: TextButton(
+                onPressed: notifier.uitloggen,
+                child: Text(l.dawarichUitloggen),
+              ),
+            ),
+          ],
         ),
-        const Divider(height: 32),
-        Text(l.dawarichFamilie, style: Theme.of(context).textTheme.titleMedium),
-        _FamilieDelen(account),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          secondary: const Icon(Icons.groups_outlined),
-          title: Text(l.dawarichToonFamilie),
-          subtitle: Text(l.dawarichToonFamilieUitleg),
-          value: account.toonFamilie,
-          onChanged: account.familie ? notifier.zetToonFamilie : null,
+        InstellingenSectie(
+          titel: l.dawarichFamilie,
+          children: [
+            _FamilieDelen(account),
+            SwitchListTile(
+              secondary: const Icon(Icons.groups_outlined),
+              title: Text(l.dawarichToonFamilie),
+              subtitle: Text(l.dawarichToonFamilieUitleg),
+              value: account.toonFamilie,
+              onChanged: account.familie ? notifier.zetToonFamilie : null,
+            ),
+          ],
         ),
-        const Divider(height: 32),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          secondary: const Icon(Icons.share_location),
-          title: Text(l.dawarichDelenOnderweg),
-          subtitle: Text(l.dawarichDelenOnderwegUitleg),
-          value: deel.aan && deeltViaDawarich(deel, account),
-          onChanged: notifier.zetDelenOnderweg,
+        InstellingenSectie(
+          titel: l.dawarichNavigeren,
+          children: [
+            SwitchListTile(
+              secondary: const Icon(Icons.share_location),
+              title: Text(l.dawarichDelenOnderweg),
+              subtitle: Text(l.dawarichDelenOnderwegUitleg),
+              value: deel.aan && deeltViaDawarich(deel, account),
+              onChanged: notifier.zetDelenOnderweg,
+            ),
+          ],
         ),
       ],
     );
@@ -327,16 +350,15 @@ class _FamilieDelen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     if (!account.familie) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Text(l.dawarichGeenAbonnement),
+      return ListTile(
+        leading: const Icon(Icons.family_restroom),
+        title: Text(l.dawarichGeenAbonnement),
       );
     }
     final familie = ref.watch(familieProvider);
     if (familie.value case final status?) {
       final tot = status.verlooptOm;
       return SwitchListTile(
-        contentPadding: EdgeInsets.zero,
         secondary: const Icon(Icons.family_restroom),
         title: Text(l.dawarichFamilieDelen),
         subtitle: Text(
@@ -354,7 +376,7 @@ class _FamilieDelen extends ConsumerWidget {
       final geenFamilie =
           fout is DawarichFout && fout.soort == DawarichFoutSoort.geenFamilie;
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -379,7 +401,7 @@ class _FamilieDelen extends ConsumerWidget {
       );
     }
     return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 16),
+      padding: EdgeInsets.all(16),
       child: LinearProgressIndicator(),
     );
   }

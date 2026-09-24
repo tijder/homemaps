@@ -906,4 +906,54 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get familieVolgt => 'Wordt gevolgd';
+
+  @override
+  String get instellingenGroepKaart => 'Kaart en route';
+
+  @override
+  String get instellingenGroepDelen => 'Delen';
+
+  @override
+  String get instellingenGroepApp => 'App';
+
+  @override
+  String get instellingenKaart => 'Kaart';
+
+  @override
+  String get dagEnNacht => 'Dag en nacht';
+
+  @override
+  String get themaAlleenKaart =>
+      'Alleen bij de stijl Kaart; Licht en Donker zijn al een keuze.';
+
+  @override
+  String get lagen => 'Lagen';
+
+  @override
+  String get verkeerOpKaartUitleg =>
+      'Afsluitingen, werk op de weg en files op de kaart';
+
+  @override
+  String get vervoer => 'Vervoer';
+
+  @override
+  String get vervoerUitleg => 'Waarmee een nieuwe route berekend wordt.';
+
+  @override
+  String get opgeslagen => 'Opgeslagen';
+
+  @override
+  String get overSamenvatting => 'Versie, bronnen en licenties';
+
+  @override
+  String get dawarichAccount => 'Account';
+
+  @override
+  String get dawarichNavigeren => 'Navigeren';
+
+  @override
+  String get deelVerbinding => 'Verbinding';
+
+  @override
+  String get deelPunten => 'Punten';
 }

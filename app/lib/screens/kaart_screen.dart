@@ -33,6 +33,7 @@ import '../utils/afstand.dart';
 import '../utils/geo_link.dart';
 import '../utils/opmaak.dart' show geleden;
 import '../router/app_router.dart';
+import 'instellingen/categorie.dart';
 import '../utils/muis_stub.dart'
     if (dart.library.js_interop) '../utils/muis_web.dart';
 import '../utils/testhaak_stub.dart'
@@ -56,7 +57,6 @@ class KaartScreen extends ConsumerStatefulWidget {
 
 class _KaartScreenState extends ConsumerState<KaartScreen> {
   static const _paneelBreedte = 380.0;
-  static const _stijlen = ['osm-bright', 'positron', 'dark-matter'];
 
   /// De keuzes in het lagenmenu die de verkeerslaag en je locatie aan- of
   /// uitzetten.
@@ -499,7 +499,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
       KaartThema.dag => false,
       KaartThema.nacht => true,
     };
-    final nacht = instellingen.stijl == _stijlen[0] && isNacht
+    final nacht = instellingen.stijl == KaartStijl.kaart.id && isNacht
         ? ref.watch(nachtStijlProvider(stijlUrl)).value
         : null;
     final kaart = Kaart(
@@ -598,26 +598,18 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                         );
                   },
                   itemBuilder: (_) => [
-                    for (final (stijl, naam) in [
-                      (_stijlen[0], l.stijlKaart),
-                      (_stijlen[1], l.stijlLicht),
-                      (_stijlen[2], l.stijlDonker),
-                    ])
+                    for (final stijl in KaartStijl.values)
                       PopupMenuItem(
-                        value: stijl,
-                        child: PointerInterceptor(child: Text(naam)),
+                        value: stijl.id,
+                        child: PointerInterceptor(child: Text(stijl.naam(l))),
                       ),
-                    if (instellingen.stijl == _stijlen[0]) ...[
+                    if (instellingen.stijl == KaartStijl.kaart.id) ...[
                       const PopupMenuDivider(),
-                      for (final (thema, naam) in [
-                        (KaartThema.automatisch, l.themaAutomatisch),
-                        (KaartThema.dag, l.themaDag),
-                        (KaartThema.nacht, l.themaNacht),
-                      ])
+                      for (final thema in KaartThema.values)
                         CheckedPopupMenuItem(
                           value: '$_thema${thema.name}',
                           checked: instellingen.thema == thema,
-                          child: PointerInterceptor(child: Text(naam)),
+                          child: PointerInterceptor(child: Text(thema.naam(l))),
                         ),
                     ],
                     const PopupMenuDivider(),
@@ -652,8 +644,7 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                 IconButton(
                   tooltip: l.instellingen,
                   icon: const _Rondje(Icons.settings_outlined),
-                  onPressed: () =>
-                      context.router.push(const InstellingenRoute()),
+                  onPressed: () => context.router.push(InstellingenRoute()),
                 ),
               ],
             ),
@@ -1165,7 +1156,11 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
                 onDempen: acties.dempen,
                 onZoekLangs: () => _zoekLangsRoute(nav),
                 deelt: _deelt(),
-                onDelen: () => context.router.push(const LocatieDelenRoute()),
+                onDelen: () => context.router.push(
+                  InstellingenCategorieRoute(
+                    categorie: InstellingenCategorie.locatieDelen.pad,
+                  ),
+                ),
               ),
             ),
           ],
@@ -1386,7 +1381,11 @@ class _ServerNodig extends StatelessWidget {
             Text(l.serverNodig),
             const SizedBox(height: 12),
             FilledButton(
-              onPressed: () => context.router.push(const InstellingenRoute()),
+              onPressed: () => context.router.push(
+                InstellingenCategorieRoute(
+                  categorie: InstellingenCategorie.server.pad,
+                ),
+              ),
               child: Text(l.instellingen),
             ),
           ],

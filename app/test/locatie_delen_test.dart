@@ -9,7 +9,8 @@ import 'package:homemaps/models/locatie_delen.dart';
 import 'package:homemaps/providers/diensten.dart';
 import 'package:homemaps/providers/locatie.dart';
 import 'package:homemaps/providers/locatie_delen.dart';
-import 'package:homemaps/screens/locatie_delen_screen.dart';
+import 'package:homemaps/screens/instellingen/instellingen_screen.dart';
+import 'package:homemaps/screens/instellingen/locatie_delen.dart';
 import 'package:homemaps/services/locatie_deler.dart';
 import 'package:homemaps/l10n/app_localizations.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
@@ -310,7 +311,7 @@ void main() {
   testWidgets(
     'scherm: een server kiezen vult de vaste velden en het voorbeeld',
     (tester) async {
-      tester.view.physicalSize = const Size(800, 6000);
+      tester.view.physicalSize = const Size(500, 6000);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       final opslag = GeheugenGeheimOpslag();
@@ -324,7 +325,7 @@ void main() {
             locale: const Locale('nl'),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: const LocatieDelenScreen(),
+            home: const InstellingenScreen(categorie: 'locatie-delen'),
           ),
         ),
       );
@@ -356,7 +357,7 @@ void main() {
       await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
       final container = ProviderScope.containerOf(
-        tester.element(find.byType(LocatieDelenScreen)),
+        tester.element(find.byType(LocatieDelenInstellingen)),
       );
       final bewaard = container.read(deelInstellingenProvider);
       expect(bewaard.aan, isTrue);

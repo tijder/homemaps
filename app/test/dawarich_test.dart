@@ -11,7 +11,7 @@ import 'package:homemaps/models/locatie_delen.dart';
 import 'package:homemaps/providers/dawarich.dart';
 import 'package:homemaps/providers/diensten.dart';
 import 'package:homemaps/providers/locatie_delen.dart';
-import 'package:homemaps/screens/dawarich_screen.dart';
+import 'package:homemaps/screens/instellingen/instellingen_screen.dart';
 import 'package:homemaps/services/dawarich_service.dart';
 import 'package:homemaps/utils/opmaak.dart';
 
@@ -353,7 +353,7 @@ void main() {
         ],
       );
       addTearDown(c.dispose);
-      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.physicalSize = const Size(500, 2400);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       await tester.pumpWidget(
@@ -363,7 +363,7 @@ void main() {
             locale: const Locale('nl'),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: const DawarichScreen(),
+            home: const InstellingenScreen(categorie: 'dawarich'),
           ),
         ),
       );

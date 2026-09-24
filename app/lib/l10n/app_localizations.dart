@@ -1483,6 +1483,102 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'Wordt gevolgd'**
   String get familieVolgt;
+
+  /// No description provided for @instellingenGroepKaart.
+  ///
+  /// In nl, this message translates to:
+  /// **'Kaart en route'**
+  String get instellingenGroepKaart;
+
+  /// No description provided for @instellingenGroepDelen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Delen'**
+  String get instellingenGroepDelen;
+
+  /// No description provided for @instellingenGroepApp.
+  ///
+  /// In nl, this message translates to:
+  /// **'App'**
+  String get instellingenGroepApp;
+
+  /// No description provided for @instellingenKaart.
+  ///
+  /// In nl, this message translates to:
+  /// **'Kaart'**
+  String get instellingenKaart;
+
+  /// No description provided for @dagEnNacht.
+  ///
+  /// In nl, this message translates to:
+  /// **'Dag en nacht'**
+  String get dagEnNacht;
+
+  /// No description provided for @themaAlleenKaart.
+  ///
+  /// In nl, this message translates to:
+  /// **'Alleen bij de stijl Kaart; Licht en Donker zijn al een keuze.'**
+  String get themaAlleenKaart;
+
+  /// No description provided for @lagen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Lagen'**
+  String get lagen;
+
+  /// No description provided for @verkeerOpKaartUitleg.
+  ///
+  /// In nl, this message translates to:
+  /// **'Afsluitingen, werk op de weg en files op de kaart'**
+  String get verkeerOpKaartUitleg;
+
+  /// No description provided for @vervoer.
+  ///
+  /// In nl, this message translates to:
+  /// **'Vervoer'**
+  String get vervoer;
+
+  /// No description provided for @vervoerUitleg.
+  ///
+  /// In nl, this message translates to:
+  /// **'Waarmee een nieuwe route berekend wordt.'**
+  String get vervoerUitleg;
+
+  /// No description provided for @opgeslagen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Opgeslagen'**
+  String get opgeslagen;
+
+  /// No description provided for @overSamenvatting.
+  ///
+  /// In nl, this message translates to:
+  /// **'Versie, bronnen en licenties'**
+  String get overSamenvatting;
+
+  /// No description provided for @dawarichAccount.
+  ///
+  /// In nl, this message translates to:
+  /// **'Account'**
+  String get dawarichAccount;
+
+  /// No description provided for @dawarichNavigeren.
+  ///
+  /// In nl, this message translates to:
+  /// **'Navigeren'**
+  String get dawarichNavigeren;
+
+  /// No description provided for @deelVerbinding.
+  ///
+  /// In nl, this message translates to:
+  /// **'Verbinding'**
+  String get deelVerbinding;
+
+  /// No description provided for @deelPunten.
+  ///
+  /// In nl, this message translates to:
+  /// **'Punten'**
+  String get deelPunten;
 }
 
 class _AppLocalizationsDelegate

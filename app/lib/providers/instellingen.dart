@@ -1,11 +1,42 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/profiel.dart';
+
+/// De kaartstijlen van de tileserver, met hun id in de stijl-URL.
+enum KaartStijl {
+  kaart('osm-bright'),
+  licht('positron'),
+  donker('dark-matter');
+
+  const KaartStijl(this.id);
+
+  final String id;
+
+  String naam(AppLocalizations l) => switch (this) {
+    kaart => l.stijlKaart,
+    licht => l.stijlLicht,
+    donker => l.stijlDonker,
+  };
+
+  static KaartStijl van(String id) =>
+      values.firstWhere((s) => s.id == id, orElse: () => kaart);
+}
 
 /// Dag- of nachtversie van de kaart: met de telefoon mee, of altijd één van
 /// de twee.
-enum KaartThema { automatisch, dag, nacht }
+enum KaartThema {
+  automatisch,
+  dag,
+  nacht;
+
+  String naam(AppLocalizations l) => switch (this) {
+    automatisch => l.themaAutomatisch,
+    dag => l.themaDag,
+    nacht => l.themaNacht,
+  };
+}
 
 /// Wat de gebruiker instelt en wat een herstart moet overleven.
 class Instellingen {

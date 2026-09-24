@@ -904,4 +904,54 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get familieVolgt => 'Following';
+
+  @override
+  String get instellingenGroepKaart => 'Map and route';
+
+  @override
+  String get instellingenGroepDelen => 'Sharing';
+
+  @override
+  String get instellingenGroepApp => 'App';
+
+  @override
+  String get instellingenKaart => 'Map';
+
+  @override
+  String get dagEnNacht => 'Day and night';
+
+  @override
+  String get themaAlleenKaart =>
+      'Only for the Map style; Light and Dark are already a choice.';
+
+  @override
+  String get lagen => 'Layers';
+
+  @override
+  String get verkeerOpKaartUitleg =>
+      'Closures, road works and traffic jams on the map';
+
+  @override
+  String get vervoer => 'Transport';
+
+  @override
+  String get vervoerUitleg => 'Used to calculate a new route.';
+
+  @override
+  String get opgeslagen => 'Saved';
+
+  @override
+  String get overSamenvatting => 'Version, sources and licenses';
+
+  @override
+  String get dawarichAccount => 'Account';
+
+  @override
+  String get dawarichNavigeren => 'Navigation';
+
+  @override
+  String get deelVerbinding => 'Connection';
+
+  @override
+  String get deelPunten => 'Points';
 }

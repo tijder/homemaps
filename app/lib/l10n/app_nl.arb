@@ -560,5 +560,21 @@
     }
   },
   "familieVolgen": "Volgen",
-  "familieVolgt": "Wordt gevolgd"
+  "familieVolgt": "Wordt gevolgd",
+  "instellingenGroepKaart": "Kaart en route",
+  "instellingenGroepDelen": "Delen",
+  "instellingenGroepApp": "App",
+  "instellingenKaart": "Kaart",
+  "dagEnNacht": "Dag en nacht",
+  "themaAlleenKaart": "Alleen bij de stijl Kaart; Licht en Donker zijn al een keuze.",
+  "lagen": "Lagen",
+  "verkeerOpKaartUitleg": "Afsluitingen, werk op de weg en files op de kaart",
+  "vervoer": "Vervoer",
+  "vervoerUitleg": "Waarmee een nieuwe route berekend wordt.",
+  "opgeslagen": "Opgeslagen",
+  "overSamenvatting": "Versie, bronnen en licenties",
+  "dawarichAccount": "Account",
+  "dawarichNavigeren": "Navigeren",
+  "deelVerbinding": "Verbinding",
+  "deelPunten": "Punten"
 }

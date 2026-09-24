@@ -7,10 +7,9 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import '../l10n/app_localizations.dart';
 import 'langs_route.dart';
 import 'locatie_reden.dart';
+import 'route_opties.dart';
 import '../models/plaats.dart';
-import '../models/profiel.dart';
 import '../models/route.dart';
-import '../providers/instellingen.dart';
 import '../providers/locatie.dart';
 import '../providers/planner.dart';
 import '../services/valhalla_service.dart';
@@ -183,34 +182,7 @@ class _RoutePaneelState extends ConsumerState<RoutePaneel> {
     );
   }
 
-  Widget _profiel() {
-    final l = AppLocalizations.of(context);
-    final instellingen = ref.watch(instellingenProvider);
-    final zet = ref.read(instellingenProvider.notifier).wijzig;
-    return SegmentedButton<Profiel>(
-      showSelectedIcon: false,
-      segments: [
-        ButtonSegment(
-          value: Profiel.auto,
-          icon: const Icon(Icons.directions_car),
-          label: Text(l.profielAuto),
-        ),
-        ButtonSegment(
-          value: Profiel.fiets,
-          icon: const Icon(Icons.directions_bike),
-          label: Text(l.profielFiets),
-        ),
-        ButtonSegment(
-          value: Profiel.lopen,
-          icon: const Icon(Icons.directions_walk),
-          label: Text(l.profielLopen),
-        ),
-      ],
-      selected: {instellingen.profiel},
-      onSelectionChanged: (keuze) =>
-          zet(instellingen.kopie(profiel: keuze.first)),
-    );
-  }
+  Widget _profiel() => const ProfielKeuze();
 
   /// "Nu" of "Later": een dag in de komende week en een tijd.
   Widget _vertrek(PlannerState planner) {
@@ -346,42 +318,12 @@ class _RoutePaneelState extends ConsumerState<RoutePaneel> {
 
   Widget _opties() {
     final l = AppLocalizations.of(context);
-    final instellingen = ref.watch(instellingenProvider);
-    final zet = ref.read(instellingenProvider.notifier).wijzig;
     return ExpansionTile(
       title: Text(l.opties),
       tilePadding: EdgeInsets.zero,
       childrenPadding: EdgeInsets.zero,
       shape: const Border(),
-      children: [
-        if (instellingen.profiel == Profiel.auto) ...[
-          SwitchListTile(
-            dense: true,
-            title: Text(l.liveVerkeer),
-            subtitle: Text(l.liveVerkeerUitleg),
-            value: instellingen.liveVerkeer,
-            onChanged: (aan) => zet(instellingen.kopie(liveVerkeer: aan)),
-          ),
-          SwitchListTile(
-            dense: true,
-            title: Text(l.vermijdSnelwegen),
-            value: instellingen.vermijdSnelwegen,
-            onChanged: (aan) => zet(instellingen.kopie(vermijdSnelwegen: aan)),
-          ),
-          SwitchListTile(
-            dense: true,
-            title: Text(l.vermijdTol),
-            value: instellingen.vermijdTol,
-            onChanged: (aan) => zet(instellingen.kopie(vermijdTol: aan)),
-          ),
-        ],
-        SwitchListTile(
-          dense: true,
-          title: Text(l.vermijdVeren),
-          value: instellingen.vermijdVeren,
-          onChanged: (aan) => zet(instellingen.kopie(vermijdVeren: aan)),
-        ),
-      ],
+      children: const [RouteOpties(dense: true)],
     );
   }
 
