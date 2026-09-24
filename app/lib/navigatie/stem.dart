@@ -22,6 +22,7 @@ class TtsStem implements Stem {
 
   static final _android =
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+  static final _ios = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
   @override
   Future<void> begin(String taal) async {
@@ -30,6 +31,16 @@ class TtsStem implements Stem {
     await _tts.awaitSpeakCompletion(true);
     // Als navigatiegeluid, zodat het ook met het scherm uit klinkt.
     if (_android) await _tts.setAudioAttributesForNavigation();
+    if (_ios) {
+      // Playback klinkt ook met het scherm uit en de stilteschakelaar aan;
+      // muziek gaat zachter zolang de zin duurt, een podcast pauzeert.
+      await _tts.setSharedInstance(true);
+      await _tts.setIosAudioCategory(IosTextToSpeechAudioCategory.playback, [
+        IosTextToSpeechAudioCategoryOptions.duckOthers,
+        IosTextToSpeechAudioCategoryOptions
+            .interruptSpokenAudioAndMixWithOthers,
+      ], IosTextToSpeechAudioMode.voicePrompt);
+    }
   }
 
   @override

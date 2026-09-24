@@ -1,14 +1,15 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../services/dawarich_service.dart';
 
-/// Inloggen op de website van Dawarich, in de app, zoals de officiële
-/// Android-app van Dawarich: zo werkt ook OIDC (Keycloak, Authentik, …).
-/// Met `?client=android` stuurt Dawarich na het inloggen door naar
-/// `/auth/ios/success?token=…`; dat vangen we af en de pagina sluit met de
-/// API-sleutel. Alleen Android: op het web is er geen WebView.
+/// Inloggen op de website van Dawarich, in de app, zoals de officiële apps
+/// van Dawarich: zo werkt ook OIDC (Keycloak, Authentik, …).
+/// Met `?client=android` of `?client=ios` stuurt Dawarich na het inloggen door
+/// naar `/auth/ios/success?token=…`; dat vangen we af en de pagina sluit met de
+/// API-sleutel. Alleen Android en iOS: op het web is er geen WebView.
 class DawarichWebsiteLogin extends StatefulWidget {
   const DawarichWebsiteLogin({super.key, required this.server});
 
@@ -32,6 +33,10 @@ class _DawarichWebsiteLoginState extends State<DawarichWebsiteLogin> {
   int _voortgang = 0;
   String? _fout;
   bool _klaar = false;
+
+  static final _client = defaultTargetPlatform == TargetPlatform.iOS
+      ? 'ios'
+      : 'android';
 
   @override
   void initState() {
@@ -60,8 +65,8 @@ class _DawarichWebsiteLoginState extends State<DawarichWebsiteLogin> {
         ),
       )
       ..loadRequest(
-        Uri.parse('${widget.server}/users/sign_in?client=android'),
-        headers: const {'X-Dawarich-Client': 'android'},
+        Uri.parse('${widget.server}/users/sign_in?client=$_client'),
+        headers: {'X-Dawarich-Client': _client},
       );
   }
 

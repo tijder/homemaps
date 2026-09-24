@@ -395,19 +395,20 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
   }
 
   /// Waarom er geen locatie is, en waar je dat verhelpt. Op het web kan de app
-  /// de instellingen van de browser niet openen; dan alleen de uitleg.
+  /// de instellingen van de browser niet openen; dan alleen de uitleg. iOS
+  /// opent alleen de instellingen van de app zelf, niet die van locatie.
   void _meldLocatieProbleem() {
     final l = AppLocalizations.of(context);
     final android = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+    final ios = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
     final stand = ref.read(locatieProvider).stand;
     final tekst = locatieReden(l, stand) ?? l.locatieNietGevonden;
-    final openen = !android
-        ? null
-        : switch (stand) {
-            LocatieStand.permanentGeweigerd => Geolocator.openAppSettings,
-            LocatieStand.dienstUit => Geolocator.openLocationSettings,
-            _ => null,
-          };
+    final openen = switch (stand) {
+      LocatieStand.permanentGeweigerd when android || ios =>
+        Geolocator.openAppSettings,
+      LocatieStand.dienstUit when android => Geolocator.openLocationSettings,
+      _ => null,
+    };
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(tekst),

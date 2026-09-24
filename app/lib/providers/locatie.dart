@@ -86,8 +86,9 @@ abstract class LocatieBron {
   /// Vraagt het de gebruiker als dat nog kan.
   Future<Toestemming> vraag();
 
-  /// [melding]: houd het ophalen op Android levend met een blijvende melding
-  /// (voorgronddienst), ook met het scherm uit. Null = alleen op de voorgrond.
+  /// [melding]: houd het ophalen ook met het scherm uit levend: op Android met
+  /// een blijvende melding (voorgronddienst), op iOS als achtergrondlocatie.
+  /// Null = alleen op de voorgrond.
   Stream<LocatieFix> volg({
     required bool nauwkeurig,
     ({String titel, String tekst})? melding,
@@ -143,6 +144,19 @@ class GeolocatorBron implements LocatieBron {
                     enableWakeLock: true,
                     setOngoing: true,
                   ),
+          )
+        : defaultTargetPlatform == TargetPlatform.iOS
+        // Met een melding (navigatie) ook met het scherm uit door, zoals de
+        // voorgronddienst op Android; iOS toont dan de blauwe locatie-indicator.
+        ? AppleSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: nauwkeurig ? 2 : 5,
+            activityType: melding == null
+                ? ActivityType.other
+                : ActivityType.otherNavigation,
+            pauseLocationUpdatesAutomatically: false,
+            allowBackgroundLocationUpdates: melding != null,
+            showBackgroundLocationIndicator: melding != null,
           )
         : LocationSettings(
             accuracy: LocationAccuracy.high,
