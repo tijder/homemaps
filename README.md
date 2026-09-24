@@ -5,7 +5,7 @@ cluster, en tijdens het gebruik gaat er niets naar buiten.
 
 | map | wat |
 |---|---|
-| `app/` | Flutter-app (web en Android): kaart, zoeken, routes plannen, je locatie, navigatie met stem en verkeerslaag |
+| `app/` | Flutter-app (web, Android en iOS): kaart, zoeken, routes plannen, je locatie, navigatie met stem en verkeerslaag |
 | `chart/homemaps/` | Helm chart: tiles (planetiler + tileserver-gl), routing (Valhalla), zoeken (Photon), de web-app, en de verkeersimporter |
 | `importer/` | Python-sidecar die live snelheden en afsluitingen van NDW in Valhalla's `traffic.tar` schrijft ([README](importer/README.md)) |
 | `docker/web/` | nginx-image rond de web-build; proxyt `/valhalla`, `/geocode`, `/tiles` en `/verkeer` |
@@ -23,7 +23,7 @@ Daarna één keer de twee bouwjobs starten (de NOTES van de chart geven de
 commando's); tot die klaar zijn wachten de pods. Standaard is het gebied
 Nederland; `gebied.*` en `photon.dbUrl` in de values kiezen een ander.
 
-Alles hangt onder één hostnaam. De Android-app vraagt bij de eerste start om dat
+Alles hangt onder één hostnaam. De Android- en iOS-app vragen bij de eerste start om dat
 adres; de web-app gebruikt zijn eigen origin.
 
 ## Ontwikkelen
@@ -47,10 +47,26 @@ dat werkt ook zonder simulatie, om een route als link te delen.
 nagemaakte GPS en stopt. Schermafdrukken komen in `ci/e2e/uitvoer/`.
 
 Het app-icoon is code: `python3 app/tool/maak_icoon.py` tekent het, daarna maakt
-`dart run flutter_launcher_icons` er de Android- en web-iconen van.
+`dart run flutter_launcher_icons` er de Android-, iOS- en web-iconen van.
 
 Na een wijziging aan routes of vertalingen: `flutter gen-l10n` en
 `dart run build_runner build`; het resultaat is ingecheckt en de CI controleert dat.
+
+## iOS
+
+Zonder Mac: de CI bouwt de app op `macos-latest`. Bij elke PR alleen of hij
+compileert (`flutter build ios --no-codesign`); bij een release ondertekent
+`release.yml` hem met een App Store Connect API-sleutel (secrets
+`APP_STORE_CONNECT_KEY_P8`, `APP_STORE_CONNECT_KEY_ID`,
+`APP_STORE_CONNECT_ISSUER_ID`, team `68TXJMQZH4`) en zet hem op TestFlight. De
+ipa hangt ook aan de GitHub-release, maar is alleen via TestFlight te installeren.
+
+Eenmalig bij Apple: de App ID `nl.tijder.homemaps` en een app in App Store
+Connect. Zelf bouwen kan alleen op een Mac met een signing team in Xcode
+(`cd app && flutter build ios --release`).
+
+`geo:`-links uit andere apps openen HomeMaps op iOS niet: iOS kent die niet
+systeembreed.
 
 ## Wat bewezen is, en hoe
 
@@ -70,6 +86,8 @@ Na een wijziging aan routes of vertalingen: `flutter gen-l10n` en
   ondertekend met één vaste sleutel (secrets `ANDROID_KEYSTORE` en
   `ANDROID_KEYSTORE_WACHTWOORD`); raak je die kwijt, dan kan een nieuwe versie
   niet meer over een oude heen.
+- **De iOS-app** is alleen in de CI gebouwd: locatie op de achtergrond, stem met
+  het scherm uit en de kaartgebaren moeten nog op een iPhone bekeken worden.
 - **Navigatie op Android** is niet op een toestel gereden: stem, voorgronddienst
   met het scherm uit en de GPS van een echte telefoon zijn alleen in code en
   tests gedekt.
