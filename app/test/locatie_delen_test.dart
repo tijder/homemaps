@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:homemaps/models/locatie_delen.dart';
+import 'package:homemaps/models/profiel.dart';
 import 'package:homemaps/providers/diensten.dart';
+import 'package:homemaps/providers/instellingen.dart';
 import 'package:homemaps/providers/locatie.dart';
 import 'package:homemaps/providers/locatie_delen.dart';
 import 'package:homemaps/screens/instellingen/instellingen_screen.dart';
@@ -43,11 +45,19 @@ class NepVerzender implements DeelVerzender {
   }
 }
 
+/// Een vaste batterij, zonder plugin.
+class NepBatterij implements BatterijBron {
+  Batterij waarde = (procent: 64, staat: 'charging');
+
+  @override
+  Future<Batterij> lees() async => waarde;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('het verzoek, zoals Colota', () {
-    test('OwnTracks en Dawarich: cog, _type en tid', () {
+    test('OwnTracks: cog, _type en tid', () {
       final v = bouwVerzoek(met(DeelSjabloon.owntracks), [punt]);
       expect(v.methode, DeelMethode.post);
       expect(v.body, {
@@ -60,10 +70,55 @@ void main() {
         '_type': 'location',
         'tid': 'HM',
       });
-      final d = bouwVerzoek(met(DeelSjabloon.dawarich), [punt]).body!;
-      expect(d['cog'], 88.5);
-      expect(d['_type'], 'location');
-      expect(d.containsKey('tid'), isFalse);
+    });
+
+    test('Dawarich: /api/v1/points, per 100, met alles wat hij bewaart', () {
+      const vol = DeelPunt(
+        lat: 52.09,
+        lon: 5.12,
+        tst: 1790000000,
+        acc: 4.6,
+        alt: 3.4,
+        vel: 27.77,
+        bear: 88.5,
+        vac: 2.6,
+        bearAcc: 7.8,
+        batt: 81,
+        bs: 'unplugged',
+        vervoer: 'driving',
+      );
+      final instellingen = met(
+        DeelSjabloon.dawarich,
+        url: 'https://dawarich.test/api/v1/points',
+      );
+      expect(puntenPerVerzoek(instellingen), 100);
+      final body = bouwVerzoek(instellingen, [vol]).body!;
+      final feature = (body['locations']! as List).single as Map;
+      expect(feature['properties'], {
+        'timestamp': '2026-09-21T14:13:20Z',
+        'horizontal_accuracy': 5,
+        'altitude': 3,
+        'vertical_accuracy': 3,
+        'speed': 27.77,
+        'course': 88.5,
+        'course_accuracy': 8,
+        'battery_level': 0.81,
+        'battery_state': 'unplugged',
+        'motion': ['driving'],
+        'device_id': 'homemaps',
+      });
+    });
+
+    test('Dawarich via OwnTracks van vroeger wordt /api/v1/points', () {
+      final oud = DeelInstellingen.vanMap({
+        'aan': true,
+        'sjabloon': 'dawarich',
+        'url': 'https://d.test/api/v1/owntracks/points?api_key=abc',
+        'extraVelden': {'_type': 'location'},
+      });
+      expect(oud.url, 'https://d.test/api/v1/points?api_key=abc');
+      expect(oud.extraVelden, {'device_id': 'homemaps'});
+      expect(oud.aan, isTrue);
     });
 
     test('PhoneTrack: speed, timestamp en bearing', () {
@@ -129,6 +184,7 @@ void main() {
           'horizontal_accuracy': 5,
           'speed': 27.77,
           'course': 88.5,
+          'device_id': 'homemaps',
         },
       });
       expect(puntenPerVerzoek(met(DeelSjabloon.overland)), 100);
@@ -181,6 +237,7 @@ void main() {
           locatieBronProvider.overrideWithValue(bron),
           deelVerzenderProvider.overrideWithValue(verzender),
           geheimOpslagProvider.overrideWithValue(GeheugenGeheimOpslag()),
+          batterijBronProvider.overrideWithValue(NepBatterij()),
           if (wachtrij != null)
             deelWachtrijProvider.overrideWithValue(wachtrij),
         ],
@@ -243,6 +300,43 @@ void main() {
       expect(verzender.verzoeken, hasLength(3));
       expect(c.read(locatieDelerProvider).inWachtrij, 0);
       expect(c.read(locatieDelerProvider).laatstVerstuurd, isNotNull);
+    });
+
+    test('naar Dawarich met hoogte, batterij en het vervoer', () async {
+      await c
+          .read(deelInstellingenProvider.notifier)
+          .wijzig(
+            met(
+              DeelSjabloon.dawarich,
+              url: 'https://dawarich.test/api/v1/points',
+            ),
+          );
+      c
+          .read(instellingenProvider.notifier)
+          .wijzig(c.read(instellingenProvider).kopie(profiel: Profiel.fiets));
+      c.read(onderwegProvider.notifier).zet(true);
+      bron.fixes.add(
+        LocatieFix(
+          punt: const LatLng(52.0, 5.0),
+          tijd: t0,
+          nauwkeurigheid: 5,
+          snelheid: 6,
+          koers: 90,
+          hoogte: 1.2,
+          hoogteNauwkeurigheid: 3,
+          koersNauwkeurigheid: 10,
+        ),
+      );
+      await pumpEventQueue();
+      final body = verzender.verzoeken.single.body!;
+      final eigenschappen =
+          ((body['locations']! as List).single as Map)['properties'] as Map;
+      expect(eigenschappen['altitude'], 1);
+      expect(eigenschappen['vertical_accuracy'], 3);
+      expect(eigenschappen['course_accuracy'], 10);
+      expect(eigenschappen['battery_level'], 0.64);
+      expect(eigenschappen['battery_state'], 'charging');
+      expect(eigenschappen['motion'], ['cycling']);
     });
 
     test('zonder netwerk in de wachtrij, daarna in volgorde', () async {

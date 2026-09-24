@@ -182,7 +182,7 @@
   "deelUit": "Off",
   "deelServer": "Server",
   "deelAangepast": "Custom server",
-  "deelSjabloonUitleg": "{sjabloon, select, dawarich{OwnTracks-compatible format for Dawarich} geopulse{Colota format for GeoPulse} overland{Overland: points in batches (GeoJSON)} owntracks{Standard OwnTracks HTTP format} phonetrack{Nextcloud PhoneTrack} reitti{OwnTracks-compatible format for Reitti} traccar{Traccar, OsmAnd protocol} other{Your own field names}}",
+  "deelSjabloonUitleg": "{sjabloon, select, dawarich{Dawarich API: points in batches, with heading, battery and transport mode} geopulse{Colota format for GeoPulse} overland{Overland: points in batches (GeoJSON)} owntracks{Standard OwnTracks HTTP format} phonetrack{Nextcloud PhoneTrack} reitti{OwnTracks-compatible format for Reitti} traccar{Traccar, OsmAnd protocol} other{Your own field names}}",
   "@deelSjabloonUitleg": {
     "placeholders": {
       "sjabloon": {

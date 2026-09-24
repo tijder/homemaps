@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:battery_plus/battery_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,7 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../models/locatie_delen.dart';
+import '../models/profiel.dart';
 import '../services/locatie_deler.dart';
 import '../utils/afstand.dart';
 import 'diensten.dart';
@@ -156,6 +158,59 @@ final deelWachtrijProvider = Provider<DeelWachtrij>(
   (ref) => DeelWachtrij(ref.watch(deelWachtrijDoosProvider)),
 );
 
+/// De batterij op het moment van een punt.
+typedef Batterij = ({int? procent, String? staat});
+
+abstract class BatterijBron {
+  Future<Batterij> lees();
+}
+
+/// Via battery_plus; hooguit eens per minuut gevraagd, zo snel verandert hij
+/// niet. Kan het niet (een browser zonder Battery API), dan onbekend.
+class ToestelBatterij implements BatterijBron {
+  final _batterij = Battery();
+  Batterij? _laatst;
+  DateTime? _gelezen;
+
+  @override
+  Future<Batterij> lees() async {
+    final nu = DateTime.now();
+    final laatst = _laatst;
+    if (laatst != null && nu.difference(_gelezen!).inSeconds < 60) {
+      return laatst;
+    }
+    Batterij waarde;
+    try {
+      final procent = await _batterij.batteryLevel;
+      final staat = await _batterij.batteryState;
+      waarde = (
+        procent: procent >= 0 && procent <= 100 ? procent : null,
+        staat: switch (staat) {
+          BatteryState.discharging => 'unplugged',
+          BatteryState.charging ||
+          BatteryState.connectedNotCharging => 'charging',
+          BatteryState.full => 'full',
+          BatteryState.unknown => null,
+        },
+      );
+    } on Object {
+      waarde = (procent: null, staat: null);
+    }
+    _laatst = waarde;
+    _gelezen = nu;
+    return waarde;
+  }
+}
+
+final batterijBronProvider = Provider<BatterijBron>((ref) => ToestelBatterij());
+
+/// Hoe Overland en Dawarich de vervoerswijze noemen.
+String vervoerVan(Profiel profiel) => switch (profiel) {
+  Profiel.auto => 'driving',
+  Profiel.fiets => 'cycling',
+  Profiel.lopen => 'walking',
+};
+
 final deelVerzenderProvider = Provider<DeelVerzender>(
   (ref) => DioVerzender(ref.watch(dioProvider)),
 );
@@ -230,21 +285,35 @@ class LocatieDeler extends Notifier<DeelStatus> {
     }
     // Een fix van meer dan honderd meter breed zegt te weinig.
     if (fix.nauwkeurigheid > 100) return;
-    final punt = DeelPunt(
-      lat: fix.punt.latitude,
-      lon: fix.punt.longitude,
-      tst: fix.tijd.millisecondsSinceEpoch ~/ 1000,
-      acc: fix.nauwkeurigheid,
-      vel: fix.snelheid,
-      bear: fix.koers,
-    );
+    final tst = fix.tijd.millisecondsSinceEpoch ~/ 1000;
     final vorige = _vorige;
     if (vorige != null &&
-        punt.tst - vorige.tst < instellingen.interval &&
+        tst - vorige.tst < instellingen.interval &&
         meters(fix.punt, _plek(vorige)) < instellingen.minAfstand) {
       return;
     }
-    _vorige = punt;
+    // Meteen, anders komt de volgende fix tijdens het wachten op de batterij
+    // er ook nog door.
+    _vorige = DeelPunt(
+      lat: fix.punt.latitude,
+      lon: fix.punt.longitude,
+      tst: tst,
+    );
+    final batterij = await ref.read(batterijBronProvider).lees();
+    final punt = DeelPunt(
+      lat: fix.punt.latitude,
+      lon: fix.punt.longitude,
+      tst: tst,
+      acc: fix.nauwkeurigheid,
+      alt: fix.hoogte,
+      vel: fix.snelheid,
+      bear: fix.koers,
+      vac: fix.hoogteNauwkeurigheid,
+      bearAcc: fix.koersNauwkeurigheid,
+      batt: batterij.procent,
+      bs: batterij.staat,
+      vervoer: vervoerVan(ref.read(instellingenProvider).profiel),
+    );
     final wachtrij = ref.read(deelWachtrijProvider);
     await wachtrij.voegToe(punt);
     state = DeelStatus(

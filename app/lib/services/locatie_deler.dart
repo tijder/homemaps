@@ -45,7 +45,10 @@ DeelVerzoek bouwVerzoek(DeelInstellingen instellingen, List<DeelPunt> punten) {
       uri: uri,
       headers: headers,
       body: {
-        'locations': [for (final p in punten) _overlandFeature(p)],
+        'locations': [
+          for (final p in punten)
+            _overlandFeature(p, extra['device_id'] ?? 'homemaps'),
+        ],
         for (final e in extra.entries)
           if (e.key != 'device_id') e.key: e.value,
         'device_id': extra['device_id'] ?? 'homemaps',
@@ -102,7 +105,9 @@ String _iso(int tst) => DateTime.fromMillisecondsSinceEpoch(
   isUtc: true,
 ).toIso8601String().replaceFirst('.000', '');
 
-Map<String, Object?> _overlandFeature(DeelPunt p) => {
+/// Eén punt als GeoJSON-feature, met de eigenschappen van Overland. Dawarich
+/// leest dezelfde namen (`/api/v1/points`), en `device_id` per punt.
+Map<String, Object?> _overlandFeature(DeelPunt p, String apparaat) => {
   'type': 'Feature',
   'geometry': {
     'type': 'Point',
@@ -112,8 +117,14 @@ Map<String, Object?> _overlandFeature(DeelPunt p) => {
     'timestamp': _iso(p.tst),
     'horizontal_accuracy': ?p.acc?.round(),
     'altitude': ?p.alt?.round(),
+    'vertical_accuracy': ?p.vac?.round(),
     'speed': ?p.vel,
     'course': ?p.bear,
+    'course_accuracy': ?p.bearAcc?.round(),
+    'battery_level': ?(p.batt == null ? null : p.batt! / 100),
+    'battery_state': ?p.bs,
+    'motion': ?(p.vervoer == null ? null : [p.vervoer!]),
+    'device_id': apparaat,
   },
 };
 

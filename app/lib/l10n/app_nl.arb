@@ -372,7 +372,7 @@
   "deelUit": "Uit",
   "deelServer": "Server",
   "deelAangepast": "Eigen server",
-  "deelSjabloonUitleg": "{sjabloon, select, dawarich{OwnTracks-formaat voor Dawarich} geopulse{Colota-formaat voor GeoPulse} overland{Overland: punten in batches (GeoJSON)} owntracks{Standaard OwnTracks over HTTP} phonetrack{Nextcloud PhoneTrack} reitti{OwnTracks-formaat voor Reitti} traccar{Traccar, OsmAnd-protocol} other{Je eigen veldnamen}}",
+  "deelSjabloonUitleg": "{sjabloon, select, dawarich{Dawarich-API: punten in batches, met richting, batterij en vervoer} geopulse{Colota-formaat voor GeoPulse} overland{Overland: punten in batches (GeoJSON)} owntracks{Standaard OwnTracks over HTTP} phonetrack{Nextcloud PhoneTrack} reitti{OwnTracks-formaat voor Reitti} traccar{Traccar, OsmAnd-protocol} other{Je eigen veldnamen}}",
   "@deelSjabloonUitleg": {
     "placeholders": {
       "sjabloon": {

@@ -268,7 +268,7 @@ void main() {
         final deel = c.read(deelInstellingenProvider);
         expect(deel.aan, isTrue);
         expect(deel.sjabloon, DeelSjabloon.dawarich);
-        expect(deel.url, '$server/api/v1/owntracks/points');
+        expect(deel.url, '$server/api/v1/points');
         expect(deel.inlog, DeelInlog.bearer);
         expect(deel.geheim, 'geheim123');
         expect(deeltViaDawarich(deel, c.read(dawarichProvider)), isTrue);

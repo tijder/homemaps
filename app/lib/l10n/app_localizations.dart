@@ -983,7 +983,7 @@ abstract class AppLocalizations {
   /// No description provided for @deelSjabloonUitleg.
   ///
   /// In nl, this message translates to:
-  /// **'{sjabloon, select, dawarich{OwnTracks-formaat voor Dawarich} geopulse{Colota-formaat voor GeoPulse} overland{Overland: punten in batches (GeoJSON)} owntracks{Standaard OwnTracks over HTTP} phonetrack{Nextcloud PhoneTrack} reitti{OwnTracks-formaat voor Reitti} traccar{Traccar, OsmAnd-protocol} other{Je eigen veldnamen}}'**
+  /// **'{sjabloon, select, dawarich{Dawarich-API: punten in batches, met richting, batterij en vervoer} geopulse{Colota-formaat voor GeoPulse} overland{Overland: punten in batches (GeoJSON)} owntracks{Standaard OwnTracks over HTTP} phonetrack{Nextcloud PhoneTrack} reitti{OwnTracks-formaat voor Reitti} traccar{Traccar, OsmAnd-protocol} other{Je eigen veldnamen}}'**
   String deelSjabloonUitleg(String sjabloon);
 
   /// No description provided for @deelUrl.

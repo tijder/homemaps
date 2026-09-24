@@ -20,7 +20,7 @@ final dawarichServiceProvider = Provider<DawarichService>(
 );
 
 /// Het adres waar het delen tijdens het navigeren heen gaat.
-String dawarichPuntenUrl(String server) => '$server/api/v1/owntracks/points';
+String dawarichPuntenUrl(String server) => '$server/api/v1/points';
 
 /// Wijzen de algemene deel-instellingen naar dit Dawarich-account?
 bool deeltViaDawarich(DeelInstellingen deel, DawarichAccount? account) =>

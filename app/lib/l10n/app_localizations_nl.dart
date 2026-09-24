@@ -570,7 +570,8 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String deelSjabloonUitleg(String sjabloon) {
     String _temp0 = intl.Intl.selectLogic(sjabloon, {
-      'dawarich': 'OwnTracks-formaat voor Dawarich',
+      'dawarich':
+          'Dawarich-API: punten in batches, met richting, batterij en vervoer',
       'geopulse': 'Colota-formaat voor GeoPulse',
       'overland': 'Overland: punten in batches (GeoJSON)',
       'owntracks': 'Standaard OwnTracks over HTTP',

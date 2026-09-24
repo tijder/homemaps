@@ -17,6 +17,9 @@ class LocatieFix {
     this.nauwkeurigheid = 0,
     this.koers,
     this.snelheid,
+    this.hoogte,
+    this.hoogteNauwkeurigheid,
+    this.koersNauwkeurigheid,
   });
 
   final LatLng punt;
@@ -31,6 +34,15 @@ class LocatieFix {
 
   /// In m/s, of null als onbekend.
   final double? snelheid;
+
+  /// Boven zeeniveau (m), of null als het apparaat het niet weet.
+  final double? hoogte;
+
+  /// In meters.
+  final double? hoogteNauwkeurigheid;
+
+  /// In graden.
+  final double? koersNauwkeurigheid;
 }
 
 enum LocatieStand {
@@ -146,6 +158,17 @@ class GeolocatorBron implements LocatieBron {
             ? p.heading
             : null,
         snelheid: p.speed.isFinite && p.speed >= 0 ? p.speed : null,
+        // Zonder nauwkeurigheid is de hoogte een 0 die niets betekent (web).
+        hoogte: p.altitudeAccuracy > 0 && p.altitude.isFinite
+            ? p.altitude
+            : null,
+        hoogteNauwkeurigheid: p.altitudeAccuracy > 0
+            ? p.altitudeAccuracy
+            : null,
+        koersNauwkeurigheid:
+            p.speed > 1 && p.headingAccuracy.isFinite && p.headingAccuracy > 0
+            ? p.headingAccuracy
+            : null,
       ),
     );
   }

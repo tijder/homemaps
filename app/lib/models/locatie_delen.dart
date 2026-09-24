@@ -13,12 +13,14 @@ enum DeelInlog { geen, basic, bearer }
 /// (zie Colota's `API_TEMPLATES`), zodat een server die Colota slikt ook dit
 /// slikt.
 enum DeelSjabloon {
+  /// Anders dan Colota niet via OwnTracks maar via `/api/v1/points`: dat
+  /// bewaart ook de richting en de vervoerswijze, en neemt 100 punten tegelijk.
+  /// Het formaat is dat van Overland.
   dawarich(
     naam: 'Dawarich',
-    voorbeeldUrl:
-        'https://dawarich.example/api/v1/owntracks/points?api_key=SLEUTEL',
-    velden: {'bear': 'cog'},
-    extra: {'_type': 'location'},
+    voorbeeldUrl: 'https://dawarich.example/api/v1/points?api_key=SLEUTEL',
+    extra: {'device_id': 'homemaps'},
+    batch: true,
   ),
   geopulse(
     naam: 'GeoPulse',
@@ -200,13 +202,22 @@ class DeelInstellingen {
       ruw['sjabloon'],
       DeelSjabloon.owntracks,
     );
+    var url = ruw['url'] as String? ?? '';
+    var extra = tekstMap(ruw['extraVelden']);
+    // Dawarich ging eerst via OwnTracks; zie DeelSjabloon.dawarich. Beide
+    // adressen nemen dezelfde api_key.
+    if (sjabloon == DeelSjabloon.dawarich &&
+        url.contains('/api/v1/owntracks/points')) {
+      url = url.replaceFirst('/api/v1/owntracks/points', '/api/v1/points');
+      if (mapEquals(extra, const {'_type': 'location'})) extra = null;
+    }
     return DeelInstellingen(
       aan: ruw['aan'] == true,
       sjabloon: sjabloon,
-      url: ruw['url'] as String? ?? '',
+      url: url,
       methode: uit(DeelMethode.values, ruw['methode'], sjabloon.methode),
       veldnamen: tekstMap(ruw['veldnamen']) ?? const {},
-      extraVelden: tekstMap(ruw['extraVelden']) ?? sjabloon.extra,
+      extraVelden: extra ?? sjabloon.extra,
       inlog: uit(DeelInlog.values, ruw['inlog'], DeelInlog.geen),
       gebruiker: ruw['gebruiker'] as String? ?? '',
       interval: (ruw['interval'] as num?)?.toInt() ?? 10,
@@ -226,6 +237,11 @@ class DeelPunt {
     this.alt,
     this.vel,
     this.bear,
+    this.vac,
+    this.bearAcc,
+    this.batt,
+    this.bs,
+    this.vervoer,
   });
 
   final double lat;
@@ -240,6 +256,18 @@ class DeelPunt {
   final double? vel;
   final double? bear;
 
+  /// Nauwkeurigheid van de hoogte (m) en van de koers (graden).
+  final double? vac;
+  final double? bearAcc;
+
+  /// Batterij in procent, en `unplugged`, `charging` of `full`.
+  final int? batt;
+  final String? bs;
+
+  /// Waarmee je onderweg bent, zoals Overland het noemt: `driving`,
+  /// `cycling` of `walking`.
+  final String? vervoer;
+
   Map<String, Object> naarMap() => {
     'lat': lat,
     'lon': lon,
@@ -248,6 +276,11 @@ class DeelPunt {
     'alt': ?alt,
     'vel': ?vel,
     'bear': ?bear,
+    'vac': ?vac,
+    'bearAcc': ?bearAcc,
+    'batt': ?batt,
+    'bs': ?bs,
+    'vervoer': ?vervoer,
   };
 
   static DeelPunt vanMap(Map<dynamic, dynamic> m) => DeelPunt(
@@ -258,5 +291,10 @@ class DeelPunt {
     alt: (m['alt'] as num?)?.toDouble(),
     vel: (m['vel'] as num?)?.toDouble(),
     bear: (m['bear'] as num?)?.toDouble(),
+    vac: (m['vac'] as num?)?.toDouble(),
+    bearAcc: (m['bearAcc'] as num?)?.toDouble(),
+    batt: (m['batt'] as num?)?.toInt(),
+    bs: m['bs'] as String?,
+    vervoer: m['vervoer'] as String?,
   );
 }
