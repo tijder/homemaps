@@ -61,7 +61,7 @@ compileert (`flutter build ios --no-codesign`); bij een release ondertekent
 `APP_STORE_CONNECT_ISSUER_ID`, team `68TXJMQZH4`) en zet hem op TestFlight. De
 ipa hangt ook aan de GitHub-release, maar is alleen via TestFlight te installeren.
 
-Eenmalig bij Apple: de App ID `nl.tijder.homemaps` en een app in App Store
+Eenmalig bij Apple: de App ID `nl.g4d.homemaps` en een app in App Store
 Connect. Zelf bouwen kan alleen op een Mac met een signing team in Xcode
 (`cd app && flutter build ios --release`).
 

@@ -14,7 +14,7 @@ scope "plannen" (geen turn-by-turn) · Photon in de chart · importer in Python 
 Nederland, instelbaar · owner `tijder`.
 
 **Naam: `homemaps`** (`~/Projecten/homemaps`, `github.com/tijder/homemaps`,
-`ghcr.io/tijder/homemaps-*`, app-id `nl.tijder.homemaps`). Geen GitHub-repo met exact
+`ghcr.io/tijder/homemaps-*`, app-id `nl.g4d.homemaps`). Geen GitHub-repo met exact
 die naam, geen bestaande app gevonden. Reserve: `kaartroute`. De naam staat op één
 plek per onderdeel (pubspec, Chart.yaml, workflow-env), dus hernoemen blijft goedkoop.
 
