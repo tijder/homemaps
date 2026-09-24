@@ -21,6 +21,7 @@ import '../models/route.dart';
 import '../navigatie/afslag_pijl.dart';
 import '../navigatie/navigatie_provider.dart';
 import '../navigatie/simulatie.dart';
+import '../providers/dawarich.dart';
 import '../providers/diensten.dart';
 import '../providers/instellingen.dart';
 import '../providers/locatie.dart';
@@ -481,6 +482,25 @@ class _KaartScreenState extends ConsumerState<KaartScreen> {
       onVerkeerGetikt: (scherm, info) => setState(
         () => _melding = (plek: Offset(scherm.x, scherm.y), info: info),
       ),
+      familie: ref.watch(familieLocatiesProvider),
+      // Een familielid is een plek als een zoekresultaat: met "Route" erheen.
+      onFamilieGetikt: nav != null
+          ? null
+          : (lid) => ref
+                .read(plannerProvider.notifier)
+                .toonPlaats(
+                  Plaats(
+                    naam: lid.email,
+                    omschrijving: [
+                      l.familieGeleden(
+                        DateTime.now().difference(lid.tijd).inMinutes,
+                      ),
+                      if (lid.batterij case final procent?)
+                        l.familieBatterij(procent),
+                    ].join(' · '),
+                    punt: lid.punt,
+                  ),
+                ),
       rand: breed
           ? const EdgeInsets.only(left: _paneelBreedte)
           : EdgeInsets.only(

@@ -11,6 +11,22 @@
 part of 'app_router.dart';
 
 /// generated route for
+/// [DawarichScreen]
+class DawarichRoute extends PageRouteInfo<void> {
+  const DawarichRoute({List<PageRouteInfo>? children})
+    : super(DawarichRoute.name, initialChildren: children);
+
+  static const String name = 'DawarichRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const DawarichScreen();
+    },
+  );
+}
+
+/// generated route for
 /// [InstellingenScreen]
 class InstellingenRoute extends PageRouteInfo<void> {
   const InstellingenRoute({List<PageRouteInfo>? children})

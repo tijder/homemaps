@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 
+import '../screens/dawarich_screen.dart';
 import '../screens/instellingen_screen.dart';
 import '../screens/kaart_screen.dart';
 import '../screens/locatie_delen_screen.dart';
@@ -17,6 +18,7 @@ class AppRouter extends RootStackRouter {
       page: LocatieDelenRoute.page,
       path: '/instellingen/locatie-delen',
     ),
+    AutoRoute(page: DawarichRoute.page, path: '/instellingen/dawarich'),
     AutoRoute(page: OverRoute.page, path: '/instellingen/over'),
   ];
 }

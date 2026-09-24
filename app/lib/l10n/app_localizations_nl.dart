@@ -717,4 +717,165 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get licenties => 'Licenties';
+
+  @override
+  String get dawarich => 'Dawarich';
+
+  @override
+  String get dawarichUitleg =>
+      'Log in bij je eigen Dawarich-server om je locatie met je familie te delen, onderweg je rit bij te houden en familieleden op de kaart te zien.';
+
+  @override
+  String get dawarichNietIngelogd => 'Niet ingelogd';
+
+  @override
+  String get dawarichServer => 'Server';
+
+  @override
+  String get dawarichMetWachtwoord => 'E-mail en wachtwoord';
+
+  @override
+  String get dawarichMetSleutel => 'API-sleutel';
+
+  @override
+  String get dawarichEmail => 'E-mail';
+
+  @override
+  String get dawarichWachtwoord => 'Wachtwoord';
+
+  @override
+  String get dawarichSleutel => 'API-sleutel';
+
+  @override
+  String get dawarichSleutelUitleg =>
+      'Te vinden in Dawarich onder Instellingen. Gebruik dit als je server alleen OIDC kent.';
+
+  @override
+  String get dawarichInloggen => 'Inloggen';
+
+  @override
+  String get dawarichUitloggen => 'Uitloggen';
+
+  @override
+  String get dawarichCode => 'Code voor tweestapsverificatie';
+
+  @override
+  String get dawarichCodeUitleg =>
+      'De code uit je authenticator-app, of een back-upcode.';
+
+  @override
+  String get dawarichBevestig => 'Bevestigen';
+
+  @override
+  String get annuleren => 'Annuleren';
+
+  @override
+  String get dawarichWeb =>
+      'In de browser moet Dawarich CORS toestaan voor dit adres.';
+
+  @override
+  String get dawarichFoutInlog => 'Onjuiste gegevens.';
+
+  @override
+  String get dawarichFoutWachtwoordUit =>
+      'Deze server staat inloggen met een wachtwoord niet toe. Gebruik een API-sleutel.';
+
+  @override
+  String get dawarichFoutGeblokkeerd =>
+      'Te vaak een verkeerde code. Probeer het later opnieuw.';
+
+  @override
+  String dawarichFoutVerbinding(String detail) {
+    return 'Dawarich is niet te bereiken ($detail).';
+  }
+
+  @override
+  String dawarichFoutOnbekend(String detail) {
+    return 'Er ging iets mis ($detail).';
+  }
+
+  @override
+  String dawarichIngelogdAls(String email) {
+    return 'Ingelogd als $email';
+  }
+
+  @override
+  String get dawarichFamilie => 'Familie';
+
+  @override
+  String get dawarichFamilieDelen => 'Locatie delen met familie';
+
+  @override
+  String dawarichDeeltTot(String tijd) {
+    return 'Tot $tijd';
+  }
+
+  @override
+  String get dawarichDeeltAltijd => 'Tot je het uitzet';
+
+  @override
+  String get dawarichDeeltNiet => 'Je familie ziet je locatie niet';
+
+  @override
+  String get dawarichGeenFamilie =>
+      'Je zit nog niet in een familie. Maak er een of word lid op de Dawarich-website.';
+
+  @override
+  String get dawarichNaarWebsite => 'Naar de website';
+
+  @override
+  String get dawarichGeenAbonnement =>
+      'Familie zit niet in je Dawarich-abonnement.';
+
+  @override
+  String get dawarichHoeLang => 'Hoe lang delen?';
+
+  @override
+  String dawarichDuur(String duur) {
+    String _temp0 = intl.Intl.selectLogic(duur, {
+      'uur1': '1 uur',
+      'uur6': '6 uur',
+      'uur12': '12 uur',
+      'uur24': '24 uur',
+      'other': 'Tot ik het uitzet',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get dawarichDelenOnderweg => 'Locatie delen tijdens navigeren';
+
+  @override
+  String get dawarichDelenOnderwegUitleg =>
+      'Stuurt je rit naar Dawarich. Interval en afstand stel je in bij Locatie delen.';
+
+  @override
+  String get dawarichToonFamilie => 'Familieleden op de kaart';
+
+  @override
+  String get dawarichToonFamilieUitleg =>
+      'Elke 30 seconden bijgewerkt, zolang de app open is.';
+
+  @override
+  String get dawarichFamilieDeelt => 'familie deelt';
+
+  @override
+  String get deelViaDawarich => 'Ingesteld via je Dawarich-account.';
+
+  @override
+  String familieGeleden(int minuten) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minuten,
+      locale: localeName,
+      other: '$minuten minuten geleden',
+      one: '1 minuut geleden',
+      zero: 'zojuist',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String familieBatterij(int procent) {
+    return 'batterij $procent%';
+  }
 }

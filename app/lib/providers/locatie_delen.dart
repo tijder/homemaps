@@ -22,8 +22,10 @@ abstract class GeheimOpslag {
 }
 
 class VeiligeGeheimOpslag implements GeheimOpslag {
-  static const _sleutel = 'locatieDelenGeheim';
-  final _opslag = const FlutterSecureStorage();
+  const VeiligeGeheimOpslag([this._sleutel = 'locatieDelenGeheim']);
+
+  final String _sleutel;
+  static const _opslag = FlutterSecureStorage();
 
   @override
   Future<String?> lees() => _opslag.read(key: _sleutel);
@@ -46,7 +48,7 @@ class GeheugenGeheimOpslag implements GeheimOpslag {
 }
 
 final geheimOpslagProvider = Provider<GeheimOpslag>(
-  (ref) => VeiligeGeheimOpslag(),
+  (ref) => const VeiligeGeheimOpslag(),
 );
 
 class DeelInstellingenNotifier extends Notifier<DeelInstellingen> {

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/app_localizations.dart';
+import '../providers/dawarich.dart';
 import '../providers/instellingen.dart';
 import '../providers/locatie_delen.dart';
 import '../router/app_router.dart';
@@ -80,6 +81,7 @@ class _InstellingenScreenState extends ConsumerState<InstellingenScreen> {
           ],
           _Plekken(),
           const Divider(height: 32),
+          const _Dawarich(),
           const _LocatieDelen(),
           const Divider(height: 32),
           ListTile(
@@ -149,6 +151,32 @@ class _Plekken extends ConsumerWidget {
                 ),
         ),
       ],
+    );
+  }
+}
+
+/// De ingang naar Dawarich: wie er is ingelogd, en of de familie je ziet.
+class _Dawarich extends ConsumerWidget {
+  const _Dawarich();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final account = ref.watch(dawarichProvider);
+    final deelt =
+        account != null &&
+        (ref.watch(familieProvider).value?.delenAan ?? false);
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: const Icon(Icons.family_restroom),
+      title: Text(l.dawarich),
+      subtitle: Text(
+        account == null
+            ? l.dawarichNietIngelogd
+            : [account.email, if (deelt) l.dawarichFamilieDeelt].join(' · '),
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => context.router.push(const DawarichRoute()),
     );
   }
 }

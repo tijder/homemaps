@@ -289,7 +289,8 @@
         "type": "int"
       }
     }
-  },  "maximumsnelheidTijdelijk": "Tijdelijke maximumsnelheid {kmu} km/u",
+  },
+  "maximumsnelheidTijdelijk": "Tijdelijke maximumsnelheid {kmu} km/u",
   "maximumsnelheidMatrix": "Maximumsnelheid {kmu} km/u op de matrixborden",
   "@maximumsnelheidMatrix": {
     "placeholders": {
@@ -305,7 +306,6 @@
       }
     }
   },
-
   "meldingOngeval": "Ongeval",
   "meldingPech": "Pechgeval",
   "meldingObstakel": "Voorwerp op de weg",
@@ -452,5 +452,95 @@
   "bronZoeken": "Zoeken",
   "bronVerkeer": "Verkeer, werk en matrixborden",
   "broncode": "Broncode",
-  "licenties": "Licenties"
+  "licenties": "Licenties",
+  "dawarich": "Dawarich",
+  "dawarichUitleg": "Log in bij je eigen Dawarich-server om je locatie met je familie te delen, onderweg je rit bij te houden en familieleden op de kaart te zien.",
+  "dawarichNietIngelogd": "Niet ingelogd",
+  "dawarichServer": "Server",
+  "dawarichMetWachtwoord": "E-mail en wachtwoord",
+  "dawarichMetSleutel": "API-sleutel",
+  "dawarichEmail": "E-mail",
+  "dawarichWachtwoord": "Wachtwoord",
+  "dawarichSleutel": "API-sleutel",
+  "dawarichSleutelUitleg": "Te vinden in Dawarich onder Instellingen. Gebruik dit als je server alleen OIDC kent.",
+  "dawarichInloggen": "Inloggen",
+  "dawarichUitloggen": "Uitloggen",
+  "dawarichCode": "Code voor tweestapsverificatie",
+  "dawarichCodeUitleg": "De code uit je authenticator-app, of een back-upcode.",
+  "dawarichBevestig": "Bevestigen",
+  "annuleren": "Annuleren",
+  "dawarichWeb": "In de browser moet Dawarich CORS toestaan voor dit adres.",
+  "dawarichFoutInlog": "Onjuiste gegevens.",
+  "dawarichFoutWachtwoordUit": "Deze server staat inloggen met een wachtwoord niet toe. Gebruik een API-sleutel.",
+  "dawarichFoutGeblokkeerd": "Te vaak een verkeerde code. Probeer het later opnieuw.",
+  "dawarichFoutVerbinding": "Dawarich is niet te bereiken ({detail}).",
+  "@dawarichFoutVerbinding": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "dawarichFoutOnbekend": "Er ging iets mis ({detail}).",
+  "@dawarichFoutOnbekend": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "dawarichIngelogdAls": "Ingelogd als {email}",
+  "@dawarichIngelogdAls": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "dawarichFamilie": "Familie",
+  "dawarichFamilieDelen": "Locatie delen met familie",
+  "dawarichDeeltTot": "Tot {tijd}",
+  "@dawarichDeeltTot": {
+    "placeholders": {
+      "tijd": {
+        "type": "String"
+      }
+    }
+  },
+  "dawarichDeeltAltijd": "Tot je het uitzet",
+  "dawarichDeeltNiet": "Je familie ziet je locatie niet",
+  "dawarichGeenFamilie": "Je zit nog niet in een familie. Maak er een of word lid op de Dawarich-website.",
+  "dawarichNaarWebsite": "Naar de website",
+  "dawarichGeenAbonnement": "Familie zit niet in je Dawarich-abonnement.",
+  "dawarichHoeLang": "Hoe lang delen?",
+  "dawarichDuur": "{duur, select, uur1{1 uur} uur6{6 uur} uur12{12 uur} uur24{24 uur} other{Tot ik het uitzet}}",
+  "@dawarichDuur": {
+    "placeholders": {
+      "duur": {
+        "type": "String"
+      }
+    }
+  },
+  "dawarichDelenOnderweg": "Locatie delen tijdens navigeren",
+  "dawarichDelenOnderwegUitleg": "Stuurt je rit naar Dawarich. Interval en afstand stel je in bij Locatie delen.",
+  "dawarichToonFamilie": "Familieleden op de kaart",
+  "dawarichToonFamilieUitleg": "Elke 30 seconden bijgewerkt, zolang de app open is.",
+  "dawarichFamilieDeelt": "familie deelt",
+  "deelViaDawarich": "Ingesteld via je Dawarich-account.",
+  "familieGeleden": "{minuten, plural, =0{zojuist} =1{1 minuut geleden} other{{minuten} minuten geleden}}",
+  "@familieGeleden": {
+    "placeholders": {
+      "minuten": {
+        "type": "int"
+      }
+    }
+  },
+  "familieBatterij": "batterij {procent}%",
+  "@familieBatterij": {
+    "placeholders": {
+      "procent": {
+        "type": "int"
+      }
+    }
+  }
 }

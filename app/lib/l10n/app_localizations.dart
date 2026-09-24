@@ -1213,6 +1213,252 @@ abstract class AppLocalizations {
   /// In nl, this message translates to:
   /// **'Licenties'**
   String get licenties;
+
+  /// No description provided for @dawarich.
+  ///
+  /// In nl, this message translates to:
+  /// **'Dawarich'**
+  String get dawarich;
+
+  /// No description provided for @dawarichUitleg.
+  ///
+  /// In nl, this message translates to:
+  /// **'Log in bij je eigen Dawarich-server om je locatie met je familie te delen, onderweg je rit bij te houden en familieleden op de kaart te zien.'**
+  String get dawarichUitleg;
+
+  /// No description provided for @dawarichNietIngelogd.
+  ///
+  /// In nl, this message translates to:
+  /// **'Niet ingelogd'**
+  String get dawarichNietIngelogd;
+
+  /// No description provided for @dawarichServer.
+  ///
+  /// In nl, this message translates to:
+  /// **'Server'**
+  String get dawarichServer;
+
+  /// No description provided for @dawarichMetWachtwoord.
+  ///
+  /// In nl, this message translates to:
+  /// **'E-mail en wachtwoord'**
+  String get dawarichMetWachtwoord;
+
+  /// No description provided for @dawarichMetSleutel.
+  ///
+  /// In nl, this message translates to:
+  /// **'API-sleutel'**
+  String get dawarichMetSleutel;
+
+  /// No description provided for @dawarichEmail.
+  ///
+  /// In nl, this message translates to:
+  /// **'E-mail'**
+  String get dawarichEmail;
+
+  /// No description provided for @dawarichWachtwoord.
+  ///
+  /// In nl, this message translates to:
+  /// **'Wachtwoord'**
+  String get dawarichWachtwoord;
+
+  /// No description provided for @dawarichSleutel.
+  ///
+  /// In nl, this message translates to:
+  /// **'API-sleutel'**
+  String get dawarichSleutel;
+
+  /// No description provided for @dawarichSleutelUitleg.
+  ///
+  /// In nl, this message translates to:
+  /// **'Te vinden in Dawarich onder Instellingen. Gebruik dit als je server alleen OIDC kent.'**
+  String get dawarichSleutelUitleg;
+
+  /// No description provided for @dawarichInloggen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Inloggen'**
+  String get dawarichInloggen;
+
+  /// No description provided for @dawarichUitloggen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Uitloggen'**
+  String get dawarichUitloggen;
+
+  /// No description provided for @dawarichCode.
+  ///
+  /// In nl, this message translates to:
+  /// **'Code voor tweestapsverificatie'**
+  String get dawarichCode;
+
+  /// No description provided for @dawarichCodeUitleg.
+  ///
+  /// In nl, this message translates to:
+  /// **'De code uit je authenticator-app, of een back-upcode.'**
+  String get dawarichCodeUitleg;
+
+  /// No description provided for @dawarichBevestig.
+  ///
+  /// In nl, this message translates to:
+  /// **'Bevestigen'**
+  String get dawarichBevestig;
+
+  /// No description provided for @annuleren.
+  ///
+  /// In nl, this message translates to:
+  /// **'Annuleren'**
+  String get annuleren;
+
+  /// No description provided for @dawarichWeb.
+  ///
+  /// In nl, this message translates to:
+  /// **'In de browser moet Dawarich CORS toestaan voor dit adres.'**
+  String get dawarichWeb;
+
+  /// No description provided for @dawarichFoutInlog.
+  ///
+  /// In nl, this message translates to:
+  /// **'Onjuiste gegevens.'**
+  String get dawarichFoutInlog;
+
+  /// No description provided for @dawarichFoutWachtwoordUit.
+  ///
+  /// In nl, this message translates to:
+  /// **'Deze server staat inloggen met een wachtwoord niet toe. Gebruik een API-sleutel.'**
+  String get dawarichFoutWachtwoordUit;
+
+  /// No description provided for @dawarichFoutGeblokkeerd.
+  ///
+  /// In nl, this message translates to:
+  /// **'Te vaak een verkeerde code. Probeer het later opnieuw.'**
+  String get dawarichFoutGeblokkeerd;
+
+  /// No description provided for @dawarichFoutVerbinding.
+  ///
+  /// In nl, this message translates to:
+  /// **'Dawarich is niet te bereiken ({detail}).'**
+  String dawarichFoutVerbinding(String detail);
+
+  /// No description provided for @dawarichFoutOnbekend.
+  ///
+  /// In nl, this message translates to:
+  /// **'Er ging iets mis ({detail}).'**
+  String dawarichFoutOnbekend(String detail);
+
+  /// No description provided for @dawarichIngelogdAls.
+  ///
+  /// In nl, this message translates to:
+  /// **'Ingelogd als {email}'**
+  String dawarichIngelogdAls(String email);
+
+  /// No description provided for @dawarichFamilie.
+  ///
+  /// In nl, this message translates to:
+  /// **'Familie'**
+  String get dawarichFamilie;
+
+  /// No description provided for @dawarichFamilieDelen.
+  ///
+  /// In nl, this message translates to:
+  /// **'Locatie delen met familie'**
+  String get dawarichFamilieDelen;
+
+  /// No description provided for @dawarichDeeltTot.
+  ///
+  /// In nl, this message translates to:
+  /// **'Tot {tijd}'**
+  String dawarichDeeltTot(String tijd);
+
+  /// No description provided for @dawarichDeeltAltijd.
+  ///
+  /// In nl, this message translates to:
+  /// **'Tot je het uitzet'**
+  String get dawarichDeeltAltijd;
+
+  /// No description provided for @dawarichDeeltNiet.
+  ///
+  /// In nl, this message translates to:
+  /// **'Je familie ziet je locatie niet'**
+  String get dawarichDeeltNiet;
+
+  /// No description provided for @dawarichGeenFamilie.
+  ///
+  /// In nl, this message translates to:
+  /// **'Je zit nog niet in een familie. Maak er een of word lid op de Dawarich-website.'**
+  String get dawarichGeenFamilie;
+
+  /// No description provided for @dawarichNaarWebsite.
+  ///
+  /// In nl, this message translates to:
+  /// **'Naar de website'**
+  String get dawarichNaarWebsite;
+
+  /// No description provided for @dawarichGeenAbonnement.
+  ///
+  /// In nl, this message translates to:
+  /// **'Familie zit niet in je Dawarich-abonnement.'**
+  String get dawarichGeenAbonnement;
+
+  /// No description provided for @dawarichHoeLang.
+  ///
+  /// In nl, this message translates to:
+  /// **'Hoe lang delen?'**
+  String get dawarichHoeLang;
+
+  /// No description provided for @dawarichDuur.
+  ///
+  /// In nl, this message translates to:
+  /// **'{duur, select, uur1{1 uur} uur6{6 uur} uur12{12 uur} uur24{24 uur} other{Tot ik het uitzet}}'**
+  String dawarichDuur(String duur);
+
+  /// No description provided for @dawarichDelenOnderweg.
+  ///
+  /// In nl, this message translates to:
+  /// **'Locatie delen tijdens navigeren'**
+  String get dawarichDelenOnderweg;
+
+  /// No description provided for @dawarichDelenOnderwegUitleg.
+  ///
+  /// In nl, this message translates to:
+  /// **'Stuurt je rit naar Dawarich. Interval en afstand stel je in bij Locatie delen.'**
+  String get dawarichDelenOnderwegUitleg;
+
+  /// No description provided for @dawarichToonFamilie.
+  ///
+  /// In nl, this message translates to:
+  /// **'Familieleden op de kaart'**
+  String get dawarichToonFamilie;
+
+  /// No description provided for @dawarichToonFamilieUitleg.
+  ///
+  /// In nl, this message translates to:
+  /// **'Elke 30 seconden bijgewerkt, zolang de app open is.'**
+  String get dawarichToonFamilieUitleg;
+
+  /// No description provided for @dawarichFamilieDeelt.
+  ///
+  /// In nl, this message translates to:
+  /// **'familie deelt'**
+  String get dawarichFamilieDeelt;
+
+  /// No description provided for @deelViaDawarich.
+  ///
+  /// In nl, this message translates to:
+  /// **'Ingesteld via je Dawarich-account.'**
+  String get deelViaDawarich;
+
+  /// No description provided for @familieGeleden.
+  ///
+  /// In nl, this message translates to:
+  /// **'{minuten, plural, =0{zojuist} =1{1 minuut geleden} other{{minuten} minuten geleden}}'**
+  String familieGeleden(int minuten);
+
+  /// No description provided for @familieBatterij.
+  ///
+  /// In nl, this message translates to:
+  /// **'batterij {procent}%'**
+  String familieBatterij(int procent);
 }
 
 class _AppLocalizationsDelegate

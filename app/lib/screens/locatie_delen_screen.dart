@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/locatie_delen.dart';
+import '../providers/dawarich.dart';
 import '../providers/locatie.dart';
 import '../providers/locatie_delen.dart';
 import '../services/locatie_deler.dart';
@@ -180,6 +181,10 @@ class _LocatieDelenState extends ConsumerState<LocatieDelenScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           Text(l.locatieDelenUitleg),
+          if (deeltViaDawarich(nu, ref.watch(dawarichProvider))) ...[
+            const SizedBox(height: 8),
+            Text(l.deelViaDawarich, style: tekst.bodySmall),
+          ],
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(l.locatieDelenAan),

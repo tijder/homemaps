@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
+import '../models/dawarich.dart';
 import '../models/plaats.dart';
 import '../models/route.dart';
 import '../navigatie/afslag_pijl.dart';
@@ -36,6 +37,8 @@ class Kaart extends StatefulWidget {
     this.verkeer,
     this.toonVertraging = true,
     this.onVerkeerGetikt,
+    this.familie = const [],
+    this.onFamilieGetikt,
     this.onController,
   });
 
@@ -93,6 +96,10 @@ class Kaart extends StatefulWidget {
   /// Een tik op een stuk verkeer, met de eigenschappen uit de GeoJSON.
   final void Function(Point<double> scherm, Map<String, dynamic> eigenschappen)?
   onVerkeerGetikt;
+
+  /// De familieleden die hun locatie via Dawarich delen.
+  final List<FamilieLocatie> familie;
+  final ValueChanged<FamilieLocatie>? onFamilieGetikt;
   final ValueChanged<MapLibreMapController>? onController;
 
   @override
@@ -105,6 +112,10 @@ class _KaartState extends State<Kaart> {
   static const _verkeerBron = 'verkeer';
   static const _geredenBron = 'gereden';
   static const _pijlBron = 'pijl';
+  static const _familieBron = 'familie';
+
+  /// Na zoveel tijd zonder nieuwe plek is een familielid grijs.
+  static const _familieOud = Duration(hours: 1);
 
   /// Kleiner dan dit is het gat tussen een punt en de weg niet het tonen waard.
   static const _minAansluiting = 15.0;
@@ -118,6 +129,9 @@ class _KaartState extends State<Kaart> {
 
   /// Cirkel-id -> index in [Kaart.punten]; de gevonden plaats zit er niet in.
   final _cirkelIndex = <String, int>{};
+
+  /// De markeringen van de familie die de stijl al heeft (per letter en kleur).
+  final _familieBeelden = <String>{};
   int _ingepast = 0;
   int _tekenVolgnummer = 0;
 
@@ -134,6 +148,7 @@ class _KaartState extends State<Kaart> {
     if (oud.locatie != widget.locatie) _toonLocatie();
     if (oud.gereden != widget.gereden) _tekenGereden();
     if (oud.pijl != widget.pijl) _tekenPijl();
+    if (oud.familie != widget.familie) _tekenFamilie();
     if (oud.navigeert != widget.navigeert) _zetRand();
     if (widget.volg != null && oud.volg != widget.volg) _volg();
     if (oud.verkeer != widget.verkeer ||
@@ -283,12 +298,26 @@ class _KaartState extends State<Kaart> {
       enableInteraction: false,
       belowLayerId: onder,
     );
+    // De familie bovenop: een rondje met een letter, zoals op de website.
+    await c.addGeoJsonSource(_familieBron, _leeg);
+    await c.addSymbolLayer(
+      _familieBron,
+      'familie',
+      const SymbolLayerProperties(
+        iconImage: [Expressions.get, 'beeld'],
+        iconSize: 0.5,
+        iconAllowOverlap: true,
+        iconIgnorePlacement: true,
+      ),
+    );
+    _familieBeelden.clear();
     _stijlKlaar = true;
     _cirkelIndex.clear();
     _ingepast = 0;
     await _tekenVerkeer();
     await _tekenGereden();
     await _tekenPijl();
+    await _tekenFamilie();
     await _toonLocatie();
     await _teken();
   }
@@ -376,6 +405,75 @@ class _KaartState extends State<Kaart> {
           },
         ],
       ],
+    });
+  }
+
+  /// Een familielid: een gekleurd rondje met een witte rand en de eerste
+  /// letter van het e-mailadres.
+  static Future<Uint8List> _familieMarkering(String letter, bool oud) async {
+    const maat = 72.0;
+    final opname = ui.PictureRecorder();
+    final doek = Canvas(opname);
+    const midden = Offset(maat / 2, maat / 2);
+    doek
+      ..drawCircle(midden, maat / 2 - 2, Paint()..color = Colors.white)
+      ..drawCircle(
+        midden,
+        maat / 2 - 8,
+        Paint()
+          ..color = oud ? const Color(0xFF9E9E9E) : const Color(0xFF6A1B9A),
+      );
+    final tekst = TextPainter(
+      text: TextSpan(
+        text: letter,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 32,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tekst.paint(doek, midden - Offset(tekst.width / 2, tekst.height / 2));
+    final beeld = await opname.endRecording().toImage(
+      maat.toInt(),
+      maat.toInt(),
+    );
+    final png = await beeld.toByteData(format: ui.ImageByteFormat.png);
+    return png!.buffer.asUint8List();
+  }
+
+  Future<void> _tekenFamilie() async {
+    final c = _controller;
+    if (c == null || !_stijlKlaar) return;
+    final nu = DateTime.now();
+    final features = <Map<String, dynamic>>[];
+    for (final lid in widget.familie) {
+      final oud = nu.difference(lid.tijd) > _familieOud;
+      final beeld = 'familie-${lid.initiaal}-${oud ? 'oud' : 'nu'}';
+      if (_familieBeelden.add(beeld)) {
+        try {
+          await c.addImage(beeld, await _familieMarkering(lid.initiaal, oud));
+        } catch (_) {
+          _familieBeelden.remove(beeld);
+          continue;
+        }
+      }
+      features.add({
+        'type': 'Feature',
+        'id': '${lid.userId}',
+        'properties': {'beeld': beeld},
+        'geometry': {
+          'type': 'Point',
+          'coordinates': [lid.punt.longitude, lid.punt.latitude],
+        },
+      });
+    }
+    // Een andere stijl kan intussen alles weggegooid hebben.
+    if (!_stijlKlaar) return;
+    await c.setGeoJsonSource(_familieBron, {
+      'type': 'FeatureCollection',
+      'features': features,
     });
   }
 
@@ -796,6 +894,11 @@ class _KaartState extends State<Kaart> {
     String laag,
     Annotation? _,
   ) {
+    if (laag == 'familie') {
+      final lid = widget.familie.where((f) => '${f.userId}' == id).firstOrNull;
+      if (lid != null) widget.onFamilieGetikt?.call(lid);
+      return;
+    }
     if (laag.startsWith('verkeer-')) {
       final info = _verkeerInfo[id];
       if (info != null) widget.onVerkeerGetikt?.call(_logisch(scherm), info);
