@@ -7,6 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CA12A0000000000000000002 /* CarApi.g.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA12A0000000000000000001 /* CarApi.g.swift */; };
+		CA12A0000000000000000004 /* CarHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA12A0000000000000000003 /* CarHost.swift */; };
+		CA12A0000000000000000006 /* CarPlayMapViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA12A0000000000000000005 /* CarPlayMapViewController.swift */; };
+		CA12A0000000000000000008 /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA12A0000000000000000007 /* CarPlaySceneDelegate.swift */; };
+		CA12A000000000000000000A /* ManeuverBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA12A0000000000000000009 /* ManeuverBuilder.swift */; };
+		CA12A0000000000000000202 /* MapLibre in Frameworks */ = {isa = PBXBuildFile; productRef = CA12A0000000000000000201 /* MapLibre */; };
 		A1C0DE032EC4000000000003 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A1C0DE022EC4000000000002 /* PrivacyInfo.xcprivacy */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
@@ -43,6 +49,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		CA12A0000000000000000001 /* CarApi.g.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarApi.g.swift; sourceTree = "<group>"; };
+		CA12A0000000000000000003 /* CarHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarHost.swift; sourceTree = "<group>"; };
+		CA12A0000000000000000005 /* CarPlayMapViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayMapViewController.swift; sourceTree = "<group>"; };
+		CA12A0000000000000000007 /* CarPlaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlaySceneDelegate.swift; sourceTree = "<group>"; };
+		CA12A0000000000000000009 /* ManeuverBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManeuverBuilder.swift; sourceTree = "<group>"; };
 		A1C0DE012EC4000000000001 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		A1C0DE022EC4000000000002 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
@@ -70,12 +81,25 @@
 			buildActionMask = 2147483647;
 			files = (
 				78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */,
+				CA12A0000000000000000202 /* MapLibre in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		CA12A0000000000000000100 /* CarPlay */ = {
+			isa = PBXGroup;
+			children = (
+				CA12A0000000000000000001 /* CarApi.g.swift */,
+				CA12A0000000000000000003 /* CarHost.swift */,
+				CA12A0000000000000000005 /* CarPlayMapViewController.swift */,
+				CA12A0000000000000000007 /* CarPlaySceneDelegate.swift */,
+				CA12A0000000000000000009 /* ManeuverBuilder.swift */,
+			);
+			path = CarPlay;
+			sourceTree = "<group>";
+		};
 		331C8082294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -128,6 +152,7 @@
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
+				CA12A0000000000000000100 /* CarPlay */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
 			path = Runner;
@@ -171,6 +196,7 @@
 			name = Runner;
 			packageProductDependencies = (
 				78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */,
+				CA12A0000000000000000201 /* MapLibre */,
 			);
 			productName = Runner;
 			productReference = 97C146EE1CF9000F007C117D /* Runner.app */;
@@ -207,6 +233,7 @@
 			mainGroup = 97C146E51CF9000F007C117D;
 			packageReferences = (
 				781AD8BC2B33823900A9FFBB /* XCLocalSwiftPackageReference "Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage" */,
+				CA12A0000000000000000200 /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */,
 			);
 			productRefGroup = 97C146EF1CF9000F007C117D /* Products */;
 			projectDirPath = "";
@@ -290,6 +317,11 @@
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
+				CA12A0000000000000000002 /* CarApi.g.swift in Sources */,
+				CA12A0000000000000000004 /* CarHost.swift in Sources */,
+				CA12A0000000000000000006 /* CarPlayMapViewController.swift in Sources */,
+				CA12A0000000000000000008 /* CarPlaySceneDelegate.swift in Sources */,
+				CA12A000000000000000000A /* ManeuverBuilder.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -651,10 +683,26 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		CA12A0000000000000000200 /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/maplibre/maplibre-gl-native-distribution.git";
+			requirement = {
+				kind = exactVersion;
+				version = 6.28.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = FlutterGeneratedPluginSwiftPackage;
+		};
+		CA12A0000000000000000201 /* MapLibre */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CA12A0000000000000000200 /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */;
+			productName = MapLibre;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

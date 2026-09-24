@@ -139,6 +139,17 @@ jobs:
       - name: Build iOS
         run: flutter build ios --release --no-codesign
 
+      # The CarPlay map links MapLibre from Runner.xcodeproj; it has to be the
+      # same version maplibre_gl's Package.swift brings, or there are two.
+      - name: One MapLibre version
+        run: |
+          plugin=$(grep -o 'maplibre-gl-native-distribution.git", exact: "[^"]*"' \
+            ~/.pub-cache/hosted/pub.dev/maplibre_gl-*/ios/maplibre_gl/Package.swift | grep -o '[0-9][0-9.]*')
+          runner=$(grep -A3 'maplibre-gl-native-distribution' ios/Runner.xcodeproj/project.pbxproj \
+            | grep -o 'version = [0-9.]*' | grep -o '[0-9][0-9.]*' | head -1)
+          echo "maplibre_gl: $plugin, Runner: $runner"
+          test "$plugin" = "$runner"
+
   importer:
     name: Importer (lint, test)
     if: ${{ github.event_name == 'pull_request' || !startsWith(github.event.head_commit.message, 'chore(release):') }}
