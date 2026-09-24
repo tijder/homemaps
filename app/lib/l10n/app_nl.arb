@@ -264,5 +264,9 @@
   "dawarichSessionExpired": "Sessie verlopen",
   "dawarichSessionExpiredHelp": "Je API-sleutel werkt niet meer. Log opnieuw in.",
   "dawarichUnreachable": "Niet bereikbaar",
-  "dawarichSignInAgain": "Opnieuw inloggen"
+  "dawarichSignInAgain": "Opnieuw inloggen",
+  "carWhereTo": "Waarheen?",
+  "carOpenApp": "Open HomeMaps op je telefoon en zet locatie aan.",
+  "carNoResults": "Niets gevonden.",
+  "carRoutes": "Routes"
 }

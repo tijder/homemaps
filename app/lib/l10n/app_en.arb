@@ -608,5 +608,21 @@
   "dawarichSessionExpired": "Session expired",
   "dawarichSessionExpiredHelp": "Your API key no longer works. Sign in again.",
   "dawarichUnreachable": "Not reachable",
-  "dawarichSignInAgain": "Sign in again"
+  "dawarichSignInAgain": "Sign in again",
+  "carWhereTo": "Where to?",
+  "@carWhereTo": {
+    "description": "CarPlay and Android Auto"
+  },
+  "carOpenApp": "Open HomeMaps on your phone and turn on location.",
+  "@carOpenApp": {
+    "description": "CarPlay and Android Auto"
+  },
+  "carNoResults": "Nothing found.",
+  "@carNoResults": {
+    "description": "CarPlay and Android Auto"
+  },
+  "carRoutes": "Routes",
+  "@carRoutes": {
+    "description": "CarPlay and Android Auto"
+  }
 }

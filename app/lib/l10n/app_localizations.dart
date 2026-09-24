@@ -1687,6 +1687,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign in again'**
   String get dawarichSignInAgain;
+
+  /// CarPlay and Android Auto
+  ///
+  /// In en, this message translates to:
+  /// **'Where to?'**
+  String get carWhereTo;
+
+  /// CarPlay and Android Auto
+  ///
+  /// In en, this message translates to:
+  /// **'Open HomeMaps on your phone and turn on location.'**
+  String get carOpenApp;
+
+  /// CarPlay and Android Auto
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing found.'**
+  String get carNoResults;
+
+  /// CarPlay and Android Auto
+  ///
+  /// In en, this message translates to:
+  /// **'Routes'**
+  String get carRoutes;
 }
 
 class _AppLocalizationsDelegate

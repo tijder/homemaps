@@ -19,7 +19,7 @@ import '../models/dawarich.dart';
 import '../models/place.dart';
 import '../models/profile.dart';
 import '../models/route.dart';
-import '../navigation/turn_arrow.dart';
+import '../navigation/route_geometry.dart';
 import '../navigation/navigation_provider.dart';
 import '../navigation/simulation.dart';
 import '../providers/dawarich.dart';
@@ -77,12 +77,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Timer? _resume;
   static const _resumeAfter = Duration(seconds: 10);
 
-  /// This close to the next turn the arrow shows on the map.
-  static const _arrowWithin = 1000.0;
-
-  /// The arrow of the last turn; only a new one for another turn or route, so
-  /// the map doesn't redraw it on every fix.
-  ({RouteOption route, int index, List<LatLng>? line})? _arrow;
+  /// The arrow at the next turn (see [TurnArrowCache]).
+  final _arrows = TurnArrowCache();
 
   /// The bottom sheet on a narrow screen: low (just the summary and the chosen
   /// route), half (all routes and Start) or almost full.
@@ -483,19 +479,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         'offRoute': status?.offRoute,
       });
     }
-    // During navigation the dot sits on the road as long as you drive on the
-    // route, as you're used to from a navigation system.
     final status = nav?.status;
-    final onRoad =
-        nav != null && status != null && fix != null && status.deviation < 30
-        ? LocationFix(
-            point: status.onRoute,
-            time: fix.time,
-            accuracy: fix.accuracy,
-            heading: status.routeHeading,
-            speed: fix.speed,
-          )
-        : fix;
+    final onRoad = snapToRoute(nav, fix);
 
     // At night (fixed, or when the phone is in dark mode) the night version of
     // the regular map. Until it's there (or if it fails) the regular one.
@@ -547,10 +532,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             )
           : null,
       navigating: nav != null && !nav.arrived,
-      driven: nav != null && status != null
-          ? [...nav.route.points.take(status.segment + 1), status.onRoute]
-          : null,
-      arrow: _arrowFor(nav),
+      driven: drivenLine(nav),
+      arrow: _arrows.arrowFor(nav),
       onUserMoved: _userMoved,
       traffic: ref.watch(trafficProvider).value,
       // A traffic jam means nothing to cyclists and walkers; a closed road does.
@@ -1192,27 +1175,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   bool? _isSharing() {
     if (!ref.watch(shareSettingsProvider).enabled) return null;
     return ref.watch(locationSharerProvider).error != null;
-  }
-
-  /// The arrow at the next turn, if it's close.
-  List<LatLng>? _arrowFor(NavigationState? nav) {
-    final status = nav?.status;
-    if (nav == null ||
-        status == null ||
-        nav.arrived ||
-        nav.recalculating ||
-        status.toNext > _arrowWithin) {
-      return null;
-    }
-    final old = _arrow;
-    if (old != null &&
-        identical(old.route, nav.route) &&
-        old.index == status.next) {
-      return old.line;
-    }
-    final line = turnArrow(nav.route, status.next);
-    _arrow = (route: nav.route, index: status.next, line: line);
-    return line;
   }
 
   /// During navigation: the rest of the directions, from the next

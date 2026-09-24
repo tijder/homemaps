@@ -39,19 +39,11 @@ class ManeuverIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = this.color ?? IconTheme.of(context).color ?? Colors.black;
-    final angle = maneuver.roundaboutAngle;
-    final CustomPainter? painter = switch (maneuver.type) {
-      26 || 27 when angle != null => RoundaboutPainter(
-        angle: angle,
-        turn: maneuver.roundaboutExit,
-        color: color,
-        text: DefaultTextStyle.of(context).style,
-      ),
-      // Off-ramp/on-ramp right, keep right at a fork.
-      18 || 20 || 23 => ForkPainter(right: true, color: color),
-      19 || 21 || 24 => ForkPainter(right: false, color: color),
-      _ => null,
-    };
+    final painter = maneuverPainter(
+      maneuver,
+      color: color,
+      text: DefaultTextStyle.of(context).style,
+    );
     if (painter == null) {
       return Icon(maneuverIconData(maneuver.type), size: size, color: color);
     }
@@ -63,6 +55,29 @@ class ManeuverIcon extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The painter for a maneuver that is more than an icon: a roundabout with
+/// its exit, a fork or off-ramp with its branch. Null for the rest (see
+/// [maneuverIconData]). [text] is the font for the exit number.
+CustomPainter? maneuverPainter(
+  Maneuver maneuver, {
+  required Color color,
+  TextStyle? text,
+}) {
+  final angle = maneuver.roundaboutAngle;
+  return switch (maneuver.type) {
+    26 || 27 when angle != null => RoundaboutPainter(
+      angle: angle,
+      turn: maneuver.roundaboutExit,
+      color: color,
+      text: text,
+    ),
+    // Off-ramp/on-ramp right, keep right at a fork.
+    18 || 20 || 23 => ForkPainter(right: true, color: color),
+    19 || 21 || 24 => ForkPainter(right: false, color: color),
+    _ => null,
+  };
 }
 
 /// A fork or off-ramp: the branch you take thick and with an arrowhead, the

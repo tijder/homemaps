@@ -1014,4 +1014,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dawarichSignInAgain => 'Sign in again';
+
+  @override
+  String get carWhereTo => 'Where to?';
+
+  @override
+  String get carOpenApp => 'Open HomeMaps on your phone and turn on location.';
+
+  @override
+  String get carNoResults => 'Nothing found.';
+
+  @override
+  String get carRoutes => 'Routes';
 }

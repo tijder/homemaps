@@ -11,7 +11,7 @@ void main() {
 
   ProviderContainer container(FakeSource source) {
     final c = ProviderContainer(
-      overrides: [locationSourceProvider.overrideWithValue(source)],
+      overrides: [locationSourceProvider.overrideWithBuild((_, _) => source)],
     );
     addTearDown(c.dispose);
     return c;
