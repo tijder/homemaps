@@ -129,9 +129,115 @@ jobs:
           name: web-build
           path: app/build/web/
 
+  # Zelfde opzet als ister/player: gebouwd en ondertekend op een Mac van GitHub, met
+  # één App Store Connect API-sleutel en Apples certificaat in de cloud; geen .p12,
+  # geen profiel in de repo. Een kapotte iOS-build houdt de release tegen; alleen de
+  # upload naar TestFlight mag mislukken (dat is Apple, niet de build).
+  ios:
+    name: App (iOS)
+    needs: gate
+    if: needs.gate.outputs.release == 'true'
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: app/pubspec.yaml
+          cache: true
+      - run: flutter pub get
+
+      # altool vindt de sleutel hier zelf; xcodebuild niet, dat krijgt de
+      # -authenticationKey*-vlaggen hieronder (en daarom geen `flutter build ipa`,
+      # dat die vlaggen niet doorgeeft).
+      - name: App Store Connect API-sleutel
+        env:
+          KEY_P8: ${{ secrets.APP_STORE_CONNECT_KEY_P8 }}
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+        run: |
+          test -n "$KEY_P8" || { echo "::error::secret APP_STORE_CONNECT_KEY_P8 ontbreekt"; exit 1; }
+          mkdir -p ~/.appstoreconnect/private_keys
+          printf '%s\n' "$KEY_P8" > ~/.appstoreconnect/private_keys/"AuthKey_${KEY_ID}.p8"
+
+      # Het archief wordt bewust níét ondertekend: dat zou een certificaat in een
+      # keychain vragen, en een identiteit forceren breekt de SwiftPM-plugins. De
+      # export tekent met Apples certificaat in de cloud. Een ongetekend archief
+      # verliest wel Runner.entitlements (de export neemt ze over, maakt ze niet),
+      # dus eerst ad-hoc tekenen met de entitlements erbij.
+      - name: Bouw de ondertekende ipa
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          # CFBundleShortVersionString = semver, CFBundleVersion = aantal commits:
+          # TestFlight weigert een buildnummer dat het al gezien heeft.
+          flutter build ios --release --config-only \
+            --build-name "${{ needs.gate.outputs.version }}" --build-number "${{ needs.gate.outputs.build }}"
+
+          KEY="$HOME/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8"
+
+          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath build/ios/archive/Runner.xcarchive archive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+
+          APP="build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app"
+          find "$APP/Frameworks" -maxdepth 1 \( -name '*.framework' -o -name '*.dylib' \) \
+            -exec codesign --force --sign - {} \;
+          codesign --force --sign - --generate-entitlement-der \
+            --entitlements ios/Runner/Runner.entitlements "$APP"
+
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>teamID</key><string>68TXJMQZH4</string>
+            <key>uploadSymbols</key><true/>
+          </dict>
+          </plist>
+          EOF
+
+          xcodebuild -exportArchive \
+            -archivePath build/ios/archive/Runner.xcarchive \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath build/ios/ipa \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$KEY" \
+            -authenticationKeyID "$KEY_ID" \
+            -authenticationKeyIssuerID "$ISSUER_ID"
+
+          mkdir -p "$GITHUB_WORKSPACE/uit"
+          mv build/ios/ipa/*.ipa "$GITHUB_WORKSPACE/uit/homemaps-${{ needs.gate.outputs.version }}.ipa"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-ios
+          path: uit/
+
+      # Eerst valideren: een leesbare fout in dit log in plaats van een mail van Apple
+      # een halfuur later. Komt een versie niet in TestFlight aan, kijk dan hier.
+      - name: Naar TestFlight
+        continue-on-error: true
+        working-directory: uit
+        env:
+          VERSION: ${{ needs.gate.outputs.version }}
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          xcrun altool --validate-app -f "homemaps-${VERSION}.ipa" -t ios \
+            --apiKey "$KEY_ID" --apiIssuer "$ISSUER_ID"
+          xcrun altool --upload-app -f "homemaps-${VERSION}.ipa" -t ios \
+            --apiKey "$KEY_ID" --apiIssuer "$ISSUER_ID"
+
   publish:
     name: Images, chart, tag en release
-    needs: [gate, app]
+    needs: [gate, app, ios]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -149,6 +255,10 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: release-app
+          path: dist
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-ios
           path: dist
       - uses: docker/login-action@v4
         with:
@@ -237,4 +347,4 @@ jobs:
         run: |
           mv dist/app-release.apk "dist/homemaps-$VERSION.apk"
           gh release create "v$VERSION" --title "v$VERSION" --notes-file RELEASE_NOTES.md \
-            "dist/homemaps-$VERSION.apk" "dist/homemaps-web-$VERSION.tar.gz" "dist/homemaps-$VERSION.tgz"
+            "dist/homemaps-$VERSION.apk" "dist/homemaps-$VERSION.ipa" "dist/homemaps-web-$VERSION.tar.gz" "dist/homemaps-$VERSION.tgz"
