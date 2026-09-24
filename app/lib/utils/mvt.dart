@@ -4,196 +4,203 @@ import 'dart:typed_data';
 
 import 'package:maplibre_gl/maplibre_gl.dart';
 
-/// Een punt uit een vectortegel, met zijn eigenschappen (class, subclass,
-/// name, ...).
-typedef TegelPunt = ({LatLng punt, Map<String, Object?> eigenschappen});
+/// A point from a vector tile, with its properties (class, subclass, name,
+/// ...).
+typedef TilePoint = ({LatLng point, Map<String, Object?> properties});
 
-/// De punten van één laag uit een Mapbox-vectortegel (protobuf). Alleen wat
-/// "zoeken langs de route" nodig heeft: puntgeometrie en eigenschappen; lijnen
-/// en vlakken worden overgeslagen.
+/// The points of one layer from a Mapbox vector tile (protobuf). Only what
+/// "search along the route" needs: point geometry and properties; lines and
+/// polygons are skipped.
 ///
-/// Geen bit-operaties op grote getallen: gecompileerd naar JavaScript zijn die
-/// 32 bits (zie decodeerPolyline).
-List<TegelPunt> puntenUitTegel(
+/// No bit operations on large numbers: compiled to JavaScript those are 32 bits
+/// (see decodePolyline).
+List<TilePoint> pointsFromTile(
   Uint8List data, {
-  required String laag,
+  required String layer,
   required int z,
   required int x,
   required int y,
 }) {
-  final uit = <TegelPunt>[];
-  final tegel = _Lezer(data);
-  while (!tegel.klaar) {
-    final (veld, soort) = tegel.sleutel();
-    if (veld == 3 && soort == 2) {
-      _laag(tegel.stuk(), laag, z, x, y, uit);
+  final out = <TilePoint>[];
+  final tile = _Reader(data);
+  while (!tile.done) {
+    final (field, kind) = tile.key();
+    if (field == 3 && kind == 2) {
+      _layer(tile.message(), layer, z, x, y, out);
     } else {
-      tegel.overslaan(soort);
+      tile.skip(kind);
     }
   }
-  return uit;
+  return out;
 }
 
-void _laag(_Lezer l, String gezocht, int z, int x, int y, List<TegelPunt> uit) {
-  String? naam;
-  var omvang = 4096;
-  final sleutels = <String>[];
-  final waarden = <Object?>[];
-  final features = <_Lezer>[];
-  while (!l.klaar) {
-    final (veld, soort) = l.sleutel();
-    switch ((veld, soort)) {
+void _layer(
+  _Reader l,
+  String wanted,
+  int z,
+  int x,
+  int y,
+  List<TilePoint> out,
+) {
+  String? name;
+  var extent = 4096;
+  final keys = <String>[];
+  final values = <Object?>[];
+  final features = <_Reader>[];
+  while (!l.done) {
+    final (field, kind) = l.key();
+    switch ((field, kind)) {
       case (1, 2):
-        naam = l.tekst();
+        name = l.text();
       case (2, 2):
-        features.add(l.stuk());
+        features.add(l.message());
       case (3, 2):
-        sleutels.add(l.tekst());
+        keys.add(l.text());
       case (4, 2):
-        waarden.add(_waarde(l.stuk()));
+        values.add(_value(l.message()));
       case (5, 0):
-        omvang = l.varint();
+        extent = l.varint();
       default:
-        l.overslaan(soort);
+        l.skip(kind);
     }
   }
-  if (naam != gezocht) return;
+  if (name != wanted) return;
   final n = pow(2, z).toDouble();
   for (final f in features) {
     var type = 0;
-    List<int> labels = const [], geometrie = const [];
-    while (!f.klaar) {
-      final (veld, soort) = f.sleutel();
-      switch ((veld, soort)) {
+    List<int> tags = const [], geometry = const [];
+    while (!f.done) {
+      final (field, kind) = f.key();
+      switch ((field, kind)) {
         case (2, 2):
-          labels = f.ingepakt();
+          tags = f.packed();
         case (3, 0):
           type = f.varint();
         case (4, 2):
-          geometrie = f.ingepakt();
+          geometry = f.packed();
         default:
-          f.overslaan(soort);
+          f.skip(kind);
       }
     }
-    if (type != 1 || geometrie.length < 3) continue; // alleen punten
-    final eigen = <String, Object?>{};
-    for (var i = 0; i + 1 < labels.length; i += 2) {
-      if (labels[i] < sleutels.length && labels[i + 1] < waarden.length) {
-        eigen[sleutels[labels[i]]] = waarden[labels[i + 1]];
+    if (type != 1 || geometry.length < 3) continue; // points only
+    final props = <String, Object?>{};
+    for (var i = 0; i + 1 < tags.length; i += 2) {
+      if (tags[i] < keys.length && tags[i + 1] < values.length) {
+        props[keys[tags[i]]] = values[tags[i + 1]];
       }
     }
-    // Opdracht MoveTo (1) met een aantal, dan paren zigzag-getallen.
-    final opdracht = geometrie[0];
-    final aantal = opdracht ~/ 8;
+    // Command MoveTo (1) with a count, then pairs of zigzag numbers.
+    final command = geometry[0];
+    final count = command ~/ 8;
     var px = 0, py = 0;
-    for (var i = 0; i < aantal && 2 + 2 * i < geometrie.length; i++) {
-      px += _zigzag(geometrie[1 + 2 * i]);
-      py += _zigzag(geometrie[2 + 2 * i]);
-      final lon = (x + px / omvang) / n * 360 - 180;
-      final mercator = pi * (1 - 2 * (y + py / omvang) / n);
+    for (var i = 0; i < count && 2 + 2 * i < geometry.length; i++) {
+      px += _zigzag(geometry[1 + 2 * i]);
+      py += _zigzag(geometry[2 + 2 * i]);
+      final lon = (x + px / extent) / n * 360 - 180;
+      final mercator = pi * (1 - 2 * (y + py / extent) / n);
       final lat = atan((exp(mercator) - exp(-mercator)) / 2) * 180 / pi;
-      uit.add((punt: LatLng(lat, lon), eigenschappen: eigen));
+      out.add((point: LatLng(lat, lon), properties: props));
     }
   }
 }
 
 int _zigzag(int n) => n.isOdd ? -(n + 1) ~/ 2 : n ~/ 2;
 
-Object? _waarde(_Lezer l) {
-  Object? waarde;
-  while (!l.klaar) {
-    final (veld, soort) = l.sleutel();
-    switch ((veld, soort)) {
+Object? _value(_Reader l) {
+  Object? value;
+  while (!l.done) {
+    final (field, kind) = l.key();
+    switch ((field, kind)) {
       case (1, 2):
-        waarde = l.tekst();
+        value = l.text();
       case (2, 5):
-        waarde = l.float32();
+        value = l.float32();
       case (3, 1):
-        waarde = l.float64();
+        value = l.float64();
       case (4, 0) || (5, 0):
-        waarde = l.varint();
+        value = l.varint();
       case (6, 0):
-        waarde = _zigzag(l.varint());
+        value = _zigzag(l.varint());
       case (7, 0):
-        waarde = l.varint() != 0;
+        value = l.varint() != 0;
       default:
-        l.overslaan(soort);
+        l.skip(kind);
     }
   }
-  return waarde;
+  return value;
 }
 
-/// Protobuf lezen, net genoeg voor vectortegels.
-class _Lezer {
-  _Lezer(this.data, [this.pos = 0, int? eind]) : eind = eind ?? data.length;
+/// Reads protobuf, just enough for vector tiles.
+class _Reader {
+  _Reader(this.data, [this.pos = 0, int? end]) : end = end ?? data.length;
 
   final Uint8List data;
   int pos;
-  final int eind;
+  final int end;
 
-  bool get klaar => pos >= eind;
+  bool get done => pos >= end;
 
   int varint() {
-    var waarde = 0, factor = 1;
+    var value = 0, factor = 1;
     while (true) {
       final byte = data[pos++];
-      waarde += (byte & 0x7f) * factor;
-      if (byte < 0x80) return waarde;
+      value += (byte & 0x7f) * factor;
+      if (byte < 0x80) return value;
       factor *= 128;
     }
   }
 
-  (int, int) sleutel() {
+  (int, int) key() {
     final s = varint();
     return (s ~/ 8, s % 8);
   }
 
-  _Lezer stuk() {
-    final lengte = varint();
-    final kind = _Lezer(data, pos, pos + lengte);
-    pos += lengte;
-    return kind;
+  _Reader message() {
+    final length = varint();
+    final sub = _Reader(data, pos, pos + length);
+    pos += length;
+    return sub;
   }
 
-  String tekst() {
-    final s = stuk();
+  String text() {
+    final s = message();
     return utf8.decode(
-      Uint8List.sublistView(data, s.pos, s.eind),
+      Uint8List.sublistView(data, s.pos, s.end),
       allowMalformed: true,
     );
   }
 
-  List<int> ingepakt() {
-    final s = stuk();
-    final uit = <int>[];
-    while (!s.klaar) {
-      uit.add(s.varint());
+  List<int> packed() {
+    final s = message();
+    final out = <int>[];
+    while (!s.done) {
+      out.add(s.varint());
     }
-    return uit;
+    return out;
   }
 
   double float32() {
-    final waarde = ByteData.sublistView(
+    final value = ByteData.sublistView(
       data,
       pos,
       pos + 4,
     ).getFloat32(0, Endian.little);
     pos += 4;
-    return waarde;
+    return value;
   }
 
   double float64() {
-    final waarde = ByteData.sublistView(
+    final value = ByteData.sublistView(
       data,
       pos,
       pos + 8,
     ).getFloat64(0, Endian.little);
     pos += 8;
-    return waarde;
+    return value;
   }
 
-  void overslaan(int soort) {
-    switch (soort) {
+  void skip(int kind) {
+    switch (kind) {
       case 0:
         varint();
       case 1:
@@ -203,7 +210,7 @@ class _Lezer {
       case 5:
         pos += 4;
       default:
-        throw FormatException('onbekend protobuf-type $soort');
+        throw FormatException('unknown protobuf wire type $kind');
     }
   }
 }

@@ -1,15 +1,15 @@
 name: Release
 
-# Elke nacht, als main sinds de laatste tag bewogen heeft en groen is; of met de hand.
-# De versie volgt uit de conventional commits sinds de laatste tag:
-#   fix -> patch, feat -> minor, `!` of BREAKING CHANGE -> major.
+# Every night, if main has moved since the last tag and is green; or by hand.
+# The version follows from the conventional commits since the last tag:
+#   fix -> patch, feat -> minor, `!` or BREAKING CHANGE -> major.
 on:
   schedule:
     - cron: "0 4 * * *"
   workflow_dispatch:
     inputs:
       bump:
-        description: Versiesprong
+        description: Version bump
         type: choice
         default: auto
         options: [auto, patch, minor, major]
@@ -23,39 +23,39 @@ env:
 
 jobs:
   gate:
-    name: Moet er een release komen?
+    name: Is a release due?
     runs-on: ubuntu-latest
     permissions:
       contents: read
       actions: read
     outputs:
-      release: ${{ steps.versie.outputs.release }}
-      version: ${{ steps.versie.outputs.version }}
-      build: ${{ steps.versie.outputs.build }}
-      # De groene run van workflow.yml voor HEAD: daar komen de schermafdrukken vandaan.
-      run: ${{ steps.versie.outputs.run }}
+      release: ${{ steps.version.outputs.release }}
+      version: ${{ steps.version.outputs.version }}
+      build: ${{ steps.version.outputs.build }}
+      # The green run of workflow.yml for HEAD: that's where the screenshots come from.
+      run: ${{ steps.version.outputs.run }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - name: Bepaal de versie
-        id: versie
+      - name: Determine the version
+        id: version
         env:
           BUMP: ${{ inputs.bump || 'auto' }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          laatste=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
-          bereik=${laatste:+$laatste..}HEAD
-          # De eigen boekhoudcommit telt niet als beweging.
-          commits=$(git log --no-merges --pretty='%s%n%b' "$bereik" | grep -v '^chore(release):' || true)
-          if ! git log --no-merges --pretty='%s' "$bereik" | grep -qv '^chore(release):'; then
-            echo "geen nieuwe commits sinds ${laatste:-het begin}"; echo "release=false" >> "$GITHUB_OUTPUT"; exit 0
+          last=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
+          range=${last:+$last..}HEAD
+          # Our own bookkeeping commit doesn't count as movement.
+          commits=$(git log --no-merges --pretty='%s%n%b' "$range" | grep -v '^chore(release):' || true)
+          if ! git log --no-merges --pretty='%s' "$range" | grep -qv '^chore(release):'; then
+            echo "no new commits since ${last:-the beginning}"; echo "release=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
-          # Alleen uitbrengen wat groen gebouwd is.
+          # Only release what was built green.
           read -r status run < <(gh run list --workflow workflow.yml --branch main --commit "$(git rev-parse HEAD)" \
                    --json conclusion,databaseId --jq '.[0] | "\(.conclusion) \(.databaseId)"' || true) || true
           if [ "$status" != "success" ]; then
-            echo "::warning::de build van HEAD is '${status:-onbekend}', geen release"
+            echo "::warning::the build of HEAD is '${status:-unknown}', no release"
             echo "release=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
           if [ "$BUMP" = auto ]; then
@@ -63,7 +63,7 @@ jobs:
             elif echo "$commits" | grep -qE '^feat(\(.+\))?:'; then BUMP="minor"
             else BUMP="patch"; fi
           fi
-          IFS=. read -r major minor patch <<< "${laatste#v}"
+          IFS=. read -r major minor patch <<< "${last#v}"
           major=${major:-0}; minor=${minor:-0}; patch=${patch:-0}
           case "$BUMP" in
             major) major=$((major + 1)); minor=0; patch=0 ;;
@@ -72,12 +72,12 @@ jobs:
           esac
           {
             echo "version=$major.$minor.$patch"
-            # Android wil een oplopend geheel getal als versionCode.
+            # Android wants an increasing integer as versionCode.
             echo "build=$(git rev-list --count HEAD)"
             echo "run=$run"
             echo "release=true"
           } >> "$GITHUB_OUTPUT"
-          echo "release v$major.$minor.$patch ($BUMP) sinds ${laatste:-het begin}"
+          echo "release v$major.$minor.$patch ($BUMP) since ${last:-the beginning}"
 
   app:
     name: App
@@ -99,43 +99,43 @@ jobs:
           java-version: 21
           distribution: zulu
       - run: flutter pub get
-      # De vaste releasesleutel (zie app/android/app/build.gradle.kts). Zonder
-      # secret faalt de release liever dan dat hij met een wegwerpsleutel tekent:
-      # zo'n APK is niet over een bestaande installatie heen te zetten.
-      - name: Releasesleutel
+      # The fixed release key (see app/android/app/build.gradle.kts). Without the
+      # secret the release would rather fail than sign with a throwaway key:
+      # such an APK can't be installed over an existing installation.
+      - name: Release key
         env:
           KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
         run: |
-          test -n "$KEYSTORE" || { echo "::error::secret ANDROID_KEYSTORE ontbreekt"; exit 1; }
+          test -n "$KEYSTORE" || { echo "::error::secret ANDROID_KEYSTORE is missing"; exit 1; }
           echo "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/homemaps.jks"
           echo "HOMEMAPS_KEYSTORE=$RUNNER_TEMP/homemaps.jks" >> "$GITHUB_ENV"
       - name: Build Android
         env:
-          HOMEMAPS_KEYSTORE_WACHTWOORD: ${{ secrets.ANDROID_KEYSTORE_WACHTWOORD }}
-          HOMEMAPS_SLEUTEL_ALIAS: homemaps
+          HOMEMAPS_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_WACHTWOORD }}
+          HOMEMAPS_KEY_ALIAS: homemaps
         run: flutter build apk --release --build-name "${{ needs.gate.outputs.version }}" --build-number "${{ needs.gate.outputs.build }}"
       - name: Build Web
         run: flutter build web --release --wasm --no-web-resources-cdn --build-name "${{ needs.gate.outputs.version }}" --build-number "${{ needs.gate.outputs.build }}"
-      # Beide bestanden in één map: upload-artifact bewaart het pad vanaf de
-      # gezamenlijke bovenliggende map, en de publish-job verwacht ze plat in dist/.
-      - name: Verzamel de release-bestanden
+      # Both files in one dir: upload-artifact keeps the path from the
+      # common parent dir, and the publish job expects them flat in dist/.
+      - name: Collect the release files
         run: |
-          mkdir -p "$GITHUB_WORKSPACE/uit"
-          cp build/app/outputs/flutter-apk/app-release.apk "$GITHUB_WORKSPACE/uit/"
-          tar -czf "$GITHUB_WORKSPACE/uit/homemaps-web-${{ needs.gate.outputs.version }}.tar.gz" -C build/web .
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          cp build/app/outputs/flutter-apk/app-release.apk "$GITHUB_WORKSPACE/out/"
+          tar -czf "$GITHUB_WORKSPACE/out/homemaps-web-${{ needs.gate.outputs.version }}.tar.gz" -C build/web .
       - uses: actions/upload-artifact@v7
         with:
           name: release-app
-          path: uit/
+          path: out/
       - uses: actions/upload-artifact@v7
         with:
           name: web-build
           path: app/build/web/
 
-  # Zelfde opzet als ister/player: gebouwd en ondertekend op een Mac van GitHub, met
-  # één App Store Connect API-sleutel en Apples certificaat in de cloud; geen .p12,
-  # geen profiel in de repo. Een kapotte iOS-build houdt de release tegen; alleen de
-  # upload naar TestFlight mag mislukken (dat is Apple, niet de build).
+  # Same setup as ister/player: built and signed on a GitHub Mac, with
+  # one App Store Connect API key and Apple's cloud certificate; no .p12,
+  # no profile in the repo. A broken iOS build blocks the release; only the
+  # upload to TestFlight may fail (that's Apple, not the build).
   ios:
     name: App (iOS)
     needs: gate
@@ -153,30 +153,30 @@ jobs:
           cache: true
       - run: flutter pub get
 
-      # altool vindt de sleutel hier zelf; xcodebuild niet, dat krijgt de
-      # -authenticationKey*-vlaggen hieronder (en daarom geen `flutter build ipa`,
-      # dat die vlaggen niet doorgeeft).
-      - name: App Store Connect API-sleutel
+      # altool finds the key here by itself; xcodebuild doesn't, it gets the
+      # -authenticationKey* flags below (and hence no `flutter build ipa`,
+      # which doesn't pass those flags on).
+      - name: App Store Connect API key
         env:
           KEY_P8: ${{ secrets.APP_STORE_CONNECT_KEY_P8 }}
           KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
         run: |
-          test -n "$KEY_P8" || { echo "::error::secret APP_STORE_CONNECT_KEY_P8 ontbreekt"; exit 1; }
+          test -n "$KEY_P8" || { echo "::error::secret APP_STORE_CONNECT_KEY_P8 is missing"; exit 1; }
           mkdir -p ~/.appstoreconnect/private_keys
           printf '%s\n' "$KEY_P8" > ~/.appstoreconnect/private_keys/"AuthKey_${KEY_ID}.p8"
 
-      # Het archief wordt bewust níét ondertekend: dat zou een certificaat in een
-      # keychain vragen, en een identiteit forceren breekt de SwiftPM-plugins. De
-      # export tekent met Apples certificaat in de cloud. Een ongetekend archief
-      # verliest wel Runner.entitlements (de export neemt ze over, maakt ze niet),
-      # dus eerst ad-hoc tekenen met de entitlements erbij.
-      - name: Bouw de ondertekende ipa
+      # The archive is deliberately *not* signed: that would need a certificate in a
+      # keychain, and forcing an identity breaks the SwiftPM plugins. The
+      # export signs with Apple's cloud certificate. An unsigned archive does
+      # lose Runner.entitlements (the export copies them, it doesn't create them),
+      # so first sign ad hoc with the entitlements included.
+      - name: Build the signed ipa
         env:
           KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
         run: |
-          # CFBundleShortVersionString = semver, CFBundleVersion = aantal commits:
-          # TestFlight weigert een buildnummer dat het al gezien heeft.
+          # CFBundleShortVersionString = semver, CFBundleVersion = number of commits:
+          # TestFlight rejects a build number it has already seen.
           flutter build ios --release --config-only \
             --build-name "${{ needs.gate.outputs.version }}" --build-number "${{ needs.gate.outputs.build }}"
 
@@ -215,19 +215,19 @@ jobs:
             -authenticationKeyID "$KEY_ID" \
             -authenticationKeyIssuerID "$ISSUER_ID"
 
-          mkdir -p "$GITHUB_WORKSPACE/uit"
-          mv build/ios/ipa/*.ipa "$GITHUB_WORKSPACE/uit/homemaps-${{ needs.gate.outputs.version }}.ipa"
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          mv build/ios/ipa/*.ipa "$GITHUB_WORKSPACE/out/homemaps-${{ needs.gate.outputs.version }}.ipa"
 
       - uses: actions/upload-artifact@v7
         with:
           name: release-ios
-          path: uit/
+          path: out/
 
-      # Eerst valideren: een leesbare fout in dit log in plaats van een mail van Apple
-      # een halfuur later. Komt een versie niet in TestFlight aan, kijk dan hier.
-      - name: Naar TestFlight
+      # Validate first: a readable error in this log instead of an email from Apple
+      # half an hour later. If a version doesn't arrive in TestFlight, look here.
+      - name: To TestFlight
         continue-on-error: true
-        working-directory: uit
+        working-directory: out
         env:
           VERSION: ${{ needs.gate.outputs.version }}
           KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
@@ -238,10 +238,10 @@ jobs:
           xcrun altool --upload-app -f "homemaps-${VERSION}.ipa" -t ios \
             --apiKey "$KEY_ID" --apiIssuer "$ISSUER_ID"
 
-  # De schermafdrukken komen uit de e2e-job van workflow.yml (de web-app in de
-  # kind-cluster, zie ci/e2e/schermafdrukken.py): daar draait de chart al.
+  # The screenshots come from the e2e job of workflow.yml (the web app in the
+  # kind cluster, see ci/e2e/screenshots.py): the chart already runs there.
   app-store:
-    name: Schermafdrukken naar App Store Connect
+    name: Screenshots to App Store Connect
     needs: gate
     if: needs.gate.outputs.release == 'true'
     runs-on: ubuntu-latest
@@ -250,34 +250,34 @@ jobs:
       actions: read
     steps:
       - uses: actions/checkout@v7
-      - name: Haal de schermafdrukken op
+      - name: Fetch the screenshots
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh run download "${{ needs.gate.outputs.run }}" -n app-store-schermafdrukken -D schermafdrukken
-          find schermafdrukken -name '*.png' | sort
-          mkdir -p uit
-          (cd schermafdrukken && zip -qr "../uit/homemaps-schermafdrukken-${{ needs.gate.outputs.version }}.zip" .)
+          gh run download "${{ needs.gate.outputs.run }}" -n app-store-screenshots -D screenshots
+          find screenshots -name '*.png' | sort
+          mkdir -p out
+          (cd screenshots && zip -qr "../out/homemaps-screenshots-${{ needs.gate.outputs.version }}.zip" .)
       - uses: actions/upload-artifact@v7
         with:
-          name: release-schermafdrukken
-          path: uit/
+          name: release-screenshots
+          path: out/
       - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
       - run: pip install 'pyjwt[crypto]'
-      # Net als TestFlight mag dit mislukken: het is Apple, niet de release. Staat er
-      # geen versie klaar om in te dienen, dan maakt upload.py er een.
-      - name: Naar App Store Connect
+      # Like TestFlight, this may fail: it's Apple, not the release. If no
+      # version is ready to be submitted, upload.py creates one.
+      - name: To App Store Connect
         continue-on-error: true
         env:
           APP_STORE_CONNECT_KEY_P8: ${{ secrets.APP_STORE_CONNECT_KEY_P8 }}
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-        run: python3 ci/appstore/upload.py schermafdrukken "${{ needs.gate.outputs.version }}"
+        run: python3 ci/appstore/upload.py screenshots "${{ needs.gate.outputs.version }}"
 
   publish:
-    name: Images, chart, tag en release
+    name: Images, chart, tag and release
     needs: [gate, app, ios, app-store]
     runs-on: ubuntu-latest
     permissions:
@@ -303,7 +303,7 @@ jobs:
           path: dist
       - uses: actions/download-artifact@v8
         with:
-          name: release-schermafdrukken
+          name: release-screenshots
           path: dist
       - uses: docker/login-action@v4
         with:
@@ -311,8 +311,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # De images gaan vóór de tag: een tag zonder image is erger dan een image
-      # zonder tag.
+      # The images go before the tag: a tag without an image is worse than an image
+      # without a tag.
       - id: meta-web
         uses: docker/metadata-action@v6
         with:
@@ -344,46 +344,46 @@ jobs:
           tags: ${{ steps.meta-traffic.outputs.tags }}
           labels: ${{ steps.meta-traffic.outputs.labels }}
 
-      # Chart, app en importer delen één versie: de chart trekt de images met zijn
+      # Chart, app and importer share one version: the chart pulls the images with its
       # appVersion.
-      - name: Zet de versie in de bronnen
+      - name: Put the version in the sources
         run: |
           sed -i -E "s/^version: .*/version: $VERSION/; s/^appVersion: .*/appVersion: \"$VERSION\"/" chart/homemaps/Chart.yaml
           sed -i -E "s/^version: .*/version: $VERSION+${{ needs.gate.outputs.build }}/" app/pubspec.yaml
           sed -i -E "s/^version = .*/version = \"$VERSION\"/" importer/pyproject.toml
 
       - uses: azure/setup-helm@v5
-      - name: Chart als OCI naar ghcr
+      - name: Chart as OCI to ghcr
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
           helm package chart/homemaps -d dist
           helm push "dist/homemaps-$VERSION.tgz" "oci://ghcr.io/${{ github.repository_owner }}/charts"
 
-      - name: Release-notes uit de commits
+      - name: Release notes from the commits
         run: |
-          laatste=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
-          bereik=${laatste:+$laatste..}HEAD
-          sectie() { # titel, patroon
-            regels=$(git log --no-merges --pretty='- %s (%h)' "$bereik" | grep -E "^- $2" | grep -v 'chore(release)' || true)
-            [ -n "$regels" ] && printf '### %s\n%s\n\n' "$1" "$regels" || true
+          last=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
+          range=${last:+$last..}HEAD
+          section() { # title, pattern
+            lines=$(git log --no-merges --pretty='- %s (%h)' "$range" | grep -E "^- $2" | grep -v 'chore(release)' || true)
+            [ -n "$lines" ] && printf '### %s\n%s\n\n' "$1" "$lines" || true
           }
           {
-            sectie "Nieuw" 'feat'
-            sectie "Opgelost" 'fix'
-            sectie "Overig" '(chore|docs|test|refactor|perf|build|ci)'
-            # shellcheck disable=SC2016  # de backticks horen letterlijk in de notes
-            printf '### Installeren\n```\nhelm install homemaps oci://ghcr.io/%s/charts/homemaps --version %s\n```\n' "${{ github.repository_owner }}" "$VERSION"
+            section "New" 'feat'
+            section "Fixed" 'fix'
+            section "Other" '(chore|docs|test|refactor|perf|build|ci)'
+            # shellcheck disable=SC2016  # the backticks belong literally in the notes
+            printf '### Install\n```\nhelm install homemaps oci://ghcr.io/%s/charts/homemaps --version %s\n```\n' "${{ github.repository_owner }}" "$VERSION"
           } > RELEASE_NOTES.md
           cat RELEASE_NOTES.md
 
-      - name: Commit, tag en push
+      - name: Commit, tag and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add chart/homemaps/Chart.yaml app/pubspec.yaml importer/pyproject.toml
           git commit -m "chore(release): v$VERSION"
           git tag "v$VERSION"
-          # Atomair: de tag mag niet bestaan zonder de commit op main, en omgekeerd.
+          # Atomic: the tag must not exist without the commit on main, and vice versa.
           git push --atomic origin HEAD:main "v$VERSION"
 
       - name: GitHub Release
@@ -392,4 +392,4 @@ jobs:
         run: |
           mv dist/app-release.apk "dist/homemaps-$VERSION.apk"
           gh release create "v$VERSION" --title "v$VERSION" --notes-file RELEASE_NOTES.md \
-            "dist/homemaps-$VERSION.apk" "dist/homemaps-$VERSION.ipa" "dist/homemaps-schermafdrukken-$VERSION.zip" "dist/homemaps-web-$VERSION.tar.gz" "dist/homemaps-$VERSION.tgz"
+            "dist/homemaps-$VERSION.apk" "dist/homemaps-$VERSION.ipa" "dist/homemaps-screenshots-$VERSION.zip" "dist/homemaps-web-$VERSION.tar.gz" "dist/homemaps-$VERSION.tgz"

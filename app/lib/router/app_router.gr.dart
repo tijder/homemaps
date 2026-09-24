@@ -11,126 +11,119 @@
 part of 'app_router.dart';
 
 /// generated route for
-/// [InstellingenCategorieScreen]
-class InstellingenCategorieRoute
-    extends PageRouteInfo<InstellingenCategorieRouteArgs> {
-  InstellingenCategorieRoute({
+/// [MapScreen]
+class MapRoute extends PageRouteInfo<void> {
+  const MapRoute({List<PageRouteInfo>? children})
+    : super(MapRoute.name, initialChildren: children);
+
+  static const String name = 'MapRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const MapScreen();
+    },
+  );
+}
+
+/// generated route for
+/// [SettingsCategoryScreen]
+class SettingsCategoryRoute extends PageRouteInfo<SettingsCategoryRouteArgs> {
+  SettingsCategoryRoute({
     Key? key,
-    required String categorie,
+    required String category,
     List<PageRouteInfo>? children,
   }) : super(
-         InstellingenCategorieRoute.name,
-         args: InstellingenCategorieRouteArgs(key: key, categorie: categorie),
-         rawPathParams: {'categorie': categorie},
+         SettingsCategoryRoute.name,
+         args: SettingsCategoryRouteArgs(key: key, category: category),
+         rawPathParams: {'category': category},
          initialChildren: children,
        );
 
-  static const String name = 'InstellingenCategorieRoute';
+  static const String name = 'SettingsCategoryRoute';
 
   static PageInfo page = PageInfo(
     name,
     builder: (data) {
       final pathParams = data.inheritedPathParams;
-      final args = data.argsAs<InstellingenCategorieRouteArgs>(
-        orElse: () => InstellingenCategorieRouteArgs(
-          categorie: pathParams.getString('categorie'),
+      final args = data.argsAs<SettingsCategoryRouteArgs>(
+        orElse: () => SettingsCategoryRouteArgs(
+          category: pathParams.getString('category'),
         ),
       );
-      return InstellingenCategorieScreen(
-        key: args.key,
-        categorie: args.categorie,
-      );
+      return SettingsCategoryScreen(key: args.key, category: args.category);
     },
   );
 }
 
-class InstellingenCategorieRouteArgs {
-  const InstellingenCategorieRouteArgs({this.key, required this.categorie});
+class SettingsCategoryRouteArgs {
+  const SettingsCategoryRouteArgs({this.key, required this.category});
 
   final Key? key;
 
-  final String categorie;
+  final String category;
 
   @override
   String toString() {
-    return 'InstellingenCategorieRouteArgs{key: $key, categorie: $categorie}';
+    return 'SettingsCategoryRouteArgs{key: $key, category: $category}';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    if (other is! InstellingenCategorieRouteArgs) return false;
-    return key == other.key && categorie == other.categorie;
+    if (other is! SettingsCategoryRouteArgs) return false;
+    return key == other.key && category == other.category;
   }
 
   @override
-  int get hashCode => key.hashCode ^ categorie.hashCode;
+  int get hashCode => key.hashCode ^ category.hashCode;
 }
 
 /// generated route for
-/// [InstellingenScreen]
-class InstellingenRoute extends PageRouteInfo<InstellingenRouteArgs> {
-  InstellingenRoute({
-    Key? key,
-    String? categorie,
-    List<PageRouteInfo>? children,
-  }) : super(
-         InstellingenRoute.name,
-         args: InstellingenRouteArgs(key: key, categorie: categorie),
-         rawPathParams: {'categorie': categorie},
-         initialChildren: children,
-       );
+/// [SettingsScreen]
+class SettingsRoute extends PageRouteInfo<SettingsRouteArgs> {
+  SettingsRoute({Key? key, String? category, List<PageRouteInfo>? children})
+    : super(
+        SettingsRoute.name,
+        args: SettingsRouteArgs(key: key, category: category),
+        rawPathParams: {'category': category},
+        initialChildren: children,
+      );
 
-  static const String name = 'InstellingenRoute';
+  static const String name = 'SettingsRoute';
 
   static PageInfo page = PageInfo(
     name,
     builder: (data) {
       final pathParams = data.inheritedPathParams;
-      final args = data.argsAs<InstellingenRouteArgs>(
+      final args = data.argsAs<SettingsRouteArgs>(
         orElse: () =>
-            InstellingenRouteArgs(categorie: pathParams.optString('categorie')),
+            SettingsRouteArgs(category: pathParams.optString('category')),
       );
-      return InstellingenScreen(key: args.key, categorie: args.categorie);
+      return SettingsScreen(key: args.key, category: args.category);
     },
   );
 }
 
-class InstellingenRouteArgs {
-  const InstellingenRouteArgs({this.key, this.categorie});
+class SettingsRouteArgs {
+  const SettingsRouteArgs({this.key, this.category});
 
   final Key? key;
 
-  final String? categorie;
+  final String? category;
 
   @override
   String toString() {
-    return 'InstellingenRouteArgs{key: $key, categorie: $categorie}';
+    return 'SettingsRouteArgs{key: $key, category: $category}';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    if (other is! InstellingenRouteArgs) return false;
-    return key == other.key && categorie == other.categorie;
+    if (other is! SettingsRouteArgs) return false;
+    return key == other.key && category == other.category;
   }
 
   @override
-  int get hashCode => key.hashCode ^ categorie.hashCode;
-}
-
-/// generated route for
-/// [KaartScreen]
-class KaartRoute extends PageRouteInfo<void> {
-  const KaartRoute({List<PageRouteInfo>? children})
-    : super(KaartRoute.name, initialChildren: children);
-
-  static const String name = 'KaartRoute';
-
-  static PageInfo page = PageInfo(
-    name,
-    builder: (data) {
-      return const KaartScreen();
-    },
-  );
+  int get hashCode => key.hashCode ^ category.hashCode;
 }

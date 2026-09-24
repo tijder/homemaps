@@ -1,8 +1,8 @@
-"""traffic.tar openen en edges op hun plek in het bestand bijwerken.
+"""Opening traffic.tar and updating edges in place in the file.
 
-Valhalla houdt dit bestand via mmap open. Daarom wordt er uitsluitend *in* het
-bestand geschreven, via een gedeelde mmap: een nieuw bestand ernaast zetten en
-hernoemen zou Valhalla op de oude inode laten kijken tot de volgende herstart.
+Valhalla keeps this file open via mmap. That is why writes go exclusively *into*
+the file, via a shared mmap: putting a new file next to it and renaming it
+would leave Valhalla looking at the old inode until the next restart.
 """
 
 import mmap
@@ -15,106 +15,106 @@ from . import traffictile as tt
 
 
 @dataclass(frozen=True)
-class Tegel:
-    begin: int  # byte-offset van de header in het tar-bestand
-    aantal_edges: int
+class Tile:
+    start: int  # byte offset of the header in the tar file
+    edge_count: int
 
 
 class TrafficTar:
-    def __init__(self, pad: str | Path):
-        self.pad = Path(pad)
-        self.tegels: dict[int, Tegel] = {}
-        with tarfile.open(self.pad, "r:") as tar:
-            # Alleen de tegels: valhalla_build_extract zet er ook een index.bin bij
-            # (112 bytes), en die als header lezen levert onzin op.
-            leden = [
-                (lid.offset_data, lid.size)
-                for lid in tar
-                if lid.isfile() and lid.name.endswith(".gph")
+    def __init__(self, path: str | Path):
+        self.path = Path(path)
+        self.tiles: dict[int, Tile] = {}
+        with tarfile.open(self.path, "r:") as tar:
+            # Only the tiles: valhalla_build_extract also adds an index.bin
+            # (112 bytes), and reading that as a header yields nonsense.
+            members = [
+                (member.offset_data, member.size)
+                for member in tar
+                if member.isfile() and member.name.endswith(".gph")
             ]
-        self._bestand = open(self.pad, "r+b")
-        self._map = mmap.mmap(self._bestand.fileno(), 0, flags=mmap.MAP_SHARED)
-        for begin, grootte in leden:
-            if grootte < tt.HEADER_SIZE:
+        self._file = open(self.path, "r+b")
+        self._map = mmap.mmap(self._file.fileno(), 0, flags=mmap.MAP_SHARED)
+        for start, size in members:
+            if size < tt.HEADER_SIZE:
                 continue
-            header = tt.Header.lees(self._map[begin : begin + tt.HEADER_SIZE])
-            verwacht = tt.HEADER_SIZE + header.directed_edge_count * tt.RECORD_SIZE
-            if grootte < verwacht:
-                raise ValueError(f"tegel {header.tile_id}: {grootte} bytes, verwacht {verwacht}")
-            self.tegels[header.tile_id] = Tegel(begin, header.directed_edge_count)
+            header = tt.Header.read(self._map[start : start + tt.HEADER_SIZE])
+            expected = tt.HEADER_SIZE + header.directed_edge_count * tt.RECORD_SIZE
+            if size < expected:
+                raise ValueError(f"tile {header.tile_id}: {size} bytes, expected {expected}")
+            self.tiles[header.tile_id] = Tile(start, header.directed_edge_count)
 
     def __enter__(self):
         return self
 
     def __exit__(self, *_):
-        self.sluit()
+        self.close()
 
-    def sluit(self):
+    def close(self):
         self._map.flush()
         self._map.close()
-        self._bestand.close()
+        self._file.close()
 
     @property
-    def aantal_edges(self) -> int:
-        return sum(tegel.aantal_edges for tegel in self.tegels.values())
+    def edge_count(self) -> int:
+        return sum(tile.edge_count for tile in self.tiles.values())
 
-    def _plek(self, graphid: int) -> int | None:
-        tegel = self.tegels.get(tt.tegel_van(graphid))
-        if tegel is None:
+    def _offset(self, graphid: int) -> int | None:
+        tile = self.tiles.get(tt.tile_of(graphid))
+        if tile is None:
             return None
-        index = tt.index_van(graphid)
-        if index >= tegel.aantal_edges:
+        index = tt.index_of(graphid)
+        if index >= tile.edge_count:
             return None
-        return tegel.begin + tt.HEADER_SIZE + index * tt.RECORD_SIZE
+        return tile.start + tt.HEADER_SIZE + index * tt.RECORD_SIZE
 
-    def lees(self, graphid: int) -> int | None:
-        plek = self._plek(graphid)
-        if plek is None:
+    def read(self, graphid: int) -> int | None:
+        offset = self._offset(graphid)
+        if offset is None:
             return None
-        return tt.RECORD.unpack_from(self._map, plek)[0]
+        return tt.RECORD.unpack_from(self._map, offset)[0]
 
-    def schrijf(self, graphid: int, waarde: int) -> bool:
-        """Eén record. Een uint64 op een uitgelijnd adres is voor de lezer één
-        geheel; Valhalla leest dit veld als `volatile`."""
-        plek = self._plek(graphid)
-        if plek is None:
+    def write(self, graphid: int, value: int) -> bool:
+        """One record. A uint64 at an aligned address is a single unit for the
+        reader; Valhalla reads this field as `volatile`."""
+        offset = self._offset(graphid)
+        if offset is None:
             return False
-        tt.RECORD.pack_into(self._map, plek, waarde)
+        tt.RECORD.pack_into(self._map, offset, value)
         return True
 
-    def werk_bij(self, nieuw: dict[int, int], vorige: set[int]) -> tuple[int, int, int]:
-        """Schrijft `nieuw` en zet alles uit `vorige` dat er niet meer in zit terug
-        op onbekend. Valhalla kent geen veroudering: wat hier niet wordt gewist,
-        blijft voor altijd gelden.
+    def update(self, new: dict[int, int], previous: set[int]) -> tuple[int, int, int]:
+        """Writes `new` and resets everything from `previous` that is no longer in
+        it to unknown. Valhalla has no expiry: whatever is not cleared here stays
+        in effect forever.
 
-        Geeft (geschreven, gewist, onbekende edge-id's) terug.
+        Returns (written, cleared, unknown edge ids).
         """
-        geschreven = gewist = onbekend = 0
-        for graphid, waarde in nieuw.items():
-            if self.schrijf(graphid, waarde):
-                geschreven += 1
+        written = cleared = unknown = 0
+        for graphid, value in new.items():
+            if self.write(graphid, value):
+                written += 1
             else:
-                onbekend += 1
-        for graphid in vorige - nieuw.keys():
-            if self.schrijf(graphid, tt.ONBEKEND):
-                gewist += 1
-        self._stempel()
+                unknown += 1
+        for graphid in previous - new.keys():
+            if self.write(graphid, tt.UNKNOWN):
+                cleared += 1
+        self._stamp()
         self._map.flush()
-        return geschreven, gewist, onbekend
+        return written, cleared, unknown
 
-    def wis_alles(self) -> None:
-        """Na een herstart van de importer is onbekend wat een vorige instantie
-        had geschreven; dan begint de ronde met een schone lei."""
-        for tegel in self.tegels.values():
-            begin = tegel.begin + tt.HEADER_SIZE
-            eind = begin + tegel.aantal_edges * tt.RECORD_SIZE
-            self._map[begin:eind] = bytes(eind - begin)
-        self._stempel()
+    def clear_all(self) -> None:
+        """After a restart of the importer it is unknown what a previous instance
+        had written; then the cycle starts with a clean slate."""
+        for tile in self.tiles.values():
+            start = tile.start + tt.HEADER_SIZE
+            end = start + tile.edge_count * tt.RECORD_SIZE
+            self._map[start:end] = bytes(end - start)
+        self._stamp()
         self._map.flush()
 
-    def _stempel(self) -> None:
-        nu = int(time.time())
-        for tile_id, tegel in self.tegels.items():
+    def _stamp(self) -> None:
+        now = int(time.time())
+        for tile_id, tile in self.tiles.items():
             tt.HEADER.pack_into(
-                self._map, tegel.begin, tile_id, nu, tegel.aantal_edges, tt.TILE_VERSION, 0, 0
+                self._map, tile.start, tile_id, now, tile.edge_count, tt.TILE_VERSION, 0, 0
             )

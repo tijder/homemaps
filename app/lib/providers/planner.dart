@@ -1,269 +1,265 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/plaats.dart';
+import '../models/place.dart';
 import '../models/route.dart';
 import '../services/valhalla_service.dart';
-import '../utils/geplande_afsluitingen.dart';
-import 'diensten.dart';
-import 'instellingen.dart';
-import 'locatie.dart';
+import '../utils/planned_closures.dart';
+import 'services.dart';
+import 'settings.dart';
+import 'location.dart';
 
-/// Eén vakje van de route. Het [id] blijft bij het vakje als de volgorde
-/// verandert, zodat slepen in de lijst en op de kaart hetzelfde punt bedoelen.
-class Routepunt {
-  const Routepunt(this.id, [this.plaats]);
+/// One field of the route. The [id] stays with the field when the order
+/// changes, so that dragging in the list and on the map mean the same point.
+class Waypoint {
+  const Waypoint(this.id, [this.place]);
 
   final int id;
-  final Plaats? plaats;
+  final Place? place;
 }
 
 class PlannerState {
   const PlannerState({
-    this.routeModus = false,
-    this.gevonden,
-    this.punten = const [Routepunt(0), Routepunt(1)],
+    this.routeMode = false,
+    this.found,
+    this.points = const [Waypoint(0), Waypoint(1)],
     this.routes = const AsyncData([]),
-    this.gekozen = 0,
-    this.beeldVersie = 0,
-    this.vertrek,
+    this.chosen = 0,
+    this.viewVersion = 0,
+    this.departure,
   });
 
-  /// Onwaar: het zoekscherm (één zoekbalk, eventueel een gevonden plaats).
-  /// Waar: het routescherm met van/via/naar.
-  final bool routeModus;
+  /// False: the search screen (one search bar, possibly a found place).
+  /// True: the route screen with from/via/to.
+  final bool routeMode;
 
-  /// De plaats die in het zoekscherm is gekozen.
-  final Plaats? gevonden;
+  /// The place chosen in the search screen.
+  final Place? found;
 
-  /// Van, eventuele tussenpunten, naar. Altijd minstens twee.
-  final List<Routepunt> punten;
-  final AsyncValue<List<RouteOptie>> routes;
-  final int gekozen;
+  /// From, any intermediate points, to. Always at least two.
+  final List<Waypoint> points;
+  final AsyncValue<List<RouteOption>> routes;
+  final int chosen;
 
-  /// Loopt op telkens als de kaart het resultaat in beeld moet brengen: na zoeken
-  /// wel, na het verslepen van een punt juist niet.
-  final int beeldVersie;
+  /// Goes up whenever the map has to bring the result into view: after a
+  /// search it does, after dragging a point it doesn't.
+  final int viewVersion;
 
-  /// Later vertrekken: dan rekent Valhalla voor die tijd (zonder het verkeer
-  /// van nu) en waarschuwt de app voor geplande afsluitingen. Null = nu.
-  final DateTime? vertrek;
+  /// Leaving later: then Valhalla calculates for that time (without the
+  /// current traffic) and the app warns about planned closures. Null = now.
+  final DateTime? departure;
 
-  bool get compleet => punten.every((p) => p.plaats != null);
+  bool get complete => points.every((p) => p.place != null);
 
-  RouteOptie? get gekozenRoute {
-    final lijst = routes.value;
-    if (lijst == null || lijst.isEmpty) return null;
-    return lijst[gekozen.clamp(0, lijst.length - 1)];
+  RouteOption? get chosenRoute {
+    final list = routes.value;
+    if (list == null || list.isEmpty) return null;
+    return list[chosen.clamp(0, list.length - 1)];
   }
 
-  PlannerState kopie({
-    bool? routeModus,
-    Plaats? Function()? gevonden,
-    List<Routepunt>? punten,
-    AsyncValue<List<RouteOptie>>? routes,
-    int? gekozen,
-    int? beeldVersie,
-    DateTime? Function()? vertrek,
+  PlannerState copyWith({
+    bool? routeMode,
+    Place? Function()? found,
+    List<Waypoint>? points,
+    AsyncValue<List<RouteOption>>? routes,
+    int? chosen,
+    int? viewVersion,
+    DateTime? Function()? departure,
   }) => PlannerState(
-    routeModus: routeModus ?? this.routeModus,
-    gevonden: gevonden != null ? gevonden() : this.gevonden,
-    punten: punten ?? this.punten,
+    routeMode: routeMode ?? this.routeMode,
+    found: found != null ? found() : this.found,
+    points: points ?? this.points,
     routes: routes ?? this.routes,
-    gekozen: gekozen ?? this.gekozen,
-    beeldVersie: beeldVersie ?? this.beeldVersie,
-    vertrek: vertrek != null ? vertrek() : this.vertrek,
+    chosen: chosen ?? this.chosen,
+    viewVersion: viewVersion ?? this.viewVersion,
+    departure: departure != null ? departure() : this.departure,
   );
 }
 
 class PlannerNotifier extends Notifier<PlannerState> {
-  CancelToken? _lopend;
-  int _volgendId = 2;
+  CancelToken? _inFlight;
+  int _nextId = 2;
 
-  /// De taal voor de instructies; het scherm zet hem bij het opbouwen.
-  String taal = 'nl-NL';
+  /// The language for the instructions; the screen sets it when building.
+  String language = 'nl-NL';
 
   @override
   PlannerState build() {
-    // Een andere vervoerswijze of optie is een andere route; een kaartlaag of de
-    // locatie niet.
+    // A different mode of transport or option is a different route; a map
+    // layer or the location isn't.
     ref.listen(
-      instellingenProvider.select(
-        (i) => (
-          i.profiel,
-          i.liveVerkeer,
-          i.vermijdSnelwegen,
-          i.vermijdTol,
-          i.vermijdVeren,
+      settingsProvider.select(
+        (s) => (
+          s.profile,
+          s.liveTraffic,
+          s.avoidMotorways,
+          s.avoidTolls,
+          s.avoidFerries,
         ),
       ),
-      (_, _) => _bereken(volgBeeld: false),
+      (_, _) => _calculate(moveView: false),
     );
-    ref.onDispose(() => _lopend?.cancel());
+    ref.onDispose(() => _inFlight?.cancel());
     return const PlannerState();
   }
 
-  // ---------------------------------------------------------------- zoekscherm
+  // ------------------------------------------------------------- search screen
 
-  void toonPlaats(Plaats plaats) => state = state.kopie(
-    gevonden: () => plaats,
-    beeldVersie: state.beeldVersie + 1,
+  void showPlace(Place place) => state = state.copyWith(
+    found: () => place,
+    viewVersion: state.viewVersion + 1,
   );
 
-  /// Dezelfde plaats met nieuwe gegevens (een familielid dat beweegt), zonder
-  /// hem opnieuw in beeld te brengen.
-  void vervangPlaats(Plaats plaats) =>
-      state = state.kopie(gevonden: () => plaats);
+  /// The same place with new data (a family member who moves), without
+  /// bringing it into view again.
+  void replacePlace(Place place) => state = state.copyWith(found: () => place);
 
-  void sluitPlaats() => state = state.kopie(gevonden: () => null);
+  void closePlace() => state = state.copyWith(found: () => null);
 
-  /// "Route" op de gevonden plaats: die wordt de bestemming. Staat je locatie
-  /// aan, dan vertrek je vanaf daar.
+  /// "Route" on the found place: it becomes the destination. If your location
+  /// is on, you leave from there.
   void startRoute() {
-    final doel = state.gevonden;
-    final hier = ref.read(locatieProvider).fix;
-    final van = hier == null || (doel?.mijnLocatie ?? false)
+    final target = state.found;
+    final here = ref.read(locationProvider).fix;
+    final from = here == null || (target?.myLocation ?? false)
         ? null
-        : Plaats.hier(hier.punt);
+        : Place.here(here.point);
     state = PlannerState(
-      routeModus: true,
-      gevonden: doel,
-      punten: [Routepunt(_volgendId++, van), Routepunt(_volgendId++, doel)],
-      beeldVersie: state.beeldVersie + (van == null ? 0 : 1),
+      routeMode: true,
+      found: target,
+      points: [Waypoint(_nextId++, from), Waypoint(_nextId++, target)],
+      viewVersion: state.viewVersion + (from == null ? 0 : 1),
     );
-    if (van != null) _bereken(volgBeeld: true);
+    if (from != null) _calculate(moveView: true);
   }
 
-  /// Terug naar het zoekscherm; de route is weg, de gevonden plaats blijft.
-  void naarZoeken() {
-    _lopend?.cancel();
-    state = PlannerState(
-      gevonden: state.gevonden,
-      beeldVersie: state.beeldVersie,
+  /// Back to the search screen; the route is gone, the found place stays.
+  void toSearch() {
+    _inFlight?.cancel();
+    state = PlannerState(found: state.found, viewVersion: state.viewVersion);
+  }
+
+  /// After arrival: back to an empty search screen, without a route or found
+  /// place.
+  void clear() {
+    _inFlight?.cancel();
+    state = PlannerState(viewVersion: state.viewVersion);
+  }
+
+  // -------------------------------------------------------------- route screen
+
+  /// [moveView]: bring the result into view. Not when dragging on the map --
+  /// then the map jumps away from under your hand.
+  void setPoint(int index, Place? place, {bool moveView = true}) {
+    final points = [...state.points];
+    points[index] = Waypoint(points[index].id, place);
+    state = state.copyWith(
+      routeMode: true,
+      points: points,
+      viewVersion: moveView ? state.viewVersion + 1 : null,
     );
+    _calculate(moveView: moveView);
   }
 
-  /// Na aankomst: terug naar een leeg zoekscherm, zonder route of gevonden
-  /// plaats.
-  void leeg() {
-    _lopend?.cancel();
-    state = PlannerState(beeldVersie: state.beeldVersie);
+  /// Only update a point's name (the address of a tapped point); the place is
+  /// the same, so no new route is needed.
+  void rename(int index, Place place) {
+    final points = [...state.points];
+    points[index] = Waypoint(points[index].id, place);
+    state = state.copyWith(points: points);
   }
 
-  // --------------------------------------------------------------- routescherm
+  void setFrom(Place place, {bool moveView = true}) =>
+      setPoint(0, place, moveView: moveView);
 
-  /// [volgBeeld]: breng het resultaat in beeld. Bij slepen op de kaart niet --
-  /// dan springt de kaart onder je hand vandaan.
-  void zetPunt(int index, Plaats? plaats, {bool volgBeeld = true}) {
-    final punten = [...state.punten];
-    punten[index] = Routepunt(punten[index].id, plaats);
-    state = state.kopie(
-      routeModus: true,
-      punten: punten,
-      beeldVersie: volgBeeld ? state.beeldVersie + 1 : null,
-    );
-    _bereken(volgBeeld: volgBeeld);
+  void setTo(Place place, {bool moveView = true}) =>
+      setPoint(state.points.length - 1, place, moveView: moveView);
+
+  void addVia([Place? place]) {
+    final points = [...state.points]
+      ..insert(state.points.length - 1, Waypoint(_nextId++, place));
+    state = state.copyWith(routeMode: true, points: points);
+    if (place != null) _calculate(moveView: false);
   }
 
-  /// Alleen de naam van een punt bijwerken (het adres bij een aangeklikt punt);
-  /// de plek is dezelfde, dus er hoeft geen nieuwe route te komen.
-  void hernoem(int index, Plaats plaats) {
-    final punten = [...state.punten];
-    punten[index] = Routepunt(punten[index].id, plaats);
-    state = state.kopie(punten: punten);
-  }
-
-  void zetVan(Plaats plaats, {bool volgBeeld = true}) =>
-      zetPunt(0, plaats, volgBeeld: volgBeeld);
-
-  void zetNaar(Plaats plaats, {bool volgBeeld = true}) =>
-      zetPunt(state.punten.length - 1, plaats, volgBeeld: volgBeeld);
-
-  void voegViaToe([Plaats? plaats]) {
-    final punten = [...state.punten]
-      ..insert(state.punten.length - 1, Routepunt(_volgendId++, plaats));
-    state = state.kopie(routeModus: true, punten: punten);
-    if (plaats != null) _bereken(volgBeeld: false);
-  }
-
-  void verwijder(int index) {
-    final punten = [...state.punten];
-    if (punten.length > 2) {
-      punten.removeAt(index);
+  void remove(int index) {
+    final points = [...state.points];
+    if (points.length > 2) {
+      points.removeAt(index);
     } else {
-      punten[index] = Routepunt(punten[index].id);
+      points[index] = Waypoint(points[index].id);
     }
-    state = state.kopie(punten: punten);
-    _bereken(volgBeeld: false);
+    state = state.copyWith(points: points);
+    _calculate(moveView: false);
   }
 
-  /// [naar] is de plek in de lijst ná het weghalen van [van] (zo levert
-  /// ReorderableListView.onReorderItem het aan).
-  void verplaats(int van, int naar) {
-    final punten = [...state.punten];
-    punten.insert(naar, punten.removeAt(van));
-    // Een andere volgorde is een heel andere route: die moet weer in beeld.
-    state = state.kopie(punten: punten, beeldVersie: state.beeldVersie + 1);
-    _bereken(volgBeeld: true);
+  /// [to] is the position in the list after removing [from] (that is how
+  /// ReorderableListView.onReorderItem delivers it).
+  void reorder(int from, int to) {
+    final points = [...state.points];
+    points.insert(to, points.removeAt(from));
+    // A different order is a whole different route: bring it into view again.
+    state = state.copyWith(points: points, viewVersion: state.viewVersion + 1);
+    _calculate(moveView: true);
   }
 
-  void draaiOm() {
-    state = state.kopie(
-      punten: state.punten.reversed.toList(),
-      beeldVersie: state.beeldVersie + 1,
+  void swap() {
+    state = state.copyWith(
+      points: state.points.reversed.toList(),
+      viewVersion: state.viewVersion + 1,
     );
-    _bereken(volgBeeld: true);
+    _calculate(moveView: true);
   }
 
-  /// [volgBeeld]: breng de routes weer helemaal in beeld (een keuze in de
-  /// lijst). Niet bij het aantikken van een route op de kaart: daar kijk je al.
-  void kies(int index, {bool volgBeeld = false}) => state = state.kopie(
-    gekozen: index,
-    beeldVersie: volgBeeld ? state.beeldVersie + 1 : null,
+  /// [moveView]: bring the routes fully into view again (a choice in the
+  /// list). Not when tapping a route on the map: you are already looking there.
+  void choose(int index, {bool moveView = false}) => state = state.copyWith(
+    chosen: index,
+    viewVersion: moveView ? state.viewVersion + 1 : null,
   );
 
-  /// Null = nu vertrekken.
-  void zetVertrek(DateTime? vertrek) {
-    state = state.kopie(vertrek: () => vertrek);
-    _bereken(volgBeeld: false);
+  /// Null = leave now.
+  void setDeparture(DateTime? departure) {
+    state = state.copyWith(departure: () => departure);
+    _calculate(moveView: false);
   }
 
-  Future<void> _bereken({required bool volgBeeld}) async {
-    _lopend?.cancel();
+  Future<void> _calculate({required bool moveView}) async {
+    _inFlight?.cancel();
     final valhalla = ref.read(valhallaProvider);
-    if (!state.compleet || valhalla == null) {
-      state = state.kopie(routes: const AsyncData([]), gekozen: 0);
+    if (!state.complete || valhalla == null) {
+      state = state.copyWith(routes: const AsyncData([]), chosen: 0);
       return;
     }
-    final annuleer = _lopend = CancelToken();
-    final instellingen = ref.read(instellingenProvider);
-    state = state.kopie(routes: const AsyncLoading(), gekozen: 0);
+    final cancel = _inFlight = CancelToken();
+    final settings = ref.read(settingsProvider);
+    state = state.copyWith(routes: const AsyncLoading(), chosen: 0);
     try {
       final routes = await valhalla.route(
-        [for (final punt in state.punten) punt.plaats!.punt],
-        instellingen.profiel,
-        taal: taal,
-        liveVerkeer: instellingen.liveVerkeer,
-        vermijdSnelwegen: instellingen.vermijdSnelwegen,
-        vermijdTol: instellingen.vermijdTol,
-        vermijdVeren: instellingen.vermijdVeren,
-        vertrek: state.vertrek,
-        annuleer: annuleer,
+        [for (final point in state.points) point.place!.point],
+        settings.profile,
+        language: language,
+        liveTraffic: settings.liveTraffic,
+        avoidMotorways: settings.avoidMotorways,
+        avoidTolls: settings.avoidTolls,
+        avoidFerries: settings.avoidFerries,
+        departure: state.departure,
+        cancel: cancel,
       );
-      if (annuleer.isCancelled) return;
-      state = state.kopie(
+      if (cancel.isCancelled) return;
+      state = state.copyWith(
         routes: AsyncData(routes),
-        // Nog een keer: nu is er pas een route om in beeld te brengen.
-        beeldVersie: volgBeeld ? state.beeldVersie + 1 : null,
+        // Once more: only now is there a route to bring into view.
+        viewVersion: moveView ? state.viewVersion + 1 : null,
       );
-    } on DioException catch (fout) {
-      // Geannuleerd door een nieuwer verzoek: dat schrijft zelf de uitkomst.
-      if (!CancelToken.isCancel(fout)) {
-        state = state.kopie(routes: AsyncError(fout, StackTrace.current));
+    } on DioException catch (error) {
+      // Cancelled by a newer request: that one writes the outcome itself.
+      if (!CancelToken.isCancel(error)) {
+        state = state.copyWith(routes: AsyncError(error, StackTrace.current));
       }
-    } on RouteFout catch (fout, spoor) {
-      if (!annuleer.isCancelled) {
-        state = state.kopie(routes: AsyncError(fout, spoor));
+    } on RouteError catch (error, stackTrace) {
+      if (!cancel.isCancelled) {
+        state = state.copyWith(routes: AsyncError(error, stackTrace));
       }
     }
   }
@@ -273,18 +269,14 @@ final plannerProvider = NotifierProvider<PlannerNotifier, PlannerState>(
   PlannerNotifier.new,
 );
 
-/// Per route (in de volgorde van [PlannerState.routes]) de geplande afsluitingen
-/// die erop liggen als je later vertrekt; null als je nu vertrekt of de
-/// planning er (nog) niet is.
-final afsluitingenOpRoutesProvider = Provider<List<List<AfsluitingOpRoute>>?>((
-  ref,
-) {
-  final vertrek = ref.watch(plannerProvider.select((p) => p.vertrek));
-  if (vertrek == null) return null;
+/// Per route (in the order of [PlannerState.routes]) the planned closures on
+/// it if you leave later; null if you leave now or the planning isn't there
+/// (yet).
+final closuresOnRoutesProvider = Provider<List<List<ClosureOnRoute>>?>((ref) {
+  final departure = ref.watch(plannerProvider.select((p) => p.departure));
+  if (departure == null) return null;
   final routes = ref.watch(plannerProvider.select((p) => p.routes.value));
-  final laag = ref.watch(geplandProvider).value;
-  if (routes == null || laag == null) return null;
-  return [
-    for (final route in routes) afsluitingenOpRoute(route, laag, vertrek),
-  ];
+  final layer = ref.watch(plannedProvider).value;
+  if (routes == null || layer == null) return null;
+  return [for (final route in routes) closuresOnRoute(route, layer, departure)];
 });

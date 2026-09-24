@@ -29,18 +29,18 @@ android {
         versionName = flutter.versionName
     }
 
-    // Eén vaste sleutel voor elke release: Android weigert een update die met een
-    // andere sleutel is ondertekend. De release-workflow zet hem uit de secrets
-    // neer; lokaal (zonder die variabelen) blijft het de debug-sleutel, zodat
-    // `flutter run --release` gewoon werkt.
-    val sleutelbestand = System.getenv("HOMEMAPS_KEYSTORE")
+    // One fixed key for every release: Android rejects an update signed with a
+    // different key. The release workflow writes it from the secrets; locally
+    // (without those variables) it stays the debug key, so `flutter run --release`
+    // just works.
+    val keystoreFile = System.getenv("HOMEMAPS_KEYSTORE")
     signingConfigs {
-        if (sleutelbestand != null) {
+        if (keystoreFile != null) {
             create("release") {
-                storeFile = file(sleutelbestand)
-                storePassword = System.getenv("HOMEMAPS_KEYSTORE_WACHTWOORD")
-                keyAlias = System.getenv("HOMEMAPS_SLEUTEL_ALIAS")
-                keyPassword = System.getenv("HOMEMAPS_KEYSTORE_WACHTWOORD")
+                storeFile = file(keystoreFile)
+                storePassword = System.getenv("HOMEMAPS_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("HOMEMAPS_KEY_ALIAS")
+                keyPassword = System.getenv("HOMEMAPS_KEYSTORE_PASSWORD")
             }
         }
     }
@@ -48,7 +48,7 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName(
-                if (sleutelbestand != null) "release" else "debug",
+                if (keystoreFile != null) "release" else "debug",
             )
         }
     }

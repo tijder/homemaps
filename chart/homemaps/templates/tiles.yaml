@@ -1,7 +1,7 @@
 {{- if .Values.tiles.enabled }}
-{{- $t := dict "root" . "naam" "tiles" }}
-{{- $naam := include "homemaps.onderdeel" $t }}
-{{- $scratch := dict "root" . "naam" "planetiler-scratch" }}
+{{- $t := dict "root" . "name" "tiles" }}
+{{- $name := include "homemaps.component" $t }}
+{{- $scratch := dict "root" . "name" "planetiler-scratch" }}
 {{- $pt := .Values.tiles.planetiler }}
 {{ include "homemaps.pvc" (merge (dict "size" .Values.tiles.size) $t) }}
 ---
@@ -10,13 +10,13 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ $naam }}
+  name: {{ $name }}
   labels: {{- include "homemaps.labels" $t | nindent 4 }}
 data:
   bootstrap.sh: | {{- .Files.Get "files/bootstrap.sh" | nindent 4 }}
-  samenvoegen.py: | {{- .Files.Get "files/samenvoegen.py" | nindent 4 }}
-  # De sleutel `v3` onder `data` is niet vrij te kiezen: de style-local.json van
-  # OpenMapTiles verwijst naar `mbtiles://{v3}`.
+  merge.py: | {{- .Files.Get "files/merge.py" | nindent 4 }}
+  # The key `v3` under `data` is not free to choose: OpenMapTiles' style-local.json
+  # refers to `mbtiles://{v3}`.
   config.json: |
     {
       "options": {
@@ -31,18 +31,18 @@ data:
         "staticAttributionText": "© OpenMapTiles © OpenStreetMap contributors"
       },
       "styles": {
-        {{- range $i, $stijl := .Values.tiles.styles }}
+        {{- range $i, $style := .Values.tiles.styles }}
         {{- if $i }},{{ end }}
-        {{ $stijl | quote }}: { "style": "{{ $stijl }}/style-local.json", "serve_rendered": true, "serve_data": true }
+        {{ $style | quote }}: { "style": "{{ $style }}/style-local.json", "serve_rendered": true, "serve_data": true }
         {{- end }}
       },
-      "data": { "v3": { "mbtiles": "kaart.mbtiles" } }
+      "data": { "v3": { "mbtiles": "map.mbtiles" } }
     }
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ $naam }}
+  name: {{ $name }}
   labels: {{- include "homemaps.labels" $t | nindent 4 }}
 spec:
   selector: {{- include "homemaps.selector" $t | nindent 4 }}
@@ -54,12 +54,12 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ $naam }}
+  name: {{ $name }}
   labels: {{- include "homemaps.labels" $t | nindent 4 }}
 spec:
   replicas: 1
   revisionHistoryLimit: 0
-  # Het volume is ReadWriteOnce: de oude pod moet weg voordat de nieuwe kan starten.
+  # The volume is ReadWriteOnce: the old pod must be gone before the new one can start.
   strategy:
     type: Recreate
   selector:
@@ -76,14 +76,14 @@ spec:
       {{- end }}
       securityContext: {{- include "homemaps.podSecurity" (dict "root" .) | nindent 8 }}
       initContainers:
-        # Zet eenmalig de stijlen en fonts op het volume (het image bundelt alleen
-        # `basic-preview`) en wacht daarna tot er een mbtiles is.
+        # Puts the styles and fonts on the volume once (the image only bundles
+        # `basic-preview`) and then waits until there is an mbtiles.
         - name: bootstrap
           image: docker.io/library/alpine:3.24
           imagePullPolicy: IfNotPresent
           command: ["/bin/sh", "/script/bootstrap.sh"]
           env:
-            - { name: PLANETILER_CRONJOB, value: {{ printf "%s-planetiler" $naam | quote }} }
+            - { name: PLANETILER_CRONJOB, value: {{ printf "%s-planetiler" $name | quote }} }
           securityContext: {{- include "homemaps.containerSecurity" . | nindent 12 }}
           resources:
             requests: { cpu: 10m, memory: 64Mi }
@@ -93,8 +93,8 @@ spec:
             - { name: script, mountPath: /script }
             - { name: tmp, mountPath: /tmp }
       containers:
-        # Geen `command:`: de entrypoint van het image start zelf Xvfb, dat de
-        # server-side renderer nodig heeft.
+        # No `command:`: the image's entrypoint starts Xvfb itself, which the
+        # server-side renderer needs.
         - name: tileserver
           image: {{ include "homemaps.image" (dict "root" . "image" .Values.tiles.image) }}
           imagePullPolicy: {{ .Values.tiles.image.pullPolicy }}
@@ -108,10 +108,10 @@ spec:
             - {{ . | quote }}
             {{- end }}
           env:
-            # Zonder vaste publicUrl bouwt tileserver-gl zijn URL's uit de Host-header
-            # (de nginx van de web-pod zet X-Forwarded-Path erbij). Dan mogen alleen de
-            # eigen hostnamen: anders kan een verzonnen Host in een gecachet antwoord
-            # belanden.
+            # Without a fixed publicUrl tileserver-gl builds its URLs from the Host header
+            # (the web pod's nginx adds X-Forwarded-Path). Then only our own hostnames
+            # are allowed: otherwise a made-up Host could end up in a cached
+            # response.
             - { name: TILESERVER_GL_ALLOWED_HOSTS, value: {{ include "homemaps.allowedHosts" . | quote }} }
             - { name: HOME, value: "/tmp" }
             - { name: XDG_CACHE_HOME, value: "/tmp" }
@@ -132,19 +132,19 @@ spec:
             - { name: tmp, mountPath: /tmp }
       volumes:
         - name: data
-          persistentVolumeClaim: { claimName: {{ $naam }} }
+          persistentVolumeClaim: { claimName: {{ $name }} }
         - name: script
-          configMap: { name: {{ $naam }}, defaultMode: 0555 }
+          configMap: { name: {{ $name }}, defaultMode: 0555 }
         - name: tmp
           emptyDir: { sizeLimit: 1Gi }
 ---
-# Bouwt periodiek een verse mbtiles. Bij de eerste installatie handmatig:
-#   kubectl create job --from=cronjob/{{ $naam }}-planetiler planetiler-eerste
+# Periodically builds a fresh mbtiles. On first install, by hand:
+#   kubectl create job --from=cronjob/{{ $name }}-planetiler planetiler-initial
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ $naam }}-planetiler
-  labels: {{- include "homemaps.labels" (dict "root" . "naam" "planetiler") | nindent 4 }}
+  name: {{ $name }}-planetiler
+  labels: {{- include "homemaps.labels" (dict "root" . "name" "planetiler") | nindent 4 }}
 spec:
   schedule: {{ $pt.schedule | quote }}
   timeZone: {{ $pt.timeZone }}
@@ -159,13 +159,13 @@ spec:
       ttlSecondsAfterFinished: 86400
       template:
         metadata:
-          labels: {{- include "homemaps.labels" (dict "root" . "naam" "planetiler") | nindent 12 }}
+          labels: {{- include "homemaps.labels" (dict "root" . "name" "planetiler") | nindent 12 }}
         spec:
           restartPolicy: Never
-          serviceAccountName: {{ include "homemaps.fullname" . }}-ververs
+          serviceAccountName: {{ include "homemaps.fullname" . }}-refresher
           securityContext: {{- include "homemaps.podSecurity" (dict "root" .) | nindent 12 }}
           initContainers:
-            - name: voorbereiden
+            - name: prepare
               image: docker.io/library/alpine:3.24
               imagePullPolicy: IfNotPresent
               command: ["/bin/sh", "-c", "mkdir -p /data/tiles"]
@@ -175,20 +175,20 @@ spec:
                 limits: { memory: 128Mi }
               volumeMounts:
                 - { name: data, mountPath: /data }
-            # De zware stap. --nodemap-type moet sortedtable blijven: het array-type
-            # reserveert een tabel over het hele bereik van OSM-node-id's en is
-            # alleen zinnig voor een planet-import.
+            # The heavy step. --nodemap-type must stay sortedtable: the array type
+            # reserves a table over the whole range of OSM node ids and is only
+            # sensible for a planet import.
             - name: planetiler
               image: {{ printf "%s:%s" $pt.image.repository $pt.image.tag }}
               imagePullPolicy: IfNotPresent
               args:
                 - "--download"
-                - "--area={{ .Values.gebied.naam }}"
+                - "--area={{ .Values.region.name }}"
                 - "--force"
-                {{- if $pt.wereld.enabled }}
-                - "--minzoom={{ add $pt.wereld.maxzoom 1 }}"
+                {{- if $pt.world.enabled }}
+                - "--minzoom={{ add $pt.world.maxzoom 1 }}"
                 {{- end }}
-                - "--output=/data/tiles/kaart-nieuw.mbtiles"
+                - "--output=/data/tiles/map-new.mbtiles"
                 - "--tmpdir=/scratch/tmp"
                 - "--download-dir=/scratch/sources"
                 - "--nodemap-type=sortedtable"
@@ -200,20 +200,20 @@ spec:
               volumeMounts:
                 - { name: scratch, mountPath: /scratch }
                 - { name: data, mountPath: /data }
-            {{- if $pt.wereld.enabled }}
-            # De wereld op lage zoom, uit Natural Earth en de water polygons die
-            # planetiler toch al ophaalt. Zelfde PBF, zodat het gebied ook op lage
-            # zoom zijn eigen namen houdt; daarbuiten alleen vormen, geen labels.
-            - name: planetiler-wereld
+            {{- if $pt.world.enabled }}
+            # The world at low zoom, from Natural Earth and the water polygons that
+            # planetiler fetches anyway. Same PBF, so the region keeps its own names
+            # at low zoom too; outside it only shapes, no labels.
+            - name: planetiler-world
               image: {{ printf "%s:%s" $pt.image.repository $pt.image.tag }}
               imagePullPolicy: IfNotPresent
               args:
                 - "--download"
-                - "--area={{ .Values.gebied.naam }}"
+                - "--area={{ .Values.region.name }}"
                 - "--force"
                 - "--bounds=planet"
-                - "--maxzoom={{ $pt.wereld.maxzoom }}"
-                - "--output=/scratch/wereld.mbtiles"
+                - "--maxzoom={{ $pt.world.maxzoom }}"
+                - "--output=/scratch/world.mbtiles"
                 - "--tmpdir=/scratch/tmp"
                 - "--download-dir=/scratch/sources"
                 - "--nodemap-type=sortedtable"
@@ -224,10 +224,10 @@ spec:
               resources: {{- toYaml $pt.resources | nindent 16 }}
               volumeMounts:
                 - { name: scratch, mountPath: /scratch }
-            - name: samenvoegen
+            - name: merge
               image: docker.io/library/python:3.14-alpine
               imagePullPolicy: IfNotPresent
-              command: ["python3", "/script/samenvoegen.py", "/data/tiles/kaart-nieuw.mbtiles", "/scratch/wereld.mbtiles"]
+              command: ["python3", "/script/merge.py", "/data/tiles/map-new.mbtiles", "/scratch/world.mbtiles"]
               securityContext: {{- include "homemaps.containerSecurity" . | nindent 16 }}
               resources:
                 requests: { cpu: 50m, memory: 128Mi }
@@ -238,19 +238,19 @@ spec:
                 - { name: script, mountPath: /script }
             {{- end }}
           containers:
-            # Een hernoeming binnen hetzelfde volume is atomair en kost geen kopie.
-            # tileserver-gl leest zijn bestanden alleen bij het starten in, dus de
-            # pod moet daarna weg. `delete pod` en geen `rollout restart`: dat
-            # laatste zet een annotatie op het Deployment, en dat is drift.
-            - name: wissel
+            # A rename within the same volume is atomic and costs no copy.
+            # tileserver-gl only reads its files at startup, so the pod has to go
+            # afterwards. `delete pod` and not `rollout restart`: the latter puts an
+            # annotation on the Deployment, and that is drift.
+            - name: swap
               image: docker.io/alpine/kubectl:1.37.0
               imagePullPolicy: IfNotPresent
               command: ["/bin/sh", "-c"]
               args:
                 - |
                   set -eu
-                  test -s /data/tiles/kaart-nieuw.mbtiles
-                  mv /data/tiles/kaart-nieuw.mbtiles /data/tiles/kaart.mbtiles
+                  test -s /data/tiles/map-new.mbtiles
+                  mv /data/tiles/map-new.mbtiles /data/tiles/map.mbtiles
                   kubectl delete pod -l app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/component=tiles --ignore-not-found
               securityContext: {{- include "homemaps.containerSecurity" . | nindent 16 }}
               resources:
@@ -260,9 +260,9 @@ spec:
                 - { name: data, mountPath: /data }
           volumes:
             - name: scratch
-              persistentVolumeClaim: { claimName: {{ include "homemaps.onderdeel" $scratch }} }
+              persistentVolumeClaim: { claimName: {{ include "homemaps.component" $scratch }} }
             - name: data
-              persistentVolumeClaim: { claimName: {{ $naam }} }
+              persistentVolumeClaim: { claimName: {{ $name }} }
             - name: script
-              configMap: { name: {{ $naam }} }
+              configMap: { name: {{ $name }} }
 {{- end }}

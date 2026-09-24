@@ -1,176 +1,176 @@
 import 'package:flutter/foundation.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
-/// Het Dawarich-account waarmee is ingelogd. De API-sleutel staat niet in de
-/// gewone opslag, zie `dawarichGeheimProvider`.
+/// The Dawarich account that is logged in. The API key isn't in regular
+/// storage, see `dawarichSecretProvider`.
 @immutable
 class DawarichAccount {
   const DawarichAccount({
     required this.server,
     required this.email,
     this.userId,
-    this.familie = true,
-    this.toonFamilie = false,
+    this.family = true,
+    this.showFamily = false,
   });
 
-  /// Zonder `/` aan het eind, bijvoorbeeld `https://dawarich.example`.
+  /// Without a trailing `/`, for example `https://dawarich.example`.
   final String server;
   final String email;
 
-  /// Null na inloggen met een geplakte sleutel: `/users/me` geeft hem niet.
+  /// Null after logging in with a pasted key: `/users/me` doesn't return it.
   final int? userId;
 
-  /// Kan dit account familie gebruiken (`features.family`)? Op Dawarich Cloud
-  /// alleen met het Family-abonnement.
-  final bool familie;
+  /// Can this account use family (`features.family`)? On Dawarich Cloud only
+  /// with the Family plan.
+  final bool family;
 
-  /// Familieleden op de kaart tonen.
-  final bool toonFamilie;
+  /// Show family members on the map.
+  final bool showFamily;
 
-  DawarichAccount kopie({bool? familie, bool? toonFamilie}) => DawarichAccount(
+  DawarichAccount copyWith({bool? family, bool? showFamily}) => DawarichAccount(
     server: server,
     email: email,
     userId: userId,
-    familie: familie ?? this.familie,
-    toonFamilie: toonFamilie ?? this.toonFamilie,
+    family: family ?? this.family,
+    showFamily: showFamily ?? this.showFamily,
   );
 
-  Map<String, Object?> naarMap() => {
+  Map<String, Object?> toMap() => {
     'server': server,
     'email': email,
     'userId': userId,
-    'familie': familie,
-    'toonFamilie': toonFamilie,
+    'family': family,
+    'showFamily': showFamily,
   };
 
-  static DawarichAccount? vanMap(Object? ruw) {
-    if (ruw is! Map) return null;
-    final server = ruw['server'];
+  static DawarichAccount? fromMap(Object? raw) {
+    if (raw is! Map) return null;
+    final server = raw['server'];
     if (server is! String || server.isEmpty) return null;
     return DawarichAccount(
       server: server,
-      email: ruw['email'] as String? ?? '',
-      userId: (ruw['userId'] as num?)?.toInt(),
-      familie: ruw['familie'] != false,
-      toonFamilie: ruw['toonFamilie'] == true,
+      email: raw['email'] as String? ?? '',
+      userId: (raw['userId'] as num?)?.toInt(),
+      family: raw['family'] != false,
+      showFamily: raw['showFamily'] == true,
     );
   }
 }
 
-/// Hoe lang je je locatie met de familie deelt; de waarden zijn die van
-/// Dawarich.
-enum DeelDuur {
-  uur1('1h'),
-  uur6('6h'),
-  uur12('12h'),
-  uur24('24h'),
-  altijd('permanent');
+/// How long you share your location with the family; the values are
+/// Dawarich's.
+enum ShareDuration {
+  hour1('1h'),
+  hour6('6h'),
+  hour12('12h'),
+  hour24('24h'),
+  always('permanent');
 
-  const DeelDuur(this.waarde);
+  const ShareDuration(this.value);
 
-  final String waarde;
+  final String value;
 
-  static DeelDuur? van(Object? waarde) =>
-      values.where((d) => d.waarde == waarde).firstOrNull;
+  static ShareDuration? from(Object? value) =>
+      values.where((d) => d.value == value).firstOrNull;
 }
 
-/// Jouw plek in de familie, uit `/api/v1/families/mine`.
+/// Your place in the family, from `/api/v1/families/mine`.
 @immutable
-class FamilieStatus {
-  const FamilieStatus({
-    required this.naam,
-    required this.delenAan,
-    this.duur,
-    this.verlooptOm,
-    this.leden = const [],
+class FamilyStatus {
+  const FamilyStatus({
+    required this.label,
+    required this.sharingEnabled,
+    this.duration,
+    this.expiresAt,
+    this.members = const [],
   });
 
-  final String naam;
-  final bool delenAan;
+  final String label;
+  final bool sharingEnabled;
 
-  /// Null als Dawarich een eigen aantal uren gaf.
-  final DeelDuur? duur;
+  /// Null when Dawarich gave a custom number of hours.
+  final ShareDuration? duration;
 
-  /// Null bij "altijd".
-  final DateTime? verlooptOm;
+  /// Null for "always".
+  final DateTime? expiresAt;
 
-  /// De e-mailadressen van de anderen in de familie.
-  final List<String> leden;
+  /// The email addresses of the others in the family.
+  final List<String> members;
 
-  factory FamilieStatus.vanJson(Map<String, dynamic> json) {
-    final delen = (json['me'] as Map?)?['sharing'] as Map? ?? const {};
-    final mijnId = (json['me'] as Map?)?['user_id'];
-    return FamilieStatus(
-      naam: (json['family'] as Map?)?['name'] as String? ?? '',
-      delenAan: delen['enabled'] == true,
-      duur: DeelDuur.van(delen['duration']),
-      verlooptOm: DateTime.tryParse('${delen['expires_at']}')?.toLocal(),
-      leden: [
-        for (final lid in (json['members'] as List? ?? const []))
-          if (lid is Map && lid['user_id'] != mijnId) '${lid['email']}',
+  factory FamilyStatus.fromJson(Map<String, dynamic> json) {
+    final sharing = (json['me'] as Map?)?['sharing'] as Map? ?? const {};
+    final myId = (json['me'] as Map?)?['user_id'];
+    return FamilyStatus(
+      label: (json['family'] as Map?)?['name'] as String? ?? '',
+      sharingEnabled: sharing['enabled'] == true,
+      duration: ShareDuration.from(sharing['duration']),
+      expiresAt: DateTime.tryParse('${sharing['expires_at']}')?.toLocal(),
+      members: [
+        for (final member in (json['members'] as List? ?? const []))
+          if (member is Map && member['user_id'] != myId) '${member['email']}',
       ],
     );
   }
 }
 
-/// De laatste plek van een familielid dat zijn locatie deelt.
+/// The last position of a family member who shares their location.
 @immutable
-class FamilieLocatie {
-  const FamilieLocatie({
+class FamilyLocation {
+  const FamilyLocation({
     required this.userId,
     required this.email,
-    required this.initiaal,
-    required this.punt,
-    required this.tijd,
-    this.batterij,
+    required this.initial,
+    required this.point,
+    required this.time,
+    this.battery,
   });
 
   final int userId;
   final String email;
-  final String initiaal;
-  final LatLng punt;
-  final DateTime tijd;
+  final String initial;
+  final LatLng point;
+  final DateTime time;
 
-  /// Procent, als Dawarich het weet.
-  final int? batterij;
+  /// Percent, if Dawarich knows it.
+  final int? battery;
 
-  /// Eén regel uit `/api/v1/families/locations`; null als er iets ontbreekt.
-  static FamilieLocatie? vanJson(Map<String, dynamic> json) {
+  /// One row from `/api/v1/families/locations`; null if something is missing.
+  static FamilyLocation? fromJson(Map<String, dynamic> json) {
     final id = json['user_id'], lat = json['latitude'], lon = json['longitude'];
     if (id is! num) return null;
-    final breedte = lat is num ? lat.toDouble() : double.tryParse('$lat');
-    final lengte = lon is num ? lon.toDouble() : double.tryParse('$lon');
-    if (breedte == null || lengte == null) return null;
+    final latitude = lat is num ? lat.toDouble() : double.tryParse('$lat');
+    final longitude = lon is num ? lon.toDouble() : double.tryParse('$lon');
+    if (latitude == null || longitude == null) return null;
     final ts = json['timestamp'];
-    final tijd = ts is num
+    final time = ts is num
         ? DateTime.fromMillisecondsSinceEpoch(ts.toInt() * 1000)
         : DateTime.tryParse('$ts')?.toLocal() ?? DateTime.now();
     final email = json['email'] as String? ?? '';
-    final initiaal = json['email_initial'] as String? ?? '';
-    return FamilieLocatie(
+    final initial = json['email_initial'] as String? ?? '';
+    return FamilyLocation(
       userId: id.toInt(),
       email: email,
-      initiaal:
-          (initiaal.isNotEmpty
-                  ? initiaal
+      initial:
+          (initial.isNotEmpty
+                  ? initial
                   : email.isNotEmpty
                   ? email.substring(0, 1)
                   : '?')
               .toUpperCase(),
-      punt: LatLng(breedte, lengte),
-      tijd: tijd,
-      batterij: (json['battery'] as num?)?.round(),
+      point: LatLng(latitude, longitude),
+      time: time,
+      battery: (json['battery'] as num?)?.round(),
     );
   }
 
   @override
   bool operator ==(Object other) =>
-      other is FamilieLocatie &&
+      other is FamilyLocation &&
       other.userId == userId &&
-      other.punt == punt &&
-      other.tijd == tijd &&
-      other.batterij == batterij;
+      other.point == point &&
+      other.time == time &&
+      other.battery == battery;
 
   @override
-  int get hashCode => Object.hash(userId, punt, tijd, batterij);
+  int get hashCode => Object.hash(userId, point, time, battery);
 }

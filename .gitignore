@@ -1,4 +1,4 @@
-# Lokale werkmappen van ci/ en de importer-tests
+# Local working dirs of ci/ and the importer tests
 /ci/.work/
 __pycache__/
 *.pyc
@@ -7,4 +7,4 @@ __pycache__/
 .ruff_cache/
 # Helm
 /chart/*/charts/*.tgz
-ci/e2e/uitvoer/
+ci/e2e/output/

@@ -1,5 +1,5 @@
-# De web-image heeft alleen de nginx-config en de kant-en-klare web-build nodig;
-# zonder dit gaat de hele repo (met build-mappen van gigabytes) als context mee.
+# The web image only needs the nginx config and the ready-made web build;
+# without this the whole repo (with gigabytes of build dirs) goes along as context.
 *
 !docker/web/
 !app/build/web/

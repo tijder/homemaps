@@ -1,5 +1,5 @@
 {{- if and .Values.httpRoute.enabled .Values.web.enabled }}
-{{- $w := dict "root" . "naam" "web" }}
+{{- $w := dict "root" . "name" "web" }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -10,6 +10,6 @@ spec:
   hostnames: {{- toYaml .Values.httpRoute.hostnames | nindent 4 }}
   rules:
     - backendRefs:
-        - name: {{ include "homemaps.onderdeel" $w }}
+        - name: {{ include "homemaps.component" $w }}
           port: 8080
 {{- end }}

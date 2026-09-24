@@ -1,0 +1,28 @@
+# A web server with the fake feeds. The files come from a ConfigMap that
+# ci/up.sh fills from generate.py (binaryData, since it's gzip).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fake-ndw
+spec:
+  selector: { matchLabels: { app: fake-ndw } }
+  template:
+    metadata: { labels: { app: fake-ndw } }
+    spec:
+      containers:
+        - name: http
+          image: docker.io/library/python:3.14-alpine
+          command: ["python3", "-m", "http.server", "8080", "--directory", "/feeds"]
+          ports: [{ containerPort: 8080 }]
+          volumeMounts: [{ name: feeds, mountPath: /feeds }]
+      volumes:
+        - name: feeds
+          configMap: { name: fake-ndw }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fake-ndw
+spec:
+  selector: { app: fake-ndw }
+  ports: [{ port: 8080 }]

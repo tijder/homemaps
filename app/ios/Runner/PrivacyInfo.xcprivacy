@@ -2,11 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Required-reason APIs the app target itself touches through dart:io: hive leest en
-	     schrijft zijn boxen in de Documents-map (FileTimestamp) en de instellingen van de
-	     plugins staan in NSUserDefaults. Plugins leveren hun eigen manifest; dit dekt alleen
-	     de app. Noemt een ITMS-91053-mail van App Store Connect meer categorieën, voeg die
-	     dan hier toe. -->
+	<!-- Required-reason APIs the app target itself touches through dart:io: hive reads and
+	     writes its boxes in the Documents folder (FileTimestamp) and the plugins' settings
+	     live in NSUserDefaults. Plugins ship their own manifest; this only covers the
+	     app. If an ITMS-91053 email from App Store Connect names more categories, add
+	     them here. -->
 	<key>NSPrivacyAccessedAPITypes</key>
 	<array>
 		<dict>

@@ -1,12 +1,12 @@
 {{- if .Values.photon.enabled }}
-{{- $p := dict "root" . "naam" "photon" }}
-{{- $naam := include "homemaps.onderdeel" $p }}
+{{- $p := dict "root" . "name" "photon" }}
+{{- $name := include "homemaps.component" $p }}
 {{ include "homemaps.pvc" (merge (dict "size" .Values.photon.size) $p) }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ $naam }}
+  name: {{ $name }}
   labels: {{- include "homemaps.labels" $p | nindent 4 }}
 spec:
   {{- with .Values.photon.ipFamilies }}
@@ -20,7 +20,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ $naam }}
+  name: {{ $name }}
   labels: {{- include "homemaps.labels" $p | nindent 4 }}
 spec:
   replicas: 1
@@ -39,8 +39,8 @@ spec:
       {{- end }}
       securityContext: {{- include "homemaps.podSecurity" (dict "root" . "uid" .Values.photon.runAsUser) | nindent 8 }}
       containers:
-        # Het image haalt bij de eerste start de index op en houdt hem daarna zelf
-        # bij; er is dus geen bouwjob.
+        # The image fetches the index on first start and keeps it up to date
+        # itself; so there is no build job.
         - name: photon
           image: {{ include "homemaps.image" (dict "root" . "image" .Values.photon.image) }}
           imagePullPolicy: {{ .Values.photon.image.pullPolicy }}
@@ -49,16 +49,16 @@ spec:
             - { name: LOG_LEVEL, value: "INFO" }
             - { name: FILE_URL, value: {{ .Values.photon.dbUrl | quote }} }
             - { name: MD5_URL, value: {{ printf "%s.md5" .Values.photon.dbUrl | quote }} }
-            # Expliciet, en niet aan de JVM overgelaten: die leidt zijn heap af van het
-            # geheugen dat hij ziet, en dat is niet overal de limiet van de pod. In
-            # kind op een GitHub-runner nam hij 3,9 GB bij een limiet van 1 GiB, en
-            # OpenSearch weigert dan te starten ("total physical memory minus JVM heap
-            # is non-positive").
+            # Explicit, and not left to the JVM: it derives its heap from the memory
+            # it sees, and that is not the pod's limit everywhere. In kind on a
+            # GitHub runner it took 3.9 GB with a limit of 1 GiB, and OpenSearch
+            # then refuses to start ("total physical memory minus JVM heap is
+            # non-positive").
             - { name: JAVA_PARAMS, value: {{ printf "-Xms%s -Xmx%s" .Values.photon.heap .Values.photon.heap | quote }} }
           securityContext: {{- include "homemaps.containerSecurity" . | nindent 12 }}
           ports:
             - { name: http, containerPort: 2322 }
-          # De eerste start downloadt en pakt de index uit; dat duurt lang.
+          # The first start downloads and unpacks the index; that takes a long time.
           startupProbe:
             httpGet: { path: /status, port: http }
             periodSeconds: 30
@@ -72,7 +72,7 @@ spec:
             - { name: tmp, mountPath: /tmp }
       volumes:
         - name: data
-          persistentVolumeClaim: { claimName: {{ $naam }} }
+          persistentVolumeClaim: { claimName: {{ $name }} }
         - name: tmp
           emptyDir: { sizeLimit: 1Gi }
 {{- end }}

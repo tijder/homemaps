@@ -1,10 +1,10 @@
 {{- if .Values.web.enabled }}
-{{- $w := dict "root" . "naam" "web" }}
-{{- $naam := include "homemaps.onderdeel" $w }}
+{{- $w := dict "root" . "name" "web" }}
+{{- $name := include "homemaps.component" $w }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ $naam }}
+  name: {{ $name }}
   labels: {{- include "homemaps.labels" $w | nindent 4 }}
 data:
   config.json: {{ .Values.web.config | toJson | quote }}
@@ -12,7 +12,7 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ $naam }}
+  name: {{ $name }}
   labels: {{- include "homemaps.labels" $w | nindent 4 }}
 spec:
   selector: {{- include "homemaps.selector" $w | nindent 4 }}
@@ -22,13 +22,13 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ $naam }}
+  name: {{ $name }}
   labels: {{- include "homemaps.labels" $w | nindent 4 }}
 spec:
   replicas: 1
   revisionHistoryLimit: 0
-  # Eén replica op mogelijk één node: met een surge-rollout kan de nieuwe pod
-  # blijven hangen; eerst stoppen, dan starten werkt altijd.
+  # One replica on possibly one node: with a surge rollout the new pod can get
+  # stuck; stopping first, then starting always works.
   strategy:
     type: Recreate
   selector:
@@ -51,14 +51,14 @@ spec:
           image: {{ include "homemaps.image" (dict "root" . "image" .Values.web.image) }}
           imagePullPolicy: {{ .Values.web.image.pullPolicy }}
           env:
-            # nginx proxyt /valhalla, /geocode, /tiles en /verkeer hierheen. Een
-            # onderdeel dat uit staat levert op zijn pad een 502, niets ergers.
-            # Volledige namen: de resolver van nginx kent de search-domeinen van
-            # de pod niet.
-            - { name: VALHALLA_UPSTREAM, value: "http://{{ include "homemaps.onderdeel" (dict "root" . "naam" "valhalla") }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}:8002" }
-            - { name: PHOTON_UPSTREAM, value: "http://{{ include "homemaps.onderdeel" (dict "root" . "naam" "photon") }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}:2322" }
-            - { name: VERKEER_UPSTREAM, value: "http://{{ include "homemaps.onderdeel" (dict "root" . "naam" "valhalla") }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}:9100" }
-            - { name: TILES_UPSTREAM, value: "http://{{ include "homemaps.onderdeel" (dict "root" . "naam" "tiles") }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}:8080" }
+            # nginx proxies /valhalla, /geocode, /tiles and /traffic here. A
+            # component that is disabled yields a 502 on its path, nothing worse.
+            # Fully qualified names: nginx's resolver does not know the pod's
+            # search domains.
+            - { name: VALHALLA_UPSTREAM, value: "http://{{ include "homemaps.component" (dict "root" . "name" "valhalla") }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}:8002" }
+            - { name: PHOTON_UPSTREAM, value: "http://{{ include "homemaps.component" (dict "root" . "name" "photon") }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}:2322" }
+            - { name: TRAFFIC_UPSTREAM, value: "http://{{ include "homemaps.component" (dict "root" . "name" "valhalla") }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}:9100" }
+            - { name: TILES_UPSTREAM, value: "http://{{ include "homemaps.component" (dict "root" . "name" "tiles") }}.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}:8080" }
           securityContext: {{- include "homemaps.containerSecurity" . | nindent 12 }}
           ports:
             - { name: http, containerPort: 8080 }
@@ -72,5 +72,5 @@ spec:
             - { name: config, mountPath: /usr/share/nginx/html/config }
       volumes:
         - name: config
-          configMap: { name: {{ $naam }} }
+          configMap: { name: {{ $name }} }
 {{- end }}

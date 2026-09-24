@@ -1,10 +1,10 @@
-{{- if and .Values.valhalla.enabled .Values.valhalla.verkeer.enabled }}
-{{- $v := dict "root" . "naam" "valhalla" }}
+{{- if and .Values.valhalla.enabled .Values.valhalla.traffic.enabled }}
+{{- $v := dict "root" . "name" "valhalla" }}
 {{- if .Values.monitoring.serviceMonitor.enabled }}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: {{ include "homemaps.fullname" . }}-verkeer
+  name: {{ include "homemaps.fullname" . }}-traffic
   labels:
     {{- include "homemaps.labels" $v | nindent 4 }}
     {{- with .Values.monitoring.serviceMonitor.labels }}
@@ -22,7 +22,7 @@ spec:
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: {{ include "homemaps.fullname" . }}-verkeer
+  name: {{ include "homemaps.fullname" . }}-traffic
   labels:
     {{- include "homemaps.labels" $v | nindent 4 }}
     {{- with .Values.monitoring.prometheusRule.labels }}
@@ -30,24 +30,24 @@ metadata:
     {{- end }}
 spec:
   groups:
-    - name: homemaps-verkeer
+    - name: homemaps-traffic
       rules:
-        # Valhalla kent geen veroudering: schrijft de importer niet meer, dan
-        # blijven de files van toen in elke route zitten.
-        - alert: HomemapsVerkeerVerouderd
-          expr: time() - homemaps_traffic_laatste_ronde_timestamp_seconds > {{ .Values.monitoring.prometheusRule.maxLeeftijdSeconden }}
+        # Valhalla has no notion of staleness: if the importer stops writing, the
+        # traffic jams of that moment stay in every route.
+        - alert: HomemapsTrafficStale
+          expr: time() - homemaps_traffic_last_cycle_timestamp_seconds > {{ .Values.monitoring.prometheusRule.maxAgeSeconds }}
           for: 5m
           labels:
             severity: warning
           annotations:
-            summary: De verkeersimporter heeft al {{ "{{ $value | humanizeDuration }}" }} geen ronde afgemaakt
-            description: Live verkeer in Valhalla is verouderd. Kijk in de logs van container `verkeer` in de valhalla-pod.
-        - alert: HomemapsVerkeerAfwezig
-          expr: absent(homemaps_traffic_laatste_ronde_timestamp_seconds)
+            summary: The traffic importer has not finished a cycle for {{ "{{ $value | humanizeDuration }}" }}
+            description: Live traffic in Valhalla is stale. Check the logs of container `traffic` in the valhalla pod.
+        - alert: HomemapsTrafficAbsent
+          expr: absent(homemaps_traffic_last_cycle_timestamp_seconds)
           for: 30m
           labels:
             severity: warning
           annotations:
-            summary: De verkeersimporter levert geen metrics
+            summary: The traffic importer is not reporting metrics
 {{- end }}
 {{- end }}

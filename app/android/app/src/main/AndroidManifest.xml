@@ -1,17 +1,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Zonder deze permissie heeft een release-build geen netwerk (debug krijgt hem vanzelf). -->
+    <!-- Without this permission a release build has no network (debug gets it automatically). -->
     <uses-permission android:name="android.permission.INTERNET"/>
-    <!-- Je eigen plek op de kaart; pas gevraagd als je op "Mijn locatie" tikt. -->
+    <!-- Your own position on the map; only requested when you tap "My location". -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-    <!-- Navigatie met het scherm uit: geolocators voorgronddienst (type location)
-         met een blijvende melding. Die start terwijl de app voorop staat, dus
-         "tijdens gebruik" is genoeg; ACCESS_BACKGROUND_LOCATION is niet nodig. -->
+    <!-- Navigation with the screen off: geolocator's foreground service (type location)
+         with a persistent notification. It starts while the app is in the foreground, so
+         "while in use" is enough; ACCESS_BACKGROUND_LOCATION is not needed. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
-    <!-- Gevraagd bij de start van navigatie (Android 13+). Zonder draait de dienst
-         ook, alleen zonder zichtbare melding. -->
+    <!-- Requested when navigation starts (Android 13+). Without it the service still
+         runs, just without a visible notification. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="HomeMaps"
@@ -38,8 +38,8 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Een adres of punt uit een andere app: "Openen met HomeMaps" bij
-                 een geo:-link (agenda, contacten, websites), en "navigeren naar"
+            <!-- An address or point from another app: "Open with HomeMaps" for
+                 a geo: link (calendar, contacts, websites), and "navigate to"
                  via google.navigation:. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
@@ -69,8 +69,8 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
-        <!-- Gesproken instructies: vanaf Android 11 ziet de app de spraakengine
-             anders niet. -->
+        <!-- Spoken instructions: from Android 11 the app can't see the speech engine
+             otherwise. -->
         <intent>
             <action android:name="android.intent.action.TTS_SERVICE"/>
         </intent>

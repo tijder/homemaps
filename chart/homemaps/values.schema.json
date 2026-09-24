@@ -1,14 +1,14 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "type": "object",
-  "required": ["gebied", "storage", "web", "tiles", "valhalla", "photon"],
+  "required": ["region", "storage", "web", "tiles", "valhalla", "photon"],
   "properties": {
     "clusterDomain": { "type": "string", "minLength": 1 },
-    "gebied": {
+    "region": {
       "type": "object",
-      "required": ["naam", "pbfUrl"],
+      "required": ["name", "pbfUrl"],
       "properties": {
-        "naam": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
         "pbfUrl": { "type": "string", "pattern": "^https?://" },
         "bbox": { "type": "string", "pattern": "^$|^-?[0-9.]+,-?[0-9.]+,-?[0-9.]+,-?[0-9.]+$" }
       }
@@ -31,7 +31,7 @@
         "planetiler": {
           "type": "object",
           "properties": {
-            "wereld": {
+            "world": {
               "type": "object",
               "properties": { "enabled": { "type": "boolean" }, "maxzoom": { "type": "integer", "minimum": 0, "maximum": 10 } }
             }
@@ -45,13 +45,13 @@
       "properties": {
         "enabled": { "type": "boolean" },
         "threads": { "type": "integer", "minimum": 1 },
-        "verkeer": {
+        "traffic": {
           "type": "object",
           "properties": {
             "enabled": { "type": "boolean" },
-            "intervalSeconden": { "type": "integer", "minimum": 60 },
-            "afsluitingen": { "type": "boolean" },
-            "msiSeconden": { "type": "integer", "minimum": 0 }
+            "intervalSeconds": { "type": "integer", "minimum": 60 },
+            "closures": { "type": "boolean" },
+            "msiSeconds": { "type": "integer", "minimum": 0 }
           }
         }
       }

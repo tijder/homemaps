@@ -1,20 +1,20 @@
-"""De lus: NDW ophalen, op edges leggen, traffic.tar bijwerken, meten.
+"""The loop: fetch NDW, lay it onto edges, update traffic.tar, measure.
 
-Instellingen komen uit de omgeving (de chart zet ze):
+Settings come from the environment (the chart sets them):
 
-  TRAFFIC_TAR        pad naar traffic.tar            (/data/traffic.tar)
-  VALHALLA_URL       de Valhalla in dezelfde pod     (http://localhost:8002)
-  CACHE_DIR          waar de match-cache mag staan   (/data/importer)
-  NDW_URL            basis van de feeds              (https://opendata.ndw.nu)
-  INTERVAL_SECONDEN  tussen twee rondes              (300)
-  AFSLUITINGEN       "false" zet die feed uit        (true)
-  MELDINGEN          "false" zet de SRTI-feed uit    (true)
-  PLANNING_SECONDEN  hoe vaak de planningsfeed        (3600; 0 = nooit)
-  SNELHEDEN          "false" zet tijdelijke maximumsnelheden uit (true)
-  OSM_PBF            het OSM-bestand van de tileset    (/data/bron/gebied.osm.pbf)
-  MSI_SECONDEN       hoe vaak de matrixborden          (60; 0 = nooit)
-  BRUGGEN            "false" zet open bruggen uit      (true)
-  METRICS_POORT      /metrics en /verkeer.geojson    (9100)
+  TRAFFIC_TAR        path to traffic.tar             (/data/traffic.tar)
+  VALHALLA_URL       the Valhalla in the same pod    (http://localhost:8002)
+  CACHE_DIR          where the match cache may live  (/data/importer)
+  NDW_URL            base of the feeds               (https://opendata.ndw.nu)
+  INTERVAL_SECONDS   between two cycles              (300)
+  CLOSURES           "false" turns that feed off     (true)
+  INCIDENTS          "false" turns the SRTI feed off (true)
+  PLANNING_SECONDS   how often the planning feed     (3600; 0 = never)
+  SPEED_LIMITS       "false" turns temporary maximum speeds off (true)
+  OSM_PBF            the tileset's OSM file          (/data/source/region.osm.pbf)
+  MSI_SECONDS        how often the MSI signs         (60; 0 = never)
+  BRIDGES            "false" turns open bridges off  (true)
+  METRICS_PORT       /metrics and /traffic.geojson   (9100)
 """
 
 import io
@@ -34,7 +34,7 @@ from pathlib import Path
 from socket import AF_INET6
 from xml.etree.ElementTree import ParseError
 
-from . import datex3, kaartlaag, msi, osmregels
+from . import datex3, maplayer, msi, osmrules
 from . import traffictile as tt
 from .matcher import Match, MatchCache, Valhalla
 from .tarindex import TrafficTar
@@ -43,189 +43,190 @@ log = logging.getLogger("homemaps_traffic")
 
 SRTI = "veiligheidsgerelateerde_berichten_srti.xml.gz"
 PLANNING = "planningsfeed_wegwerkzaamheden_en_evenementen.xml.gz"
-SNELHEDEN = "tijdelijke_verkeersmaatregelen_maximum_snelheden.xml.gz"
-ACTUEEL = "actueel_beeld.xml.gz"
-MSI_BEELDEN = "Matrixsignaalinformatie.xml.gz"
-MSI_LOCATIES = "ndw_msi_shapefiles_latest.zip"
-# De plekken van de borden veranderen zelden.
-MSI_LOCATIES_SECONDEN = 24 * 3600
-# Tijdelijke maximumsnelheden uit de planningsfeed: zo ver vooruit, zodat een
-# beperking die ingaat voordat de feed weer wordt opgehaald (eens per uur) op
-# tijd meetelt.
-SNELHEID_VOORUIT = timedelta(hours=2)
-# Zo ver vooruit gaan geplande afsluitingen mee (de app laat een week kiezen).
-PLANNING_VOORUIT = timedelta(days=8)
-MAX_KPH = 160  # daarboven is het een meetfout, geen auto
+SPEED_LIMITS = "tijdelijke_verkeersmaatregelen_maximum_snelheden.xml.gz"
+CURRENT_SITUATION = "actueel_beeld.xml.gz"
+MSI_DISPLAYS = "Matrixsignaalinformatie.xml.gz"
+MSI_LOCATIONS = "ndw_msi_shapefiles_latest.zip"
+# The locations of the signs rarely change.
+MSI_LOCATIONS_SECONDS = 24 * 3600
+# Temporary maximum speeds from the planning feed: this far ahead, so that a
+# restriction that starts before the feed is fetched again (once an hour)
+# counts in time.
+SPEED_LIMIT_LOOKAHEAD = timedelta(hours=2)
+# Planned closures are included this far ahead (the app lets you pick a week).
+PLANNING_LOOKAHEAD = timedelta(days=8)
+MAX_KPH = 160  # above that it is a measurement error, not a car
 
 
-def bereken_snelheden(
-    reistijden: Iterable[datex3.Reistijd], matches: dict[str, Match | None]
+def compute_speeds(
+    travel_times: Iterable[datex3.TravelTime], matches: dict[str, Match | None]
 ) -> dict[int, int]:
-    """Eén record per edge. Ligt een edge onder meerdere segmenten, dan telt elk
-    segment mee naar rato van de lengte die het op die edge heeft."""
-    som: dict[int, list[float]] = defaultdict(lambda: [0.0, 0.0, 0.0])  # m, m/kph, m/vrij
-    for reistijd in reistijden:
-        match = matches.get(reistijd.sleutel)
+    """One record per edge. If an edge lies under several segments, each segment
+    counts in proportion to the length it has on that edge."""
+    sums: dict[int, list[float]] = defaultdict(lambda: [0.0, 0.0, 0.0])  # m, m/kph, m/free
+    for travel_time in travel_times:
+        match = matches.get(travel_time.key)
         if not match:
             continue
-        kph = match.lengte_m / reistijd.seconden * 3.6
+        kph = match.length_m / travel_time.seconds * 3.6
         if kph > MAX_KPH:
             continue
-        vrij = (
-            match.lengte_m / reistijd.normaal_seconden * 3.6 if reistijd.normaal_seconden else None
+        freeflow = (
+            match.length_m / travel_time.normal_seconds * 3.6
+            if travel_time.normal_seconds
+            else None
         )
-        for graphid, lengte, _ in match.edges:
-            totaal = som[graphid]
-            totaal[0] += lengte
-            totaal[1] += lengte / max(kph, 0.1)
-            if vrij:
-                totaal[2] += lengte / max(vrij, 0.1)
+        for graphid, length, _ in match.edges:
+            total = sums[graphid]
+            total[0] += length
+            total[1] += length / max(kph, 0.1)
+            if freeflow:
+                total[2] += length / max(freeflow, 0.1)
     return {
-        graphid: tt.snelheid(meters / per_kph, meters / per_vrij if per_vrij else None)
-        for graphid, (meters, per_kph, per_vrij) in som.items()
+        graphid: tt.speed(meters / per_kph, meters / per_free if per_free else None)
+        for graphid, (meters, per_kph, per_free) in sums.items()
         if meters > 0
     }
 
 
-def bereken_afsluitingen(
-    afsluitingen: Iterable[datex3.Afsluiting], matches: dict[str, Match | None]
+def compute_closures(
+    closures: Iterable[datex3.Closure], matches: dict[str, Match | None]
 ) -> dict[int, int]:
-    """De lijn van NDW loopt in één richting. De tegenrichting gaat mee dicht als
-    hij over dezelfde OSM-way loopt: dan is het één rijbaan en ligt het werk op de
-    hele weg. Bij gescheiden rijbanen heeft de overkant een eigen way en blijft
-    hij open -- behalve bij `roadClosed`, dat de hele weg betreft."""
-    dicht: dict[int, int] = {}
-    for afsluiting in afsluitingen:
-        heen = matches.get(afsluiting.sleutel)
-        if not heen:
+    """NDW's line runs in one direction. The opposite direction is closed too if
+    it runs over the same OSM way: then it is a single carriageway and the work
+    covers the whole road. On dual carriageways the other side has its own way
+    and stays open -- except with `roadClosed`, which concerns the whole road."""
+    closed: dict[int, int] = {}
+    for closure in closures:
+        forward = matches.get(closure.key)
+        if not forward:
             continue
-        ways = {way for _, _, way in heen.edges}
-        for graphid, _, _ in heen.edges:
-            dicht[graphid] = tt.afgesloten()
-        terug = matches.get(afsluiting.sleutel + "#terug")
-        if terug:
-            for graphid, _, way in terug.edges:
-                if afsluiting.hele_weg or way in ways:
-                    dicht[graphid] = tt.afgesloten()
-    return dicht
+        ways = {way for _, _, way in forward.edges}
+        for graphid, _, _ in forward.edges:
+            closed[graphid] = tt.closed()
+        reverse = matches.get(closure.key + "#reverse")
+        if reverse:
+            for graphid, _, way in reverse.edges:
+                if closure.whole_road or way in ways:
+                    closed[graphid] = tt.closed()
+    return closed
 
 
-def leg_snelheden(
-    snelheden: Iterable[datex3.TijdelijkeSnelheid], matches: dict[str, Match | None]
-) -> list[tuple[datex3.TijdelijkeSnelheid, Match]]:
-    """Elke tijdelijke maximumsnelheid met de weg waar hij op ligt. De lijn van
-    NDW loopt in één richting; de tegenrichting telt mee als hij helemaal over
-    dezelfde OSM-way(s) loopt (één rijbaan: een 30 bij werk geldt voor beide
-    kanten). Een gescheiden rijbaan heeft een eigen way en blijft erbuiten."""
-    uit = []
-    for snelheid in snelheden:
-        heen = matches.get(snelheid.sleutel)
-        if not heen:
+def place_speed_limits(
+    limits: Iterable[datex3.TemporarySpeedLimit], matches: dict[str, Match | None]
+) -> list[tuple[datex3.TemporarySpeedLimit, Match]]:
+    """Every temporary maximum speed with the road it lies on. NDW's line runs
+    in one direction; the opposite direction counts if it runs entirely over the
+    same OSM way(s) (a single carriageway: a 30 at road works applies to both
+    sides). A dual carriageway has its own way and stays out."""
+    out = []
+    for limit in limits:
+        forward = matches.get(limit.key)
+        if not forward:
             continue
-        uit.append((snelheid, heen))
-        terug = matches.get(snelheid.sleutel + "#terug")
-        ways = {way for _, _, way in heen.edges}
-        if terug and all(way in ways for _, _, way in terug.edges):
-            uit.append((snelheid, terug))
-    return uit
+        out.append((limit, forward))
+        reverse = matches.get(limit.key + "#reverse")
+        ways = {way for _, _, way in forward.edges}
+        if reverse and all(way in ways for _, _, way in reverse.edges):
+            out.append((limit, reverse))
+    return out
 
 
-class Stand:
-    """Wat /metrics en de lagen laten zien. De verkeerslaag bestaat uit delen die
-    elk hun eigen draad bijwerkt (de ronde, de matrixborden); bij elke wijziging
-    wordt hij opnieuw samengesteld."""
+class State:
+    """What /metrics and the layers show. The traffic layer consists of parts
+    that each get updated by their own thread (the cycle, the MSI signs); it is
+    reassembled on every change."""
 
     def __init__(self):
-        self.slot = threading.Lock()
-        self.waarden: dict[str, float] = {}
-        self.laag: tuple[bytes, bytes] | None = None  # (gewoon, gzip)
-        self.delen: dict[str, list[dict]] = {}
-        self.gepland: tuple[bytes, bytes] | None = None
-        self.tijden: tuple[bytes, bytes] | None = None
+        self.lock = threading.Lock()
+        self.values: dict[str, float] = {}
+        self.layer: tuple[bytes, bytes] | None = None  # (plain, gzip)
+        self.parts: dict[str, list[dict]] = {}
+        self.planned: tuple[bytes, bytes] | None = None
+        self.conditional_speeds: tuple[bytes, bytes] | None = None
 
-    def zet_deel(self, naam: str, features: list[dict]) -> None:
-        """Het deel [naam] van de verkeerslaag. De laag komt pas beschikbaar als
-        de ronde er is: die is de kern (afsluitingen, files)."""
-        with self.slot:
-            self.delen[naam] = features
-            if "ronde" in self.delen:
-                self.laag = kaartlaag.geojson(
-                    [feature for deel in self.delen.values() for feature in deel]
+    def set_part(self, name: str, features: list[dict]) -> None:
+        """The part [name] of the traffic layer. The layer only becomes available
+        once the cycle is there: that is the core (closures, jams)."""
+        with self.lock:
+            self.parts[name] = features
+            if "cycle" in self.parts:
+                self.layer = maplayer.geojson(
+                    [feature for part in self.parts.values() for feature in part]
                 )
 
-    def zet_tijden(self, inhoud: tuple[bytes, bytes]) -> None:
-        with self.slot:
-            self.tijden = inhoud
+    def set_conditional_speeds(self, content: tuple[bytes, bytes]) -> None:
+        with self.lock:
+            self.conditional_speeds = content
 
-    def zet_gepland(self, laag: tuple[bytes, bytes]) -> None:
-        with self.slot:
-            self.gepland = laag
+    def set_planned(self, layer: tuple[bytes, bytes]) -> None:
+        with self.lock:
+            self.planned = layer
 
-    def zet(self, **waarden: float) -> None:
-        with self.slot:
-            self.waarden.update(waarden)
+    def set(self, **values: float) -> None:
+        with self.lock:
+            self.values.update(values)
 
-    def tekst(self) -> str:
-        with self.slot:
+    def text(self) -> str:
+        with self.lock:
             return "".join(
-                f"homemaps_traffic_{naam} {waarde}\n"
-                for naam, waarde in sorted(self.waarden.items())
+                f"homemaps_traffic_{name} {value}\n" for name, value in sorted(self.values.items())
             )
 
 
 class _Server(ThreadingHTTPServer):
-    # Dual-stack: probes en Prometheus komen in dit cluster over IPv6 binnen.
+    # Dual-stack: probes and Prometheus come in over IPv6 in this cluster.
     address_family = AF_INET6
 
 
-def start_metrics(stand: Stand, poort: int) -> None:
+def start_metrics(state: State, port: int) -> None:
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
-            pad = self.path.split("?")[0]
-            if pad == "/verkeer.geojson":
-                self._laag(stand.laag, 60)
+            path = self.path.split("?")[0]
+            if path == "/traffic.geojson":
+                self._layer(state.layer, 60)
                 return
-            if pad == "/verkeer-gepland.geojson":
-                self._laag(stand.gepland, 600)
+            if path == "/traffic-planned.geojson":
+                self._layer(state.planned, 600)
                 return
-            if pad == "/snelheid-tijden.json":
-                self._laag(stand.tijden, 3600, "application/json")
+            if path == "/conditional-speeds.json":
+                self._layer(state.conditional_speeds, 3600, "application/json")
                 return
-            self._stuur(200, stand.tekst().encode(), "text/plain; version=0.0.4")
+            self._send(200, state.text().encode(), "text/plain; version=0.0.4")
 
-        def _laag(self, laag, cache, soort="application/geo+json"):
-            if laag is None:  # de eerste ronde loopt nog
-                self._stuur(503, b"nog geen ronde\n", "text/plain")
+        def _layer(self, layer, cache, content_type="application/geo+json"):
+            if layer is None:  # the first cycle is still running
+                self._send(503, b"no cycle yet\n", "text/plain")
                 return
             gzip = "gzip" in self.headers.get("Accept-Encoding", "")
-            self._stuur(
+            self._send(
                 200,
-                laag[1] if gzip else laag[0],
-                soort,
+                layer[1] if gzip else layer[0],
+                content_type,
                 {"Cache-Control": f"max-age={cache}", "Vary": "Accept-Encoding"}
                 | ({"Content-Encoding": "gzip"} if gzip else {}),
             )
 
-        def _stuur(self, status, body, soort, extra=None):
+        def _send(self, status, body, content_type, extra=None):
             self.send_response(status)
-            self.send_header("Content-Type", soort)
+            self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(body)))
-            for naam, waarde in (extra or {}).items():
-                self.send_header(naam, waarde)
+            for name, value in (extra or {}).items():
+                self.send_header(name, value)
             self.end_headers()
             self.wfile.write(body)
 
         def log_message(self, *_):
             pass
 
-    server = _Server(("::", poort), Handler)
+    server = _Server(("::", port), Handler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
 
 
-def haal(url: str) -> io.BytesIO:
-    verzoek = urllib.request.Request(url, headers={"User-Agent": "homemaps-traffic"})
-    with urllib.request.urlopen(verzoek, timeout=120) as antwoord:
-        return io.BytesIO(antwoord.read())
+def fetch(url: str) -> io.BytesIO:
+    request = urllib.request.Request(url, headers={"User-Agent": "homemaps-traffic"})
+    with urllib.request.urlopen(request, timeout=120) as response:
+        return io.BytesIO(response.read())
 
 
 class Importer:
@@ -235,241 +236,241 @@ class Importer:
         valhalla: Valhalla,
         cache_dir: Path,
         ndw: str,
-        stand: Stand,
-        afsluitingen: bool = True,
-        meldingen: bool = True,
-        planning_seconden: int = 3600,
-        snelheden: bool = True,
+        state: State,
+        closures: bool = True,
+        incidents: bool = True,
+        planning_seconds: int = 3600,
+        speed_limits: bool = True,
         osm_pbf: Path | None = None,
-        bruggen: bool = True,
+        bridges: bool = True,
     ):
-        self.tar, self.valhalla, self.ndw, self.stand = tar, valhalla, ndw.rstrip("/"), stand
-        self.met_afsluitingen = afsluitingen
-        self.met_meldingen = meldingen
-        self.planning_seconden = planning_seconden
-        self.planning_gehaald = 0.0
-        self.met_snelheden = snelheden
-        # Uit de planningsfeed, bij elke ophaalbeurt ververst.
-        self.geplande_snelheden: list[datex3.TijdelijkeSnelheid] = []
+        self.tar, self.valhalla, self.ndw, self.state = tar, valhalla, ndw.rstrip("/"), state
+        self.with_closures = closures
+        self.with_incidents = incidents
+        self.planning_seconds = planning_seconds
+        self.planning_fetched = 0.0
+        self.with_speed_limits = speed_limits
+        # From the planning feed, refreshed on every fetch.
+        self.planned_speed_limits: list[datex3.TemporarySpeedLimit] = []
         self.osm_pbf = osm_pbf
-        self.met_bruggen = bruggen
-        self.pbf_gelezen: float | None = None  # mtime van de laatst gelezen PBF
+        self.with_bridges = bridges
+        self.pbf_read: float | None = None  # mtime of the last PBF read
         tileset = valhalla.tileset()
-        self.locaties = MatchCache(cache_dir / "meetlocaties.json", tileset)
-        self.afsluitingen = MatchCache(cache_dir / "afsluitingen.json", tileset, alleen_bedekt=True)
-        self.snelheden = MatchCache(cache_dir / "snelheden.json", tileset)
-        self.geschreven: set[int] = set()
-        # Wat een vorige instantie schreef is onbekend, dus alles eerst leeg.
-        tar.wis_alles()
+        self.sites = MatchCache(cache_dir / "measurement_sites.json", tileset)
+        self.closures = MatchCache(cache_dir / "closures.json", tileset, covered_only=True)
+        self.speed_limits = MatchCache(cache_dir / "speed_limits.json", tileset)
+        self.written: set[int] = set()
+        # What a previous instance wrote is unknown, so clear everything first.
+        tar.clear_all()
 
-    def _ververs_locaties(self, nodig: set[str]) -> None:
-        """De configuratie is 100 MB; alleen ophalen als de metingen naar een
-        locatie(versie) wijzen die nog niet in de cache zit."""
-        if nodig <= self.locaties.matches.keys():
+    def _refresh_sites(self, needed: set[str]) -> None:
+        """The configuration is 100 MB; only fetch it when the measurements point
+        to a site (version) that is not in the cache yet."""
+        if needed <= self.sites.matches.keys():
             return
-        log.info("meetlocaties ophalen (%d onbekend)", len(nodig - self.locaties.matches.keys()))
-        feed = datex3.open_feed(haal(f"{self.ndw}/reistijden_configuratie_meetlocaties.xml.gz"))
-        items = {locatie.sleutel: locatie.punten for locatie in datex3.lees_meetlocaties(feed)}
-        if self.locaties.vul_aan(self.valhalla, items):
-            self.locaties.bewaar()
+        log.info("fetching measurement sites (%d unknown)", len(needed - self.sites.matches.keys()))
+        feed = datex3.open_feed(fetch(f"{self.ndw}/reistijden_configuratie_meetlocaties.xml.gz"))
+        items = {site.key: site.points for site in datex3.read_measurement_sites(feed)}
+        if self.sites.fill(self.valhalla, items):
+            self.sites.save()
 
     def _planning(self) -> None:
-        """Eens per uur: de planningsfeed (18 MB) voor "later vertrekken". Hij
-        verandert traag, en een mislukte beurt laat de vorige staan."""
-        if (
-            not self.planning_seconden
-            or time.time() - self.planning_gehaald < self.planning_seconden
-        ):
+        """Once an hour: the planning feed (18 MB) for "leave later". It changes
+        slowly, and a failed attempt keeps the previous one."""
+        if not self.planning_seconds or time.time() - self.planning_fetched < self.planning_seconds:
             return
-        self.planning_gehaald = time.time()
-        nu = datetime.now(UTC)
+        self.planning_fetched = time.time()
+        now = datetime.now(UTC)
         try:
-            ruw = haal(f"{self.ndw}/{PLANNING}")
-            gepland = list(
-                datex3.lees_geplande_afsluitingen(datex3.open_feed(ruw), nu, nu + PLANNING_VOORUIT)
+            raw = fetch(f"{self.ndw}/{PLANNING}")
+            planned = list(
+                datex3.read_planned_closures(datex3.open_feed(raw), now, now + PLANNING_LOOKAHEAD)
             )
-            if self.met_snelheden:
-                ruw.seek(0)
-                self.geplande_snelheden = list(
-                    datex3.lees_snelheden(datex3.open_feed(ruw), nu, nu + SNELHEID_VOORUIT)
+            if self.with_speed_limits:
+                raw.seek(0)
+                self.planned_speed_limits = list(
+                    datex3.read_speed_limits(
+                        datex3.open_feed(raw), now, now + SPEED_LIMIT_LOOKAHEAD
+                    )
                 )
-        except (OSError, ValueError, ParseError) as fout:
-            log.warning("planningsfeed niet opgehaald: %s", fout)
+        except (OSError, ValueError, ParseError) as error:
+            log.warning("planning feed not fetched: %s", error)
             return
-        self.stand.zet_gepland(kaartlaag.geojson(kaartlaag.geplande_afsluitingen(gepland)))
-        self.stand.zet(geplande_afsluitingen=len(gepland))
+        self.state.set_planned(maplayer.geojson(maplayer.planned_closures(planned)))
+        self.state.set(planned_closures=len(planned))
         log.info(
-            "planningsfeed: %d afsluitingen in de komende dagen, %d tijdelijke snelheden",
-            len(gepland),
-            len(self.geplande_snelheden),
+            "planning feed: %d closures in the coming days, %d temporary speed limits",
+            len(planned),
+            len(self.planned_speed_limits),
         )
 
-    def _snelheden(self, nu: datetime) -> list[dict]:
-        """De tijdelijke maximumsnelheden die nu gelden, als features voor de
-        laag: uit de eigen feed (elke ronde) en uit de planningsfeed. Alleen voor
-        de app onderweg; Valhalla kent geen maximumsnelheid in traffic.tar."""
-        actueel: list[datex3.TijdelijkeSnelheid] = []
+    def _speed_limits(self, now: datetime) -> list[dict]:
+        """The temporary maximum speeds that apply now, as features for the
+        layer: from their own feed (every cycle) and from the planning feed. Only
+        for the app while driving; Valhalla has no maximum speed in traffic.tar."""
+        current: list[datex3.TemporarySpeedLimit] = []
         try:
-            feed = datex3.open_feed(haal(f"{self.ndw}/{SNELHEDEN}"))
-            actueel = list(datex3.lees_snelheden(feed, nu, nu))
-        except (OSError, ValueError, ParseError) as fout:
-            log.warning("maximumsnelheden niet opgehaald: %s", fout)
-        geldig = actueel + [s for s in self.geplande_snelheden if s.geldt(nu)]
+            feed = datex3.open_feed(fetch(f"{self.ndw}/{SPEED_LIMITS}"))
+            current = list(datex3.read_speed_limits(feed, now, now))
+        except (OSError, ValueError, ParseError) as error:
+            log.warning("maximum speeds not fetched: %s", error)
+        valid = current + [s for s in self.planned_speed_limits if s.applies(now)]
         items: dict[str, tuple] = {}
-        for snelheid in geldig:
-            items[snelheid.sleutel] = snelheid.punten
-            items[snelheid.sleutel + "#terug"] = snelheid.punten[::-1]
-        if self.snelheden.vul_aan(self.valhalla, items):
-            self.snelheden.bewaar()
-        gelegd = leg_snelheden(geldig, self.snelheden.matches)
-        self.stand.zet(
-            tijdelijke_snelheden=len(geldig),
-            tijdelijke_snelheden_gematcht=sum(
-                1 for s in geldig if self.snelheden.matches.get(s.sleutel)
+        for limit in valid:
+            items[limit.key] = limit.points
+            items[limit.key + "#reverse"] = limit.points[::-1]
+        if self.speed_limits.fill(self.valhalla, items):
+            self.speed_limits.save()
+        placed = place_speed_limits(valid, self.speed_limits.matches)
+        self.state.set(
+            temporary_speed_limits=len(valid),
+            temporary_speed_limits_matched=sum(
+                1 for s in valid if self.speed_limits.matches.get(s.key)
             ),
         )
-        return kaartlaag.snelheden(gelegd, nu)
+        return maplayer.speed_limits(placed, now)
 
-    def _snelheid_tijden(self) -> None:
-        """Maximumsnelheden naar tijdstip uit het OSM-bestand van de tileset:
-        bij de start, en opnieuw als de bouwjob een nieuw bestand neerzet."""
+    def _conditional_speeds(self) -> None:
+        """Maximum speeds by time of day from the tileset's OSM file: at startup,
+        and again when the build job puts down a new file."""
         if self.osm_pbf is None:
             return
         try:
-            gewijzigd = self.osm_pbf.stat().st_mtime
+            modified = self.osm_pbf.stat().st_mtime
         except OSError:
-            if self.pbf_gelezen is None:
-                log.warning("geen OSM-bestand op %s: geen snelheden naar tijdstip", self.osm_pbf)
-                self.pbf_gelezen = 0.0
+            if self.pbf_read is None:
+                log.warning("no OSM file at %s: no speeds by time of day", self.osm_pbf)
+                self.pbf_read = 0.0
             return
-        if gewijzigd == self.pbf_gelezen:
+        if modified == self.pbf_read:
             return
-        begin = time.time()
+        start = time.time()
         try:
-            with open(self.osm_pbf, "rb") as stroom:
-                ways = osmregels.snelheid_tijden(stroom)
-        except (OSError, ValueError, KeyError, zlib.error) as fout:
-            log.warning("OSM-bestand niet gelezen: %s", fout)
+            with open(self.osm_pbf, "rb") as stream:
+                ways = osmrules.conditional_speeds(stream)
+        except (OSError, ValueError, KeyError, zlib.error) as error:
+            log.warning("OSM file not read: %s", error)
             return
-        self.pbf_gelezen = gewijzigd
-        self.stand.zet_tijden(kaartlaag.comprimeer({"ways": ways}))
-        self.stand.zet(snelheid_tijden_ways=len(ways))
-        log.info("snelheden naar tijdstip: %d ways (%.1f s)", len(ways), time.time() - begin)
+        self.pbf_read = modified
+        self.state.set_conditional_speeds(maplayer.compress({"ways": ways}))
+        self.state.set(conditional_speed_ways=len(ways))
+        log.info("speeds by time of day: %d ways (%.1f s)", len(ways), time.time() - start)
 
-    def ronde(self) -> None:
-        begin = time.time()
-        self._snelheid_tijden()
-        feed = datex3.open_feed(haal(f"{self.ndw}/reistijden_meetgegevens.xml.gz"))
-        reistijden = list(datex3.lees_reistijden(feed))
-        self._ververs_locaties({reistijd.sleutel for reistijd in reistijden})
-        records = bereken_snelheden(reistijden, self.locaties.matches)
-        snelheden = len(records)
+    def cycle(self) -> None:
+        start = time.time()
+        self._conditional_speeds()
+        feed = datex3.open_feed(fetch(f"{self.ndw}/reistijden_meetgegevens.xml.gz"))
+        travel_times = list(datex3.read_travel_times(feed))
+        self._refresh_sites({travel_time.key for travel_time in travel_times})
+        records = compute_speeds(travel_times, self.sites.matches)
+        speeds = len(records)
 
-        dicht: dict[int, int] = {}
-        maatregelen: list[datex3.Maatregel] = []
-        if self.met_afsluitingen:
+        closed: dict[int, int] = {}
+        measures: list[datex3.Measure] = []
+        if self.with_closures:
             feed = datex3.open_feed(
-                haal(f"{self.ndw}/tijdelijke_verkeersmaatregelen_afsluitingen.xml.gz")
+                fetch(f"{self.ndw}/tijdelijke_verkeersmaatregelen_afsluitingen.xml.gz")
             )
-            maatregelen = list(datex3.lees_maatregelen(feed))
-            actief = [maatregel.als_afsluiting() for maatregel in maatregelen if maatregel.sluit_af]
+            measures = list(datex3.read_measures(feed))
+            active = [measure.as_closure() for measure in measures if measure.closes]
             items: dict[str, tuple] = {}
-            for afsluiting in actief:
-                items[afsluiting.sleutel] = afsluiting.punten
-                items[afsluiting.sleutel + "#terug"] = afsluiting.punten[::-1]
-            if self.afsluitingen.vul_aan(self.valhalla, items):
-                self.afsluitingen.bewaar()
-            dicht = bereken_afsluitingen(actief, self.afsluitingen.matches)
-            records.update(dicht)  # dicht wint van een gemeten snelheid
+            for closure in active:
+                items[closure.key] = closure.points
+                items[closure.key + "#reverse"] = closure.points[::-1]
+            if self.closures.fill(self.valhalla, items):
+                self.closures.save()
+            closed = compute_closures(active, self.closures.matches)
+            records.update(closed)  # closed wins over a measured speed
 
         self._planning()
-        geschreven, gewist, onbekend = self.tar.werk_bij(records, self.geschreven)
-        self.geschreven = set(records)
+        written, cleared, unknown = self.tar.update(records, self.written)
+        self.written = set(records)
 
-        features = kaartlaag.maatregelen(maatregelen) + kaartlaag.trage_stukken(
-            reistijden, self.locaties.matches
+        features = maplayer.measures(measures) + maplayer.slow_segments(
+            travel_times, self.sites.matches
         )
-        if self.met_snelheden:
-            features += self._snelheden(datetime.now(UTC))
-        if self.met_meldingen:
-            # Alleen voor de kaart en de waarschuwing onderweg: de vertraging
-            # die een ongeval geeft zit al in de reistijden. Een mislukte
-            # ophaalbeurt kost dus alleen de punten, niet de ronde.
+        if self.with_speed_limits:
+            features += self._speed_limits(datetime.now(UTC))
+        if self.with_incidents:
+            # Only for the map and the warning while driving: the delay an
+            # accident causes is already in the travel times. A failed fetch
+            # therefore only costs the points, not the cycle.
             try:
                 feed = datex3.open_feed(
-                    haal(f"{self.ndw}/veiligheidsgerelateerde_berichten_srti.xml.gz")
+                    fetch(f"{self.ndw}/veiligheidsgerelateerde_berichten_srti.xml.gz")
                 )
-                features += kaartlaag.meldingen(datex3.lees_meldingen(feed))
-            except (OSError, ValueError) as fout:
-                log.warning("meldingen niet opgehaald: %s", fout)
-        if self.met_bruggen:
-            # Een open brug: alleen de waarschuwing onderweg. Hij gaat na een
-            # paar minuten weer dicht, dus Valhalla hoeft er niet omheen.
+                features += maplayer.incidents(datex3.read_incidents(feed))
+            except (OSError, ValueError) as error:
+                log.warning("incidents not fetched: %s", error)
+        if self.with_bridges:
+            # An open bridge: only the warning while driving. It closes again
+            # after a few minutes, so Valhalla does not need to route around it.
             try:
-                feed = datex3.open_feed(haal(f"{self.ndw}/{ACTUEEL}"))
-                open_bruggen = list(datex3.lees_bruggen(feed))
-                features += kaartlaag.bruggen(open_bruggen)
-                self.stand.zet(bruggen_open=len(open_bruggen))
-            except (OSError, ValueError, ParseError) as fout:
-                log.warning("actueel beeld niet opgehaald: %s", fout)
-        self.stand.zet_deel("ronde", features)
-        gematcht = sum(1 for match in self.locaties.matches.values() if match)
-        self.stand.zet(
-            laatste_ronde_timestamp_seconds=time.time(),
-            ronde_duur_seconds=round(time.time() - begin, 2),
-            edges_met_snelheid=snelheden,
-            edges_afgesloten=len(dicht),
-            edges_gewist=gewist,
-            edges_buiten_tileset=onbekend,
-            metingen=len(reistijden),
-            meetlocaties=len(self.locaties.matches),
-            meetlocaties_gematcht=gematcht,
-            kaartlaag_features=len(features),
+                feed = datex3.open_feed(fetch(f"{self.ndw}/{CURRENT_SITUATION}"))
+                open_bridges = list(datex3.read_bridges(feed))
+                features += maplayer.bridges(open_bridges)
+                self.state.set(bridges_open=len(open_bridges))
+            except (OSError, ValueError, ParseError) as error:
+                log.warning("current situation not fetched: %s", error)
+        self.state.set_part("cycle", features)
+        matched = sum(1 for match in self.sites.matches.values() if match)
+        self.state.set(
+            last_cycle_timestamp_seconds=time.time(),
+            cycle_duration_seconds=round(time.time() - start, 2),
+            edges_with_speed=speeds,
+            edges_closed=len(closed),
+            edges_cleared=cleared,
+            edges_outside_tileset=unknown,
+            measurements=len(travel_times),
+            measurement_sites=len(self.sites.matches),
+            measurement_sites_matched=matched,
+            map_layer_features=len(features),
         )
         log.info(
-            "ronde: %d metingen -> %d edges met snelheid, %d afgesloten, %d gewist (%.1f s)",
-            len(reistijden),
-            snelheden,
-            len(dicht),
-            gewist,
-            time.time() - begin,
+            "cycle: %d measurements -> %d edges with speed, %d closed, %d cleared (%.1f s)",
+            len(travel_times),
+            speeds,
+            len(closed),
+            cleared,
+            time.time() - start,
         )
 
 
-class Matrixborden:
-    """Elke minuut wat de matrixborden tonen, in een eigen draad: de ronde duurt
-    vijf minuten, en een 70 boven de weg staat er soms maar een paar minuten."""
+class MsiSigns:
+    """Every minute what the MSI signs show, in a thread of its own: the cycle
+    takes five minutes, and a 70 above the road is sometimes only there for a
+    few minutes."""
 
-    def __init__(self, ndw: str, stand: Stand, seconden: int):
-        self.ndw, self.stand, self.seconden = ndw.rstrip("/"), stand, seconden
-        self.locaties: dict[str, msi.Bordplek] = {}
-        self.locaties_gehaald = 0.0
+    def __init__(self, ndw: str, state: State, seconds: int):
+        self.ndw, self.state, self.seconds = ndw.rstrip("/"), state, seconds
+        self.locations: dict[str, msi.SignLocation] = {}
+        self.locations_fetched = 0.0
 
-    def ververs(self) -> None:
-        if not self.locaties or time.time() - self.locaties_gehaald > MSI_LOCATIES_SECONDEN:
+    def refresh(self) -> None:
+        if not self.locations or time.time() - self.locations_fetched > MSI_LOCATIONS_SECONDS:
             try:
-                self.locaties = msi.lees_locaties(haal(f"{self.ndw}/{MSI_LOCATIES}"))
-                self.locaties_gehaald = time.time()
-                log.info("matrixborden: %d plekken", len(self.locaties))
-            except (OSError, ValueError, KeyError, StopIteration, zipfile.BadZipFile) as fout:
-                log.warning("plekken van de matrixborden niet opgehaald: %s", fout)
-                if not self.locaties:
+                self.locations = msi.read_locations(fetch(f"{self.ndw}/{MSI_LOCATIONS}"))
+                self.locations_fetched = time.time()
+                log.info("MSI signs: %d locations", len(self.locations))
+            except (OSError, ValueError, KeyError, StopIteration, zipfile.BadZipFile) as error:
+                log.warning("MSI sign locations not fetched: %s", error)
+                if not self.locations:
                     return
-        beelden = msi.lees_beelden(datex3.open_feed(haal(f"{self.ndw}/{MSI_BEELDEN}")))
-        portalen = msi.portalen(self.locaties, beelden)
-        self.stand.zet_deel("msi", kaartlaag.msi(portalen))
-        self.stand.zet(
-            msi_portalen=len(portalen),
+        displays = msi.read_displays(datex3.open_feed(fetch(f"{self.ndw}/{MSI_DISPLAYS}")))
+        gantries = msi.gantries(self.locations, displays)
+        self.state.set_part("msi", maplayer.msi(gantries))
+        self.state.set(
+            msi_gantries=len(gantries),
             msi_timestamp_seconds=time.time(),
         )
 
-    def lus(self) -> None:
+    def loop(self) -> None:
         while True:
             try:
-                self.ververs()
-            except (OSError, ValueError, ParseError) as fout:
-                log.warning("matrixborden niet opgehaald: %s", fout)
-            time.sleep(self.seconden)
+                self.refresh()
+            except (OSError, ValueError, ParseError) as error:
+                log.warning("MSI signs not fetched: %s", error)
+            time.sleep(self.seconds)
 
 
 def main() -> None:
@@ -478,52 +479,50 @@ def main() -> None:
         format="%(asctime)s %(levelname)s %(message)s",
         stream=sys.stdout,
     )
-    omgeving = os.environ
-    interval = int(omgeving.get("INTERVAL_SECONDEN", "300"))
-    cache_dir = Path(omgeving.get("CACHE_DIR", "/data/importer"))
+    env = os.environ
+    interval = int(env.get("INTERVAL_SECONDS", "300"))
+    cache_dir = Path(env.get("CACHE_DIR", "/data/importer"))
     cache_dir.mkdir(parents=True, exist_ok=True)
-    stand = Stand()
-    stand.zet(rondes_mislukt_total=0)
-    start_metrics(stand, int(omgeving.get("METRICS_POORT", "9100")))
+    state = State()
+    state.set(cycles_failed_total=0)
+    start_metrics(state, int(env.get("METRICS_PORT", "9100")))
 
-    valhalla = Valhalla(omgeving.get("VALHALLA_URL", "http://localhost:8002"))
+    valhalla = Valhalla(env.get("VALHALLA_URL", "http://localhost:8002"))
     while True:
         try:
             valhalla.tileset()
             break
         except OSError:
-            log.info("wachten op Valhalla")
+            log.info("waiting for Valhalla")
             time.sleep(5)
 
-    tar = TrafficTar(omgeving.get("TRAFFIC_TAR", "/data/traffic.tar"))
-    log.info("traffic.tar: %d tegels, %d edges", len(tar.tegels), tar.aantal_edges)
+    tar = TrafficTar(env.get("TRAFFIC_TAR", "/data/traffic.tar"))
+    log.info("traffic.tar: %d tiles, %d edges", len(tar.tiles), tar.edge_count)
     importer = Importer(
         tar,
         valhalla,
         cache_dir,
-        omgeving.get("NDW_URL", "https://opendata.ndw.nu"),
-        stand,
-        omgeving.get("AFSLUITINGEN", "true").lower() != "false",
-        omgeving.get("MELDINGEN", "true").lower() != "false",
-        int(omgeving.get("PLANNING_SECONDEN", "3600")),
-        omgeving.get("SNELHEDEN", "true").lower() != "false",
-        Path(omgeving.get("OSM_PBF", "/data/bron/gebied.osm.pbf")),
-        omgeving.get("BRUGGEN", "true").lower() != "false",
+        env.get("NDW_URL", "https://opendata.ndw.nu"),
+        state,
+        env.get("CLOSURES", "true").lower() != "false",
+        env.get("INCIDENTS", "true").lower() != "false",
+        int(env.get("PLANNING_SECONDS", "3600")),
+        env.get("SPEED_LIMITS", "true").lower() != "false",
+        Path(env.get("OSM_PBF", "/data/source/region.osm.pbf")),
+        env.get("BRIDGES", "true").lower() != "false",
     )
-    msi_seconden = int(omgeving.get("MSI_SECONDEN", "60"))
-    if msi_seconden:
-        borden = Matrixborden(
-            omgeving.get("NDW_URL", "https://opendata.ndw.nu"), stand, msi_seconden
-        )
-        threading.Thread(target=borden.lus, daemon=True).start()
-    mislukt = 0
+    msi_seconds = int(env.get("MSI_SECONDS", "60"))
+    if msi_seconds:
+        signs = MsiSigns(env.get("NDW_URL", "https://opendata.ndw.nu"), state, msi_seconds)
+        threading.Thread(target=signs.loop, daemon=True).start()
+    failed = 0
     while True:
         try:
-            importer.ronde()
-        except Exception:  # noqa: BLE001 -- één slechte ronde mag de lus niet stoppen
-            mislukt += 1
-            stand.zet(rondes_mislukt_total=mislukt)
-            log.exception("ronde mislukt")
+            importer.cycle()
+        except Exception:  # noqa: BLE001 -- one bad cycle must not stop the loop
+            failed += 1
+            state.set(cycles_failed_total=failed)
+            log.exception("cycle failed")
         time.sleep(interval)
 
 

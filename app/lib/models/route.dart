@@ -2,336 +2,338 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../utils/polyline.dart';
 
-class Manoeuvre {
-  const Manoeuvre({
-    required this.instructie,
+class Maneuver {
+  const Maneuver({
+    required this.instruction,
     required this.type,
     required this.meters,
-    required this.seconden,
-    required this.vormIndex,
-    int? eindVormIndex,
-    this.straten = const [],
-    this.stemVooraf,
-    this.stemVlakVoor,
-    this.stemNa,
-    this.metVolgende = false,
-    this.rotondeAfslag,
-    this.rotondeHoek,
-    this.bord,
-  }) : eindVormIndex = eindVormIndex ?? vormIndex;
+    required this.seconds,
+    required this.shapeIndex,
+    int? endShapeIndex,
+    this.streets = const [],
+    this.voiceEarly,
+    this.voiceImminent,
+    this.voiceAfter,
+    this.withNext = false,
+    this.roundaboutExit,
+    this.roundaboutAngle,
+    this.roadSign,
+  }) : endShapeIndex = endShapeIndex ?? shapeIndex;
 
-  final String instructie;
+  final String instruction;
 
-  /// Valhalla's manoeuvretype (1 = start, 4 = bestemming, 10 = rechtsaf, ...).
+  /// Valhalla's maneuver type (1 = start, 4 = destination, 10 = right, ...).
   final int type;
   final double meters;
-  final double seconden;
+  final double seconds;
 
-  /// Waar in [RouteOptie.punten] deze manoeuvre begint en eindigt.
-  final int vormIndex;
-  final int eindVormIndex;
+  /// Where in [RouteOption.points] this maneuver starts and ends.
+  final int shapeIndex;
+  final int endShapeIndex;
 
-  /// De straat (of wegnummers) waar je na de manoeuvre op rijdt.
-  final List<String> straten;
+  /// The street (or road numbers) you drive on after the maneuver.
+  final List<String> streets;
 
-  /// Valhalla's gesproken zinnen, al in de taal van het verzoek: ruim van
-  /// tevoren ("Links afslaan naar X."), vlak ervoor (met "Daarna ..." als de
-  /// volgende dichtbij is) en erna ("400 meter doorgaan.").
-  final String? stemVooraf;
-  final String? stemVlakVoor;
-  final String? stemNa;
+  /// Valhalla's spoken phrases, already in the request's language: well in
+  /// advance ("Turn left onto X."), just before (with "Then ..." when the next
+  /// one is close) and after ("Continue for 400 meters.").
+  final String? voiceEarly;
+  final String? voiceImminent;
+  final String? voiceAfter;
 
-  /// [stemVlakVoor] noemt de manoeuvre hierna al ("Daarna, over 400 meter, ...").
-  final bool metVolgende;
+  /// [voiceImminent] already mentions the next maneuver ("Then, in 400 meters,
+  /// ...").
+  final bool withNext;
 
-  /// Bij een rotonde (26 op, 27 af): de hoeveelste afslag, en de hoek van de
-  /// uitrit ten opzichte van waar je erop reed (0 = rechtdoor, 90 = rechts,
-  /// 270 = links), met de klok mee.
-  final int? rotondeAfslag;
-  final double? rotondeHoek;
+  /// At a roundabout (26 enter, 27 exit): which exit, and the angle of the
+  /// exit relative to where you entered (0 = straight on, 90 = right,
+  /// 270 = left), clockwise.
+  final int? roundaboutExit;
+  final double? roundaboutAngle;
 
-  /// Wat er op de bewegwijzering staat (afritnummer, wegnummers, richtingen).
-  final Bord? bord;
+  /// What the signposts say (exit number, road numbers, directions).
+  final RoadSign? roadSign;
 
-  bool get isRotonde => type == 26 || type == 27;
+  bool get isRoundabout => type == 26 || type == 27;
 
-  /// Op- of afrit, splitsing of invoegen: waar de bewegwijzering telt.
-  bool get isWegwijzing =>
+  /// On- or off-ramp, fork or merge: where the signposts matter.
+  bool get isSignposted =>
       (type >= 17 && type <= 25) || type == 37 || type == 38;
 
-  /// Het bord bij een op- of afrit, splitsing of invoegstrook. Staat er geen
-  /// bord in de route, dan het wegnummer waar je op komt ("A27"), zoals ook
-  /// Google en Apple Maps doen.
-  Bord? get wegwijzer {
-    if (!isWegwijzing) return null;
-    if (bord != null) return bord;
-    final weg = hoofdnummer(straten);
-    return weg == null ? null : Bord(wegen: [weg]);
+  /// The sign at an on- or off-ramp, fork or merge lane. If the route has no
+  /// sign, the road number you end up on ("A27"), as Google and Apple Maps do
+  /// too.
+  RoadSign? get signpost {
+    if (!isSignposted) return null;
+    if (roadSign != null) return roadSign;
+    final road = mainRoadNumber(streets);
+    return road == null ? null : RoadSign(roads: [road]);
   }
 
-  /// Bestemming (4) of een via-punt onderweg (ook 4, of 5/6 rechts/links).
-  bool get isBestemming => type >= 4 && type <= 6;
+  /// Destination (4) or a waypoint along the way (also 4, or 5/6 right/left).
+  bool get isDestination => type >= 4 && type <= 6;
 }
 
-/// Rotonde op (26) en af (27) horen bij elkaar: de afslag staat bij de 26, de
-/// richting waarin je eraf gaat bij de 27. Beide krijgen hetzelfde.
-({int? afslag, double hoek})? _rotonde(List<Map<String, dynamic>> ruw, int i) {
-  final type = ruw[i]['type'];
-  int op, af;
+/// Roundabout enter (26) and exit (27) belong together: the exit number is on
+/// the 26, the direction you leave in on the 27. Both get the same.
+({int? turn, double angle})? _roundabout(
+  List<Map<String, dynamic>> raw,
+  int i,
+) {
+  final type = raw[i]['type'];
+  int enter, leave;
   if (type == 26) {
-    op = i;
-    af = i + 1;
-    while (af < ruw.length && ruw[af]['type'] != 27) {
-      af++;
+    enter = i;
+    leave = i + 1;
+    while (leave < raw.length && raw[leave]['type'] != 27) {
+      leave++;
     }
-    if (af == ruw.length) return null;
+    if (leave == raw.length) return null;
   } else if (type == 27) {
-    af = i;
-    op = i - 1;
-    while (op >= 0 && ruw[op]['type'] != 26) {
-      op--;
+    leave = i;
+    enter = i - 1;
+    while (enter >= 0 && raw[enter]['type'] != 26) {
+      enter--;
     }
-    if (op < 0) return null;
+    if (enter < 0) return null;
   } else {
     return null;
   }
-  final voor = ruw[op]['bearing_before'], na = ruw[af]['bearing_after'];
-  if (voor is! num || na is! num) return null;
+  final before = raw[enter]['bearing_before'],
+      after = raw[leave]['bearing_after'];
+  if (before is! num || after is! num) return null;
   return (
-    afslag: (ruw[op]['roundabout_exit_count'] as num?)?.toInt(),
-    hoek: (na - voor + 360) % 360.0,
+    turn: (raw[enter]['roundabout_exit_count'] as num?)?.toInt(),
+    angle: (after - before + 360) % 360.0,
   );
 }
 
-/// Een wegnummer ("A27", "N228", "S100", "E 30"), geen straatnaam.
-bool isWegnummer(String naam) => RegExp(r'^[ANSE] ?\d+$').hasMatch(naam);
+/// A road number ("A27", "N228", "S100", "E 30"), not a street name.
+bool isRoadNumber(String label) => RegExp(r'^[ANSE] ?\d+$').hasMatch(label);
 
-/// Het wegnummer dat op de borden staat: een A-, N- of S-weg eerst, een
-/// E-nummer alleen als er niets anders is. Null als er geen nummer bij is.
-String? hoofdnummer(List<String> namen) =>
-    namen.where((n) => isWegnummer(n) && !n.startsWith('E')).firstOrNull ??
-    namen.where(isWegnummer).firstOrNull;
+/// The road number on the signs: an A, N or S road first, an E number only if
+/// there's nothing else. Null if there's no number.
+String? mainRoadNumber(List<String> names) =>
+    names.where((n) => isRoadNumber(n) && !n.startsWith('E')).firstOrNull ??
+    names.where(isRoadNumber).firstOrNull;
 
-/// De wegen waar een route vooral over gaat, voor "via A12, A27": per weg
-/// (het wegnummer, anders de naam) de meters opgeteld, de langste [max], in de
-/// volgorde van de route. Wegnummers gaan voor; een weg van minder dan 5% van
-/// de route telt niet mee.
-List<String> hoofdwegen(RouteOptie route, {int max = 2}) {
+/// The roads a route mostly follows, for "via A12, A27": the meters summed per
+/// road (the road number, otherwise the name), the longest [max], in route
+/// order. Road numbers go first; a road under 5% of the route doesn't count.
+List<String> mainRoads(RouteOption route, {int max = 2}) {
   final meters = <String, double>{};
-  for (final m in route.manoeuvres) {
-    if (m.straten.isEmpty) continue;
-    final weg = hoofdnummer(m.straten) ?? m.straten.first;
-    meters[weg] = (meters[weg] ?? 0) + m.meters;
+  for (final m in route.maneuvers) {
+    if (m.streets.isEmpty) continue;
+    final road = mainRoadNumber(m.streets) ?? m.streets.first;
+    meters[road] = (meters[road] ?? 0) + m.meters;
   }
-  final genoeg = [
+  final enough = [
     for (final e in meters.entries)
       if (e.value >= route.meters * 0.05) e,
   ];
-  int nummerEerst(MapEntry<String, double> a, MapEntry<String, double> b) {
-    final na = isWegnummer(a.key), nb = isWegnummer(b.key);
+  int numberFirst(MapEntry<String, double> a, MapEntry<String, double> b) {
+    final na = isRoadNumber(a.key), nb = isRoadNumber(b.key);
     if (na != nb) return na ? -1 : 1;
     return b.value.compareTo(a.value);
   }
 
-  final gekozen = {
-    for (final e in (genoeg..sort(nummerEerst)).take(max)) e.key,
-  };
-  // De map houdt de volgorde waarin de wegen voor het eerst voorkomen.
+  final chosen = {for (final e in (enough..sort(numberFirst)).take(max)) e.key};
+  // The map keeps the order in which the roads first appear.
   return [
-    for (final weg in meters.keys)
-      if (gekozen.contains(weg)) weg,
+    for (final road in meters.keys)
+      if (chosen.contains(road)) road,
   ];
 }
 
-/// De bewegwijzering bij een manoeuvre, zoals Valhalla die in `sign` geeft.
-class Bord {
-  const Bord({
-    this.afrit,
-    this.wegen = const [],
-    this.richtingen = const [],
-    this.naam,
+/// The signposts at a maneuver, as Valhalla gives them in `sign`.
+class RoadSign {
+  const RoadSign({
+    this.exit,
+    this.roads = const [],
+    this.directions = const [],
+    this.label,
   });
 
-  /// Het afritnummer ("15").
-  final String? afrit;
+  /// The exit number ("15").
+  final String? exit;
 
-  /// Wegnummers ("A12", "N228").
-  final List<String> wegen;
+  /// Road numbers ("A12", "N228").
+  final List<String> roads;
 
-  /// Plaatsen ("Utrecht", "Amersfoort").
-  final List<String> richtingen;
+  /// Places ("Utrecht", "Amersfoort").
+  final List<String> directions;
 
-  /// De naam van een knooppunt of afrit ("Knooppunt Lunetten").
-  final String? naam;
+  /// The name of an interchange or exit ("Knooppunt Lunetten").
+  final String? label;
 
-  /// Null als er niets op staat.
-  static Bord? vanValhalla(Object? sign) {
+  /// Null if it's blank.
+  static RoadSign? fromValhalla(Object? sign) {
     if (sign is! Map) return null;
-    List<String> teksten(String sleutel) {
-      final uit = <String>[];
-      for (final e in (sign[sleutel] as List? ?? const [])) {
-        final tekst = e is Map ? e['text'] : null;
-        if (tekst is String && tekst.isNotEmpty && !uit.contains(tekst)) {
-          uit.add(tekst);
+    List<String> texts(String key) {
+      final out = <String>[];
+      for (final e in (sign[key] as List? ?? const [])) {
+        final text = e is Map ? e['text'] : null;
+        if (text is String && text.isNotEmpty && !out.contains(text)) {
+          out.add(text);
         }
       }
-      return uit;
+      return out;
     }
 
-    // De borden bij de afrit gaan voor; anders die boven de doorgaande weg
-    // (OSM `destination` op de hoofdrijbaan) of de naam van het knooppunt.
-    List<String> eerst(String afrit, String gids) {
-      final uit = teksten(afrit);
-      return uit.isNotEmpty ? uit : teksten(gids);
+    // The signs at the exit come first; otherwise those above the through road
+    // (OSM `destination` on the main carriageway) or the interchange's name.
+    List<String> firstOf(String exit, String guide) {
+      final out = texts(exit);
+      return out.isNotEmpty ? out : texts(guide);
     }
 
-    final afrit = teksten('exit_number_elements');
-    final naam = eerst('exit_name_elements', 'junction_name_elements');
-    final bord = Bord(
-      afrit: afrit.firstOrNull,
-      wegen: eerst('exit_branch_elements', 'guide_branch_elements'),
-      richtingen: eerst('exit_toward_elements', 'guide_toward_elements'),
-      naam: naam.firstOrNull,
+    final exit = texts('exit_number_elements');
+    final label = firstOf('exit_name_elements', 'junction_name_elements');
+    final roadSign = RoadSign(
+      exit: exit.firstOrNull,
+      roads: firstOf('exit_branch_elements', 'guide_branch_elements'),
+      directions: firstOf('exit_toward_elements', 'guide_toward_elements'),
+      label: label.firstOrNull,
     );
-    return bord.afrit == null &&
-            bord.wegen.isEmpty &&
-            bord.richtingen.isEmpty &&
-            bord.naam == null
+    return roadSign.exit == null &&
+            roadSign.roads.isEmpty &&
+            roadSign.directions.isEmpty &&
+            roadSign.label == null
         ? null
-        : bord;
+        : roadSign;
   }
 }
 
-/// Eén rijstrook bij een kruising, van links naar rechts geteld.
-class Rijstrook {
-  const Rijstrook({required this.richtingen, required this.goed, this.gebruik});
+/// One lane at an intersection, counted left to right.
+class Lane {
+  const Lane({required this.directions, required this.correct, this.usage});
 
-  /// Zoals OSRM ze noemt: "straight", "slight right", "left", "uturn", ...
-  final List<String> richtingen;
+  /// As OSRM names them: "straight", "slight right", "left", "uturn", ...
+  final List<String> directions;
 
-  /// Op deze strook blijf je op de route.
-  final bool goed;
+  /// This lane keeps you on the route.
+  final bool correct;
 
-  /// Welke van [richtingen] je hier neemt, als de strook er meer heeft.
-  final String? gebruik;
+  /// Which of [directions] you take here, if the lane has several.
+  final String? usage;
 }
 
-/// Rijstroken bij een kruising op de route.
-typedef RijstrookAdvies = ({LatLng plek, List<Rijstrook> stroken});
+/// Lanes at an intersection on the route.
+typedef LaneAdvice = ({LatLng position, List<Lane> perLane});
 
-class RouteOptie {
-  const RouteOptie({
+class RouteOption {
+  const RouteOption({
     required this.meters,
-    required this.seconden,
-    required this.punten,
-    required this.manoeuvres,
-    required this.hoogtes,
-    required this.hoogteInterval,
-    required this.heeftTol,
-    required this.heeftVeer,
-    this.normaleSeconden,
+    required this.seconds,
+    required this.points,
+    required this.maneuvers,
+    required this.elevations,
+    required this.elevationInterval,
+    required this.hasToll,
+    required this.hasFerry,
+    this.normalSeconds,
   });
 
   final double meters;
-  final double seconden;
-  final List<LatLng> punten;
-  final List<Manoeuvre> manoeuvres;
+  final double seconds;
+  final List<LatLng> points;
+  final List<Maneuver> maneuvers;
 
-  /// Hoogte in meters, elke [hoogteInterval] meter langs de route. Leeg als de
-  /// server geen hoogtedata heeft.
-  final List<double> hoogtes;
-  final double hoogteInterval;
-  final bool heeftTol;
-  final bool heeftVeer;
+  /// Elevation in meters, every [elevationInterval] meters along the route.
+  /// Empty if the server has no elevation data.
+  final List<double> elevations;
+  final double elevationInterval;
+  final bool hasToll;
+  final bool hasFerry;
 
-  /// Dezelfde weg zonder het verkeer van nu; null als dat niet bekend is (geen
-  /// live verkeer gevraagd, of de server gaf het niet).
-  final double? normaleSeconden;
+  /// The same route without current traffic; null if unknown (no live traffic
+  /// requested, or the server didn't return it).
+  final double? normalSeconds;
 
-  /// Hoeveel langer het nu duurt door files en drukte; nul als het meevalt.
-  double get vertraging => normaleSeconden == null
+  /// How much longer it takes now due to jams and congestion; zero if it's fine.
+  double get delay => normalSeconds == null
       ? 0
-      : (seconden - normaleSeconden!).clamp(0, double.infinity);
+      : (seconds - normalSeconds!).clamp(0, double.infinity);
 
-  RouteOptie metNormaleTijd(double? seconden) => RouteOptie(
+  RouteOption withNormalTime(double? seconds) => RouteOption(
     meters: meters,
-    seconden: this.seconden,
-    punten: punten,
-    manoeuvres: manoeuvres,
-    hoogtes: hoogtes,
-    hoogteInterval: hoogteInterval,
-    heeftTol: heeftTol,
-    heeftVeer: heeftVeer,
-    normaleSeconden: seconden,
+    seconds: this.seconds,
+    points: points,
+    maneuvers: maneuvers,
+    elevations: elevations,
+    elevationInterval: elevationInterval,
+    hasToll: hasToll,
+    hasFerry: hasFerry,
+    normalSeconds: seconds,
   );
 
-  double get stijging => _som((verschil) => verschil > 0 ? verschil : 0);
-  double get daling => _som((verschil) => verschil < 0 ? -verschil : 0);
+  double get ascent => _sum((difference) => difference > 0 ? difference : 0);
+  double get descent => _sum((difference) => difference < 0 ? -difference : 0);
 
-  double _som(double Function(double) deel) {
-    var totaal = 0.0;
-    for (var i = 1; i < hoogtes.length; i++) {
-      totaal += deel(hoogtes[i] - hoogtes[i - 1]);
+  double _sum(double Function(double) part) {
+    var total = 0.0;
+    for (var i = 1; i < elevations.length; i++) {
+      total += part(elevations[i] - elevations[i - 1]);
     }
-    return totaal;
+    return total;
   }
 
-  /// Eén `trip` uit het antwoord van Valhalla. Een route met via-punten heeft
-  /// meerdere legs; die worden hier aan elkaar geregen.
-  factory RouteOptie.vanValhalla(
+  /// One `trip` from Valhalla's response. A route with waypoints has several
+  /// legs; they are strung together here.
+  factory RouteOption.fromValhalla(
     Map<String, dynamic> trip, {
-    required double hoogteInterval,
+    required double elevationInterval,
   }) {
-    final samenvatting = (trip['summary'] as Map).cast<String, dynamic>();
-    final punten = <LatLng>[];
-    final manoeuvres = <Manoeuvre>[];
-    final hoogtes = <double>[];
+    final summary = (trip['summary'] as Map).cast<String, dynamic>();
+    final points = <LatLng>[];
+    final maneuvers = <Maneuver>[];
+    final elevations = <double>[];
     for (final leg in (trip['legs'] as List).cast<Map<String, dynamic>>()) {
-      final verschuiving = punten.length;
-      punten.addAll(decodeerPolyline(leg['shape'] as String));
-      final ruw = (leg['maneuvers'] as List? ?? const [])
+      final offset = points.length;
+      points.addAll(decodePolyline(leg['shape'] as String));
+      final raw = (leg['maneuvers'] as List? ?? const [])
           .cast<Map<String, dynamic>>();
-      for (final (i, m) in ruw.indexed) {
-        final rotonde = _rotonde(ruw, i);
-        manoeuvres.add(
-          Manoeuvre(
-            instructie: m['instruction'] as String? ?? '',
+      for (final (i, m) in raw.indexed) {
+        final roundabout = _roundabout(raw, i);
+        maneuvers.add(
+          Maneuver(
+            instruction: m['instruction'] as String? ?? '',
             type: (m['type'] as num?)?.toInt() ?? 0,
             meters: ((m['length'] as num?)?.toDouble() ?? 0) * 1000,
-            seconden: (m['time'] as num?)?.toDouble() ?? 0,
-            vormIndex:
-                verschuiving + ((m['begin_shape_index'] as num?)?.toInt() ?? 0),
-            eindVormIndex:
-                verschuiving + ((m['end_shape_index'] as num?)?.toInt() ?? 0),
-            straten: [
-              for (final naam in (m['street_names'] as List? ?? const []))
-                naam as String,
+            seconds: (m['time'] as num?)?.toDouble() ?? 0,
+            shapeIndex:
+                offset + ((m['begin_shape_index'] as num?)?.toInt() ?? 0),
+            endShapeIndex:
+                offset + ((m['end_shape_index'] as num?)?.toInt() ?? 0),
+            streets: [
+              for (final label in (m['street_names'] as List? ?? const []))
+                label as String,
             ],
-            stemVooraf: m['verbal_transition_alert_instruction'] as String?,
-            stemVlakVoor: m['verbal_pre_transition_instruction'] as String?,
-            stemNa: m['verbal_post_transition_instruction'] as String?,
-            metVolgende: m['verbal_multi_cue'] == true,
-            rotondeAfslag: rotonde?.afslag,
-            rotondeHoek: rotonde?.hoek,
-            bord: Bord.vanValhalla(m['sign']),
+            voiceEarly: m['verbal_transition_alert_instruction'] as String?,
+            voiceImminent: m['verbal_pre_transition_instruction'] as String?,
+            voiceAfter: m['verbal_post_transition_instruction'] as String?,
+            withNext: m['verbal_multi_cue'] == true,
+            roundaboutExit: roundabout?.turn,
+            roundaboutAngle: roundabout?.angle,
+            roadSign: RoadSign.fromValhalla(m['sign']),
           ),
         );
       }
-      hoogtes.addAll(
+      elevations.addAll(
         (leg['elevation'] as List? ?? const []).map(
           (h) => (h as num).toDouble(),
         ),
       );
     }
-    return RouteOptie(
-      meters: (samenvatting['length'] as num).toDouble() * 1000,
-      seconden: (samenvatting['time'] as num).toDouble(),
-      punten: punten,
-      manoeuvres: manoeuvres,
-      hoogtes: hoogtes,
-      hoogteInterval: hoogteInterval,
-      heeftTol: samenvatting['has_toll'] == true,
-      heeftVeer: samenvatting['has_ferry'] == true,
+    return RouteOption(
+      meters: (summary['length'] as num).toDouble() * 1000,
+      seconds: (summary['time'] as num).toDouble(),
+      points: points,
+      maneuvers: maneuvers,
+      elevations: elevations,
+      elevationInterval: elevationInterval,
+      hasToll: summary['has_toll'] == true,
+      hasFerry: summary['has_ferry'] == true,
     );
   }
 }

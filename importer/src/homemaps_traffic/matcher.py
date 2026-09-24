@@ -1,12 +1,12 @@
-"""Van een NDW-lijn naar Valhalla's edge-id's, met een cache op schijf.
+"""From an NDW line to Valhalla's edge ids, with a cache on disk.
 
-Bijna alle reistijdsegmenten zijn alleen een begin- en eindpunt (mediaan 500 m).
-Daarom wordt er niet ge-map-matcht maar gerouteerd: de route van begin naar eind
-ís het segment, en de rijrichting volgt vanzelf uit de volgorde van de punten.
-De edges van die route komen uit trace_attributes (edge_walk op de routevorm).
+Nearly all travel time segments are only a start and an end point (median 500 m).
+That is why they are routed rather than map-matched: the route from start to end
+*is* the segment, and the direction of travel follows from the order of the points.
+The edges of that route come from trace_attributes (edge_walk on the route shape).
 
-Edge-id's veranderen bij elke tile-build. De cache hoort daarom bij één tileset
-(`tileset_last_modified` uit /status) en wordt anders weggegooid.
+Edge ids change with every tile build. The cache therefore belongs to one tileset
+(`tileset_last_modified` from /status) and is thrown away otherwise.
 """
 
 import http.client
@@ -21,34 +21,34 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
-from .datex3 import Punt
+from .datex3 import Point
 
 log = logging.getLogger(__name__)
 
-MAX_LOCATIES = 20
+MAX_LOCATIONS = 20
 
 
 @dataclass(frozen=True)
 class Match:
-    edges: tuple[tuple[int, float, int], ...]  # (graphid, lengte in m, way_id)
-    lengte_m: float
-    # De routevorm per leg, als Valhalla's polyline (zes decimalen): de lijn op de
-    # kaart. NDW's eigen lijn is meestal alleen begin en eind.
-    vorm: tuple[str, ...] = ()
+    edges: tuple[tuple[int, float, int], ...]  # (graphid, length in m, way_id)
+    length_m: float
+    # The route shape per leg, as Valhalla's polyline (six decimals): the line on
+    # the map. NDW's own line is usually just start and end.
+    shape: tuple[str, ...] = ()
 
-    def naar_json(self):
+    def to_json(self):
         return {
             "e": [list(edge) for edge in self.edges],
-            "l": round(self.lengte_m, 1),
-            "v": list(self.vorm),
+            "l": round(self.length_m, 1),
+            "v": list(self.shape),
         }
 
     @classmethod
-    def uit_json(cls, data) -> "Match":
+    def from_json(cls, data) -> "Match":
         return cls(tuple((e[0], e[1], e[2]) for e in data["e"]), data["l"], tuple(data["v"]))
 
 
-def hemelsbreed(a: Punt, b: Punt) -> float:
+def haversine(a: Point, b: Point) -> float:
     lat1, lon1, lat2, lon2 = map(math.radians, (*a, *b))
     h = (
         math.sin((lat2 - lat1) / 2) ** 2
@@ -58,176 +58,178 @@ def hemelsbreed(a: Punt, b: Punt) -> float:
 
 
 class Valhalla:
-    """Eén blijvende verbinding per draad. Met een nieuwe verbinding per verzoek
-    raken bij het matchen van 67.000 segmenten (2 verzoeken elk, ~600/s) de
-    tijdelijke poorten op -- elke gesloten verbinding blijft 60 s in TIME_WAIT --
-    en dan mislukt een derde van de verzoeken in golven."""
+    """One persistent connection per thread. With a new connection per request,
+    matching 67,000 segments (2 requests each, ~600/s) exhausts the ephemeral
+    ports -- every closed connection stays in TIME_WAIT for 60 s -- and then a
+    third of the requests fail in waves."""
 
     def __init__(self, url: str, timeout: float = 30):
-        delen = urllib.parse.urlsplit(url)
-        self.host, self.poort = delen.hostname, delen.port or 80
-        self.basis = delen.path.rstrip("/")
+        parts = urllib.parse.urlsplit(url)
+        self.host, self.port = parts.hostname, parts.port or 80
+        self.base = parts.path.rstrip("/")
         self.timeout = timeout
-        self._lokaal = threading.local()
+        self._local = threading.local()
 
-    def _vraag(self, pad: str, body: dict | None = None) -> dict:
+    def _request(self, path: str, body: dict | None = None) -> dict:
         data = json.dumps(body).encode() if body is not None else None
-        for poging in (1, 2):
-            verbinding = getattr(self._lokaal, "verbinding", None)
-            if verbinding is None:
-                verbinding = http.client.HTTPConnection(self.host, self.poort, timeout=self.timeout)
-                self._lokaal.verbinding = verbinding
+        for attempt in (1, 2):
+            connection = getattr(self._local, "connection", None)
+            if connection is None:
+                connection = http.client.HTTPConnection(self.host, self.port, timeout=self.timeout)
+                self._local.connection = connection
             try:
-                verbinding.request(
+                connection.request(
                     "POST" if data is not None else "GET",
-                    self.basis + pad,
+                    self.base + path,
                     data,
                     {"Content-Type": "application/json"},
                 )
-                antwoord = verbinding.getresponse()
-                inhoud = antwoord.read()
+                response = connection.getresponse()
+                content = response.read()
             except (OSError, http.client.HTTPException):
-                # De server mag een stille verbinding sluiten; één keer opnieuw
-                # met een verse is dan geen fout.
-                verbinding.close()
-                self._lokaal.verbinding = None
-                if poging == 2:
+                # The server may close an idle connection; retrying once with a
+                # fresh one is then not an error.
+                connection.close()
+                self._local.connection = None
+                if attempt == 2:
                     raise
                 continue
-            if antwoord.status >= 400:
-                raise urllib.error.HTTPError(pad, antwoord.status, inhoud[:200].decode(), {}, None)
-            return json.loads(inhoud)
-        raise AssertionError("onbereikbaar")
+            if response.status >= 400:
+                raise urllib.error.HTTPError(
+                    path, response.status, content[:200].decode(), {}, None
+                )
+            return json.loads(content)
+        raise AssertionError("unreachable")
 
     def tileset(self) -> int:
-        return int(self._vraag("/status").get("tileset_last_modified", 0))
+        return int(self._request("/status").get("tileset_last_modified", 0))
 
     def match(
-        self, punten: Iterable[Punt], max_omweg: float = 1.6, *, alleen_bedekt: bool = False
+        self, points: Iterable[Point], max_detour: float = 1.6, *, covered_only: bool = False
     ) -> Match | None:
-        """None als er geen geloofwaardige route is; dat is een definitief antwoord
-        en mag in de cache. Een tijdelijke fout (verbinding weg, time-out) komt er
-        als OSError uit, zodat de aanroeper het later opnieuw probeert.
+        """None if there is no credible route; that is a definitive answer and may
+        go into the cache. A temporary error (connection lost, timeout) comes out
+        as OSError, so the caller tries again later.
 
-        `max_omweg`: een route die veel langer is dan de lijn zelf is een andere
-        weg (het punt viel op de verkeerde rijbaan of een parallelweg), en dan is
-        geen match beter dan een foute.
+        `max_detour`: a route that is much longer than the line itself is a
+        different road (the point landed on the wrong carriageway or a frontage
+        road), and then no match is better than a wrong one.
 
-        `alleen_bedekt` is voor afsluitingen: die zetten een edge altijd helemaal
-        dicht, ook als de lijn er maar een randje van raakt. Een lijn over een
-        afrit begint vaak op de hoofdrijbaan, net voorbij waar de afrit in OSM
-        afbuigt. Daarom:
-        - telt een edge aan het begin of eind alleen mee als de lijn er minstens
-          de helft van beslaat (zie `_bedekt`);
-        - wordt de lijn zelf ge-map-matcht als routeren geen geloofwaardige route
-          geeft: van dat punt op de hoofdrijbaan naar de afrit is het anders een
-          omweg van kilometers.
+        `covered_only` is for closures: those always close an edge completely,
+        even if the line only touches its edge. A line over an exit often starts
+        on the main carriageway, just past where the exit branches off in OSM.
+        Therefore:
+        - an edge at the start or end only counts if the line covers at least
+          half of it (see `_covered`);
+        - the line itself is map-matched if routing yields no credible route:
+          from that point on the main carriageway to the exit it is otherwise a
+          detour of kilometres.
         """
-        punten = _ontdubbel(punten)
-        if len(punten) < 2:
+        points = _dedupe(points)
+        if len(points) < 2:
             return None
-        lijn = sum(hemelsbreed(a, b) for a, b in zip(punten, punten[1:], strict=False))
+        line = sum(haversine(a, b) for a, b in zip(points, points[1:], strict=False))
         try:
-            gevonden = self._routeer(punten, lijn, max_omweg)
-            if gevonden is None and alleen_bedekt:
-                gevonden = self._snap(punten, lijn)
-        except (KeyError, ValueError) as fout:
-            log.debug("onverwacht antwoord: %s", fout)
+            found = self._route(points, line, max_detour)
+            if found is None and covered_only:
+                found = self._snap(points, line)
+        except (KeyError, ValueError) as error:
+            log.debug("unexpected response: %s", error)
             return None
-        if gevonden is None:
+        if found is None:
             return None
-        match, delen = gevonden
-        if alleen_bedekt:
-            match = _bedekt(match, delen)
+        match, fractions = found
+        if covered_only:
+            match = _covered(match, fractions)
         return match
 
-    def _routeer(
-        self, punten: list[Punt], lijn: float, max_omweg: float
+    def _route(
+        self, points: list[Point], line: float, max_detour: float
     ) -> tuple[Match, list[float]] | None:
-        """De route door de punten, met per edge welk deel ervan bereden wordt."""
+        """The route through the points, with per edge which fraction of it is driven."""
         edges: list[tuple[int, float, int]] = []
-        delen: list[float] = []
-        vorm: list[str] = []
-        lengte = 0.0
+        fractions: list[float] = []
+        shape: list[str] = []
+        length = 0.0
         try:
-            # Blokken die elkaar één punt overlappen: Valhalla neemt hooguit 20
-            # locaties per verzoek. Tussenpunten zijn `break`, niet `through`: met
-            # `directions_type: none` struikelt Valhalla over through-locaties
+            # Blocks that overlap each other by one point: Valhalla takes at most 20
+            # locations per request. Intermediate points are `break`, not `through`:
+            # with `directions_type: none` Valhalla trips over through locations
             # ("leg_shape_index not set for intermediate").
-            for begin in range(0, len(punten) - 1, MAX_LOCATIES - 1):
-                blok = punten[begin : begin + MAX_LOCATIES]
-                route = self._vraag(
+            for start in range(0, len(points) - 1, MAX_LOCATIONS - 1):
+                block = points[start : start + MAX_LOCATIONS]
+                route = self._request(
                     "/route",
                     {
-                        "locations": [{"lat": lat, "lon": lon} for lat, lon in blok],
+                        "locations": [{"lat": lat, "lon": lon} for lat, lon in block],
                         "costing": "auto",
                         "units": "kilometers",
-                        # De meting hoort bij de weg zoals hij ligt, niet bij de
-                        # route die vandaag toevallig het snelst is.
+                        # The measurement belongs to the road as it lies, not to
+                        # the route that happens to be fastest today.
                         "costing_options": {
                             "auto": {"shortest": True, "speed_types": ["freeflow", "constrained"]}
                         },
                         "directions_type": "none",
                     },
                 )
-                lengte += route["trip"]["summary"]["length"] * 1000
-                if lengte > lijn * max_omweg + 150:
+                length += route["trip"]["summary"]["length"] * 1000
+                if length > line * max_detour + 150:
                     return None
                 for leg in route["trip"]["legs"]:
-                    vorm.append(leg["shape"])
-                    spoor = self._vraag(
+                    shape.append(leg["shape"])
+                    trace = self._request(
                         "/trace_attributes",
                         {
                             "encoded_polyline": leg["shape"],
                             "costing": "auto",
                             "shape_match": "walk_or_snap",
-                            "filters": {"attributes": SPOOR_ATTRIBUTEN, "action": "include"},
+                            "filters": {"attributes": TRACE_ATTRIBUTES, "action": "include"},
                         },
                     )
-                    _voeg_toe(edges, delen, spoor["edges"])
-        except urllib.error.HTTPError as fout:
-            # Een 4xx is "geen route": het punt ligt buiten de tileset of op een
-            # weg waar een auto niet komt. Een 5xx is Valhalla's probleem.
-            if fout.code >= 500:
+                    _append(edges, fractions, trace["edges"])
+        except urllib.error.HTTPError as error:
+            # A 4xx is "no route": the point lies outside the tileset or on a
+            # road a car cannot use. A 5xx is Valhalla's problem.
+            if error.code >= 500:
                 raise
-            log.debug("geen route: %s", fout)
+            log.debug("no route: %s", error)
             return None
-        return (Match(tuple(edges), lengte, tuple(vorm)), delen) if edges else None
+        return (Match(tuple(edges), length, tuple(shape)), fractions) if edges else None
 
-    def _snap(self, punten: list[Punt], lijn: float) -> tuple[Match, list[float]] | None:
-        """De lijn zelf ge-map-matcht. Alleen geloofwaardig als het gematchte stuk
-        ongeveer even lang is als de lijn: waar de weg anders ligt dan in OSM
-        (werk aan een nieuw knooppunt) blijft er maar een flard van over."""
+    def _snap(self, points: list[Point], line: float) -> tuple[Match, list[float]] | None:
+        """The line itself, map-matched. Only credible if the matched part is
+        about as long as the line: where the road lies differently than in OSM
+        (work on a new interchange) only a shred of it remains."""
         try:
-            spoor = self._vraag(
+            trace = self._request(
                 "/trace_attributes",
                 {
-                    "shape": [{"lat": lat, "lon": lon} for lat, lon in punten],
+                    "shape": [{"lat": lat, "lon": lon} for lat, lon in points],
                     "costing": "auto",
                     "shape_match": "map_snap",
-                    # NDW's lijn ligt op de weg; een ruime straal pakt de
-                    # parallelweg of de andere rijbaan.
+                    # NDW's line lies on the road; a wide radius picks up the
+                    # frontage road or the other carriageway.
                     "trace_options": {"search_radius": 25},
-                    "filters": {"attributes": [*SPOOR_ATTRIBUTEN, "shape"], "action": "include"},
+                    "filters": {"attributes": [*TRACE_ATTRIBUTES, "shape"], "action": "include"},
                 },
             )
-        except urllib.error.HTTPError as fout:
-            if fout.code >= 500:
+        except urllib.error.HTTPError as error:
+            if error.code >= 500:
                 raise
-            log.debug("geen map-match: %s", fout)
+            log.debug("no map match: %s", error)
             return None
         edges: list[tuple[int, float, int]] = []
-        delen: list[float] = []
-        _voeg_toe(edges, delen, spoor["edges"])
-        lengte = sum(edge["length"] for edge in spoor["edges"]) * 1000
-        if not edges or not 0.8 * lijn - 20 <= lengte <= 1.25 * lijn + 20:
+        fractions: list[float] = []
+        _append(edges, fractions, trace["edges"])
+        length = sum(edge["length"] for edge in trace["edges"]) * 1000
+        if not edges or not 0.8 * line - 20 <= length <= 1.25 * line + 20:
             return None
-        return Match(tuple(edges), lengte, (spoor["shape"],)), delen
+        return Match(tuple(edges), length, (trace["shape"],)), fractions
 
 
-# `edge.length` is het bereden stuk; de percent_along's (alleen op de eerste en
-# laatste edge van een spoor) zeggen waar op de edge het begint en eindigt.
-SPOOR_ATTRIBUTEN = [
+# `edge.length` is the driven part; the percent_along's (only on the first and
+# last edge of a trace) say where on the edge it starts and ends.
+TRACE_ATTRIBUTES = [
     "edge.id",
     "edge.length",
     "edge.way_id",
@@ -236,119 +238,117 @@ SPOOR_ATTRIBUTEN = [
 ]
 
 
-def _voeg_toe(edges: list, delen: list[float], spoor: list[dict]) -> None:
-    """De edges van een spoor achter [edges], met in [delen] welk deel van elke
-    edge bereden wordt. Een edge waar twee legs op elkaar aansluiten komt één
-    keer; zijn delen tellen op."""
-    for edge in spoor:
-        nieuw = (int(edge["id"]), edge["length"] * 1000, int(edge.get("way_id", 0)))
-        deel = edge.get("target_percent_along", 1.0) - edge.get("source_percent_along", 0.0)
-        if edges and edges[-1][0] == nieuw[0]:
-            delen[-1] += deel
+def _append(edges: list, fractions: list[float], trace: list[dict]) -> None:
+    """The edges of a trace after [edges], with in [fractions] which fraction of
+    each edge is driven. An edge where two legs connect appears once; its
+    fractions add up."""
+    for edge in trace:
+        new = (int(edge["id"]), edge["length"] * 1000, int(edge.get("way_id", 0)))
+        fraction = edge.get("target_percent_along", 1.0) - edge.get("source_percent_along", 0.0)
+        if edges and edges[-1][0] == new[0]:
+            fractions[-1] += fraction
         else:
-            edges.append(nieuw)
-            delen.append(deel)
+            edges.append(new)
+            fractions.append(fraction)
 
 
-def _bedekt(match: Match, delen: list[float]) -> Match:
-    """Zonder de edges aan begin en eind waar de lijn minder dan de helft van
-    beslaat. Een afsluiting midden op één edge laat die edge staan: blijft er
-    niets over, dan de edge die het meest bedekt is. Voor de routeplanner maakt
-    een paar meter minder niet uit; de afsluiting blokkeert de doorgang nog."""
-    houd = [
+def _covered(match: Match, fractions: list[float]) -> Match:
+    """Without the edges at the start and end of which the line covers less than
+    half. A closure in the middle of a single edge keeps that edge: if nothing
+    remains, the edge that is covered the most. For the route planner a few
+    metres less does not matter; the closure still blocks the passage."""
+    keep = [
         edge
-        for i, (edge, deel) in enumerate(zip(match.edges, delen, strict=True))
-        if 0 < i < len(delen) - 1 or deel >= 0.5
+        for i, (edge, fraction) in enumerate(zip(match.edges, fractions, strict=True))
+        if 0 < i < len(fractions) - 1 or fraction >= 0.5
     ]
-    if not houd:
-        houd = [max(zip(match.edges, delen, strict=True), key=lambda paar: paar[1])[0]]
-    return Match(tuple(houd), match.lengte_m, match.vorm)
+    if not keep:
+        keep = [max(zip(match.edges, fractions, strict=True), key=lambda pair: pair[1])[0]]
+    return Match(tuple(keep), match.length_m, match.shape)
 
 
-def _ontdubbel(punten: Iterable[Punt]) -> list[Punt]:
-    """Een lijn uit deellijnen herhaalt elk tussenpunt (eind van de ene is begin
-    van de volgende); twee gelijke locaties achter elkaar kan Valhalla niet aan."""
-    uit: list[Punt] = []
-    for punt in punten:
-        if not uit or uit[-1] != punt:
-            uit.append(punt)
-    return uit
+def _dedupe(points: Iterable[Point]) -> list[Point]:
+    """A line made of partial lines repeats every intermediate point (the end of
+    one is the start of the next); Valhalla cannot handle two equal locations in
+    a row."""
+    out: list[Point] = []
+    for point in points:
+        if not out or out[-1] != point:
+            out.append(point)
+    return out
 
 
 class MatchCache:
-    """sleutel ("<id>@<versie>") -> Match of None (bekend onmatchbaar).
+    """key ("<id>@<version>") -> Match or None (known to be unmatchable).
 
-    `alleen_bedekt` gaat door naar `Valhalla.match` en staat in het bestand: een
-    cache die met de andere regel is gematcht, vervalt."""
+    `covered_only` is passed on to `Valhalla.match` and is stored in the file: a
+    cache that was matched with the other rule is discarded."""
 
-    def __init__(self, pad: Path, tileset: int, alleen_bedekt: bool = False):
-        self.pad = pad
+    def __init__(self, path: Path, tileset: int, covered_only: bool = False):
+        self.path = path
         self.tileset = tileset
-        self.alleen_bedekt = alleen_bedekt
+        self.covered_only = covered_only
         self.matches: dict[str, Match | None] = {}
         try:
-            data = json.loads(pad.read_text())
-            if data.get("alleen_bedekt", False) != alleen_bedekt:
-                log.info("%s: andere matchregel, cache vervalt", pad.name)
+            data = json.loads(path.read_text())
+            if data.get("covered_only", False) != covered_only:
+                log.info("%s: different match rule, cache discarded", path.name)
             elif data.get("tileset") == tileset:
-                # Een match van vóór de routevorm ("v") gaat eruit en wordt
-                # opnieuw gematcht: zonder vorm kan hij niet op de kaart.
+                # A match from before the route shape ("v") is dropped and
+                # matched again: without a shape it cannot go on the map.
                 self.matches = {
-                    sleutel: Match.uit_json(waarde) if waarde else None
-                    for sleutel, waarde in data["matches"].items()
-                    if not waarde or "v" in waarde
+                    key: Match.from_json(value) if value else None
+                    for key, value in data["matches"].items()
+                    if not value or "v" in value
                 }
             else:
                 log.info(
-                    "tileset is gewijzigd (%s -> %s): cache vervalt", data.get("tileset"), tileset
+                    "tileset has changed (%s -> %s): cache discarded", data.get("tileset"), tileset
                 )
         except FileNotFoundError:
             pass
-        except (ValueError, KeyError) as fout:
-            log.warning("cache onleesbaar, begin opnieuw: %s", fout)
+        except (ValueError, KeyError) as error:
+            log.warning("cache unreadable, starting over: %s", error)
 
-    def bewaar(self) -> None:
+    def save(self) -> None:
         data = {
             "tileset": self.tileset,
-            "alleen_bedekt": self.alleen_bedekt,
+            "covered_only": self.covered_only,
             "matches": {
-                sleutel: match.naar_json() if match else None
-                for sleutel, match in self.matches.items()
+                key: match.to_json() if match else None for key, match in self.matches.items()
             },
         }
-        tijdelijk = self.pad.with_suffix(".deel")
-        tijdelijk.write_text(json.dumps(data, separators=(",", ":")))
-        tijdelijk.rename(self.pad)
+        temporary = self.path.with_suffix(".part")
+        temporary.write_text(json.dumps(data, separators=(",", ":")))
+        temporary.rename(self.path)
 
-    def vul_aan(
-        self, valhalla: Valhalla, items: dict[str, tuple[Punt, ...]], draden: int = 8
+    def fill(
+        self, valhalla: Valhalla, items: dict[str, tuple[Point, ...]], threads: int = 8
     ) -> int:
-        """Matcht wat nog ontbreekt en ruimt op wat niet meer bestaat."""
-        for sleutel in self.matches.keys() - items.keys():
-            del self.matches[sleutel]
-        ontbrekend = [sleutel for sleutel in items if sleutel not in self.matches]
-        if not ontbrekend:
+        """Matches what is still missing and removes what no longer exists."""
+        for key in self.matches.keys() - items.keys():
+            del self.matches[key]
+        missing = [key for key in items if key not in self.matches]
+        if not missing:
             return 0
 
-        def probeer(sleutel: str):
+        def attempt(key: str):
             try:
-                return valhalla.match(items[sleutel], alleen_bedekt=self.alleen_bedekt)
-            except (OSError, http.client.HTTPException) as fout:
-                return fout
+                return valhalla.match(items[key], covered_only=self.covered_only)
+            except (OSError, http.client.HTTPException) as error:
+                return error
 
-        tijdelijk = 0
-        with ThreadPoolExecutor(draden) as pool:
-            resultaten = pool.map(probeer, ontbrekend)
-            for nummer, (sleutel, match) in enumerate(zip(ontbrekend, resultaten, strict=True), 1):
+        temporary = 0
+        with ThreadPoolExecutor(threads) as pool:
+            results = pool.map(attempt, missing)
+            for number, (key, match) in enumerate(zip(missing, results, strict=True), 1):
                 if isinstance(match, Exception):
-                    # Niet in de cache: de volgende ronde probeert het opnieuw.
-                    tijdelijk += 1
+                    # Not in the cache: the next cycle tries again.
+                    temporary += 1
                 else:
-                    self.matches[sleutel] = match
-                if nummer % 5000 == 0:
-                    log.info("gematcht: %d van %d", nummer, len(ontbrekend))
-        if tijdelijk:
-            log.warning(
-                "%d van %d niet gematcht door een tijdelijke fout", tijdelijk, len(ontbrekend)
-            )
-        return len(ontbrekend)
+                    self.matches[key] = match
+                if number % 5000 == 0:
+                    log.info("matched: %d of %d", number, len(missing))
+        if temporary:
+            log.warning("%d of %d not matched due to a temporary error", temporary, len(missing))
+        return len(missing)

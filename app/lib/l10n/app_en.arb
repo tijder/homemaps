@@ -1,345 +1,612 @@
 {
   "@@locale": "en",
-  "appTitel": "HomeMaps",
-  "van": "From",
-  "naar": "To",
+  "appTitle": "HomeMaps",
+  "from": "From",
+  "to": "To",
   "via": "Via",
-  "zoekPlaats": "Search a place or address",
-  "viaToevoegen": "Add stop",
-  "omdraaien": "Swap start and destination",
-  "verwijderen": "Remove",
-  "wissen": "Clear route",
-  "profielAuto": "Car",
-  "profielFiets": "Bike",
-  "profielLopen": "Walk",
-  "opties": "Options",
-  "liveVerkeer": "Use live traffic",
-  "liveVerkeerUitleg": "Current congestion and closures; car only",
-  "vermijdSnelwegen": "Avoid motorways",
-  "vermijdTol": "Avoid toll roads",
-  "vermijdVeren": "Avoid ferries",
-  "routeBezig": "Calculating route…",
-  "geenRoute": "No route found between these points.",
-  "geenWegInDeBuurt": "There is no road near one of the points that this mode of travel can use.",
-  "serverOnbereikbaar": "The server cannot be reached.",
-  "snelste": "Fastest",
-  "alternatief": "Alternative {nummer}",
-  "stijgingDaling": "+{stijging} m / -{daling} m",
-  "metTol": "toll",
-  "metVeer": "ferry",
-  "instructies": "Directions",
-  "hoogteprofiel": "Elevation profile",
-  "hierVandaan": "Directions from here",
-  "hierNaartoe": "Directions to here",
-  "alsTussenpunt": "Add as stop",
-  "kaartstijl": "Map style",
-  "stijlKaart": "Map",
-  "stijlLicht": "Light",
-  "stijlDonker": "Dark",
-  "themaAutomatisch": "Automatic",
-  "themaDag": "Always day",
-  "themaNacht": "Always night",
-  "instellingen": "Settings",
+  "searchPlace": "Search a place or address",
+  "addViaLabel": "Add stop",
+  "swapEnds": "Swap start and destination",
+  "removeLabel": "Remove",
+  "clearRoute": "Clear route",
+  "profileCar": "Car",
+  "profileBike": "Bike",
+  "profileWalk": "Walk",
+  "options": "Options",
+  "liveTraffic": "Use live traffic",
+  "liveTrafficHelp": "Current congestion and closures; car only",
+  "avoidMotorways": "Avoid motorways",
+  "avoidTolls": "Avoid toll roads",
+  "avoidFerries": "Avoid ferries",
+  "routeCalculating": "Calculating route…",
+  "noRoute": "No route found between these points.",
+  "noRoadNearby": "There is no road near one of the points that this mode of travel can use.",
+  "serverUnreachable": "The server cannot be reached.",
+  "fastest": "Fastest",
+  "alternative": "Alternative {number}",
+  "@alternative": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "ascentDescent": "+{ascent} m / -{descent} m",
+  "@ascentDescent": {
+    "placeholders": {
+      "ascent": {
+        "type": "int"
+      },
+      "descent": {
+        "type": "int"
+      }
+    }
+  },
+  "withToll": "toll",
+  "withFerry": "ferry",
+  "instructions": "Directions",
+  "elevationProfile": "Elevation profile",
+  "directionsFrom": "Directions from here",
+  "directionsTo": "Directions to here",
+  "asStop": "Add as stop",
+  "mapStyle": "Map style",
+  "styleMap": "Map",
+  "styleLight": "Light",
+  "styleDark": "Dark",
+  "themeAutomatic": "Automatic",
+  "themeDay": "Always day",
+  "themeNight": "Always night",
+  "settings": "Settings",
   "server": "Server",
-  "serverUitleg": "The address of your HomeMaps installation, for example https://maps.example.org",
-  "serverOngeldig": "Enter an address starting with http:// or https://.",
-  "opslaan": "Save",
-  "serverNodig": "Set the address of your server first.",
-  "over": "About",
-  "noordBoven": "North up",
-  "zoekHier": "Search the map",
+  "serverHelp": "The address of your HomeMaps installation, for example https://maps.example.org",
+  "serverInvalid": "Enter an address starting with http:// or https://.",
+  "save": "Save",
+  "serverRequired": "Set the address of your server first.",
+  "about": "About",
+  "northUp": "North up",
+  "searchHere": "Search the map",
   "route": "Directions",
-  "terugNaarZoeken": "Back to search",
-  "sleepOmTeVerplaatsen": "Drag to reorder",
-  "verkeerOpKaart": "Traffic",
-  "verkeerWegDicht": "Road closed",
-  "verkeerAfritDicht": "Exit closed",
-  "verkeerOpritDicht": "On-ramp closed",
-  "verkeerVerbindingswegDicht": "Connecting road closed",
-  "verkeerParallelbaanDicht": "Parallel road closed",
-  "verkeerRijbaanDicht": "Carriageway closed",
-  "verkeerRijstrookDicht": "Lane closed",
-  "verkeerStrokenOpen": "{aantal, plural, =1{1 lane open} other{{aantal} lanes open}}",
-  "verkeerFile": "Traffic jam",
-  "verkeerTraag": "Slow traffic",
-  "verkeerVertraging": "+{duur} delay · {kmu} km/h",
-  "verkeerTot": "Until {moment}",
-  "oorzaakWerk": "Roadworks",
-  "oorzaakOngeval": "Accident",
-  "oorzaakEvenement": "Event",
-  "mijnLocatie": "My location",
-  "locatieGeweigerd": "Without permission the app can't show your location.",
-  "locatieNooit": "Location is denied for HomeMaps. Turn it on in your phone's settings.",
-  "locatieNooitWeb": "Location is blocked for this site. Allow it via the padlock next to the address.",
-  "locatieDienstUit": "Location is turned off on your device.",
-  "locatieNietGevonden": "Your device can't determine your location; it keeps trying. Computers often can't, phones can.",
-  "startNavigatie": "Start",
-  "navigatieMeldingTitel": "Navigating to {bestemming}",
-  "navigatieMeldingTekst": "HomeMaps is following your location for directions.",
-  "herberekenen": "Recalculating route.",
-  "herberekenenBezig": "Recalculating…",
-  "snellereRoute": "{minuten, plural, =1{There is a faster route, 1 minute faster. Choose on screen whether to take it.} other{There is a faster route, {minuten} minutes faster. Choose on screen whether to take it.}}",
-  "overAfstand": "In {afstand}, {zin}",
-  "gesprokenMeter": "{meter} meters",
-  "gesprokenKilometer": "{km} kilometers",
-  "aangekomen": "You have arrived",
-  "klaar": "Done",
-  "korteActie": "{soort, select, oprit{Take the ramp} afrit{Take the exit} rechtdoor{Keep straight} rechts{Keep right} links{Keep left} invoegen{Merge} other{}}",
-  "@korteActie": {
-    "description": "Wat je doet bij een op- of afrit, splitsing of invoegstrook, kort, in de navigatiekop.",
+  "backToSearch": "Back to search",
+  "dragToReorder": "Drag to reorder",
+  "trafficOnMap": "Traffic",
+  "trafficRoadClosed": "Road closed",
+  "trafficExitClosed": "Exit closed",
+  "trafficOnRampClosed": "On-ramp closed",
+  "trafficConnectingRoadClosed": "Connecting road closed",
+  "trafficParallelRoadClosed": "Parallel road closed",
+  "trafficCarriagewayClosed": "Carriageway closed",
+  "trafficLaneClosed": "Lane closed",
+  "trafficLanesOpen": "{count, plural, =1{1 lane open} other{{count} lanes open}}",
+  "@trafficLanesOpen": {
     "placeholders": {
-      "soort": {
-        "type": "String"
+      "count": {
+        "type": "int"
       }
     }
   },
-  "afrit": "Exit {nummer}",
-  "@afrit": {
+  "trafficJam": "Traffic jam",
+  "trafficSlow": "Slow traffic",
+  "trafficDelay": "+{duration} delay · {kmh} km/h",
+  "@trafficDelay": {
     "placeholders": {
-      "nummer": {
-        "type": "String"
-      }
-    }
-  },
-  "rijstrokenOver": "In {afstand}: {stroken}",
-  "@rijstrokenOver": {
-    "placeholders": {
-      "afstand": {
+      "duration": {
         "type": "String"
       },
-      "stroken": {
+      "kmh": {
+        "type": "int"
+      }
+    }
+  },
+  "trafficUntil": "Until {moment}",
+  "@trafficUntil": {
+    "placeholders": {
+      "moment": {
         "type": "String"
       }
     }
   },
-  "rijstrokenGoed": "{goed, plural, =1{1 correct lane} other{{goed} correct lanes}} of {totaal}",
-  "@rijstrokenGoed": {
+  "causeRoadworks": "Roadworks",
+  "causeAccident": "Accident",
+  "causeEvent": "Event",
+  "myLocation": "My location",
+  "locationDenied": "Without permission the app can't show your location.",
+  "locationNever": "Location is denied for HomeMaps. Turn it on in your phone's settings.",
+  "locationNeverWeb": "Location is blocked for this site. Allow it via the padlock next to the address.",
+  "locationServiceOff": "Location is turned off on your device.",
+  "locationNotFound": "Your device can't determine your location; it keeps trying. Computers often can't, phones can.",
+  "startNavigation": "Start",
+  "navigationNotificationTitle": "Navigating to {destination}",
+  "@navigationNotificationTitle": {
     "placeholders": {
-      "goed": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "navigationNotificationText": "HomeMaps is following your location for directions.",
+  "recalculating": "Recalculating route.",
+  "recalculatingBusy": "Recalculating…",
+  "fasterRoute": "{minutes, plural, =1{There is a faster route, 1 minute faster. Choose on screen whether to take it.} other{There is a faster route, {minutes} minutes faster. Choose on screen whether to take it.}}",
+  "@fasterRoute": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "inDistance": "In {distance}, {sentence}",
+  "@inDistance": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      },
+      "sentence": {
+        "type": "String"
+      }
+    }
+  },
+  "spokenMeters": "{meter} meters",
+  "@spokenMeters": {
+    "placeholders": {
+      "meter": {
+        "type": "int"
+      }
+    }
+  },
+  "spokenKilometers": "{km} kilometers",
+  "@spokenKilometers": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "arrived": "You have arrived",
+  "done": "Done",
+  "shortAction": "{kind, select, onRamp{Take the ramp} exit{Take the exit} straight{Keep straight} right{Keep right} left{Keep left} merge{Merge} other{}}",
+  "@shortAction": {
+    "description": "What you do at an on- or off-ramp, fork or merge lane, short, in the navigation header.",
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "exit": "Exit {number}",
+  "@exit": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "lanesAhead": "In {distance}: {perLane}",
+  "@lanesAhead": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      },
+      "perLane": {
+        "type": "String"
+      }
+    }
+  },
+  "lanesCorrect": "{correct, plural, =1{1 correct lane} other{{correct} correct lanes}} of {total}",
+  "@lanesCorrect": {
+    "placeholders": {
+      "correct": {
         "type": "int"
       },
-      "totaal": {
+      "total": {
         "type": "int"
       }
     }
   },
-  "hervatten": "Re-centre",
-  "stopNavigatie": "Stop",
-  "stemUit": "Mute",
-  "stemAan": "Unmute",
-  "aankomst": "Arrive {tijd}",
-  "daarna": "Then",
-  "locatieZoeken": "Finding location…",
-  "locatieAanOmTeNavigeren": "Turn on location to navigate",
-  "navigerenZonderLocatie": "Navigation needs your location.",
-  "opnieuwProberen": "Try again",
-  "aantalTussenpunten": "{aantal, plural, =1{via 1 stop} other{via {aantal} stops}}",
-  "routeWijzigen": "Edit route",
-  "eerstStoppen": "Stop navigation first.",
-  "vertraging": "delay",
-  "voorstelSneller": "Faster route: {minuten} min faster",
-  "voorstelVia": "via {weg}",
-  "nemen": "Take it",
-  "negeren": "Ignore",
-  "aankomstOm": "arrive {tijd}",
-  "thuis": "Home",
-  "werk": "Work",
-  "alsThuis": "Set as home",
-  "alsWerk": "Set as work",
-  "plekken": "Places",
-  "plekkenUitleg": "Set home and work on the card of a place you found.",
-  "nietIngesteld": "Not set",
-  "recentePlekken": "Recent places",
-  "aantalPlekken": "{aantal, plural, =0{None} =1{1 place} other{{aantal} places}}",
-  "wissenKort": "Clear",
-  "nietGevonden": "Not found: {zoek}",
-  "kmu": "km/h",
-  "maximumsnelheid": "Speed limit {kmu} km/h",
-  "maximumsnelheidTijdelijk": "Temporary speed limit {kmu} km/h",
-  "maximumsnelheidMatrix": "Speed limit {kmu} km/h on the overhead signs",
-  "meldingOngeval": "Accident",
-  "meldingPech": "Broken-down vehicle",
-  "meldingObstakel": "Object on the road",
-  "meldingBrug": "Open bridge",
-  "matrixborden": "Overhead lane signs",
-  "meldingSinds": "Since {tijd}",
-  "waarschuwingOpRoute": "Caution: {melding} in {afstand}.",
-  "vertrek": "Depart",
-  "vertrekNu": "Now",
-  "vertrekLater": "Later…",
-  "afsluitingOpRoute": "{aantal, plural, =1{Planned closure on this route: {venster}} other{{aantal} planned closures on this route, first: {venster}}}",
-  "langsDeRoute": "Along the route",
-  "langsTanken": "Fuel",
-  "langsLaden": "Charging",
-  "langsSupermarkt": "Supermarket",
-  "langsEten": "Food",
-  "langsNiets": "Nothing found within a kilometre of the route.",
-  "langsAfstand": "{afstand} from the route",
-  "tussenstopToegevoegd": "Stop: {naam}",
-  "locatieDelen": "Location sharing",
-  "locatieDelenUitleg": "Send your position to your own server, like Colota does. Only while navigating.",
-  "locatieDelenAan": "Share while navigating",
-  "deelUit": "Off",
-  "deelServer": "Server",
-  "deelAangepast": "Custom server",
-  "deelSjabloonUitleg": "{sjabloon, select, dawarich{Dawarich API: points in batches, with heading, battery and transport mode} geopulse{Colota format for GeoPulse} overland{Overland: points in batches (GeoJSON)} owntracks{Standard OwnTracks HTTP format} phonetrack{Nextcloud PhoneTrack} reitti{OwnTracks-compatible format for Reitti} traccar{Traccar, OsmAnd protocol} other{Your own field names}}",
-  "@deelSjabloonUitleg": {
+  "resume": "Re-centre",
+  "stopNavigation": "Stop",
+  "voiceOff": "Mute",
+  "voiceOn": "Unmute",
+  "arrival": "Arrive {time}",
+  "@arrival": {
     "placeholders": {
-      "sjabloon": {
+      "time": {
         "type": "String"
       }
     }
   },
-  "deelUrl": "Address (URL)",
-  "deelUrlOngeldig": "Enter an address starting with http:// or https://.",
-  "deelUrlWeb": "In the browser the server must allow CORS.",
-  "deelMethode": "Method",
-  "deelInlog": "Authentication",
-  "deelInlogGeen": "None",
-  "deelGebruiker": "Username",
-  "deelWachtwoord": "Password",
-  "deelToken": "Token",
-  "deelVeldnamen": "Field names",
-  "deelVeldnamenUitleg": "One per line as field=name, e.g. lat=latitude. Fields: lat, lon, acc, alt, vel, tst, bear.",
-  "deelExtraVelden": "Fixed fields",
-  "deelExtraVeldenUitleg": "One per line as name=value; sent with every point.",
-  "deelInterval": "Every … seconds",
-  "deelMinAfstand": "Or after … metres",
-  "deelTesten": "Test connection",
-  "deelTestGelukt": "The server received the point.",
-  "deelTestMislukt": "Failed: {fout}",
-  "@deelTestMislukt": {
+  "afterwards": "Then",
+  "locationSearching": "Finding location…",
+  "locationEnableToNavigate": "Turn on location to navigate",
+  "navigatingWithoutLocation": "Navigation needs your location.",
+  "tryAgain": "Try again",
+  "stopCount": "{count, plural, =1{via 1 stop} other{via {count} stops}}",
+  "@stopCount": {
     "placeholders": {
-      "fout": {
-        "type": "String"
-      }
-    }
-  },
-  "deelStatus": "Status",
-  "deelLaatst": "Last sent at {tijd}",
-  "@deelLaatst": {
-    "placeholders": {
-      "tijd": {
-        "type": "String"
-      }
-    }
-  },
-  "deelNogNiets": "Nothing sent yet",
-  "deelInWachtrij": "{aantal, plural, =0{Queue empty} =1{1 point queued} other{{aantal} points queued}}",
-  "@deelInWachtrij": {
-    "placeholders": {
-      "aantal": {
+      "count": {
         "type": "int"
       }
     }
   },
-  "deelFout": "Error: {fout}",
-  "@deelFout": {
+  "editRoute": "Edit route",
+  "stopFirst": "Stop navigation first.",
+  "delay": "delay",
+  "suggestionFaster": "Faster route: {minutes} min faster",
+  "@suggestionFaster": {
     "placeholders": {
-      "fout": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "suggestionVia": "via {road}",
+  "@suggestionVia": {
+    "placeholders": {
+      "road": {
         "type": "String"
       }
     }
   },
-  "deelGestopt": "Stopped until you change the settings.",
-  "deelWisWachtrij": "Clear queue",
-  "deelVoorbeeld": "Example",
-  "navigatieMeldingDelen": "HomeMaps follows your location for the route and shares it with your server.",
-  "overHomeMaps": "About HomeMaps",
-  "versie": "Version {versie}",
-  "@versie": {
+  "accept": "Take it",
+  "ignore": "Ignore",
+  "arrivalAt": "arrive {time}",
+  "@arrivalAt": {
     "placeholders": {
-      "versie": {
+      "time": {
         "type": "String"
       }
     }
   },
-  "overBeschrijving": "Navigation on your own server: map, routes, search and traffic.",
-  "bronnen": "Data and software",
-  "bronKaartgegevens": "Map data © OpenStreetMap contributors",
-  "bronTegels": "Map tiles and style",
-  "bronRoutes": "Routing and navigation",
-  "bronZoeken": "Search",
-  "bronVerkeer": "Traffic, roadworks and lane signals",
-  "broncode": "Source code",
-  "licenties": "Licenses",
+  "home": "Home",
+  "work": "Work",
+  "asHome": "Set as home",
+  "asWork": "Set as work",
+  "savedPlaces": "Places",
+  "savedPlacesHelp": "Set home and work on the card of a place you found.",
+  "notSet": "Not set",
+  "recentPlaces": "Recent places",
+  "savedPlaceCount": "{count, plural, =0{None} =1{1 place} other{{count} places}}",
+  "@savedPlaceCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clearLabel": "Clear",
+  "notFound": "Not found: {search}",
+  "@notFound": {
+    "placeholders": {
+      "search": {
+        "type": "String"
+      }
+    }
+  },
+  "kmh": "km/h",
+  "speedLimit": "Speed limit {kmh} km/h",
+  "@speedLimit": {
+    "placeholders": {
+      "kmh": {
+        "type": "int"
+      }
+    }
+  },
+  "speedLimitTemporary": "Temporary speed limit {kmh} km/h",
+  "@speedLimitTemporary": {
+    "placeholders": {
+      "kmh": {
+        "type": "int"
+      }
+    }
+  },
+  "speedLimitMatrix": "Speed limit {kmh} km/h on the overhead signs",
+  "@speedLimitMatrix": {
+    "placeholders": {
+      "kmh": {
+        "type": "int"
+      }
+    }
+  },
+  "incidentAccident": "Accident",
+  "incidentBreakdown": "Broken-down vehicle",
+  "incidentObstacle": "Object on the road",
+  "incidentBridge": "Open bridge",
+  "matrixSigns": "Overhead lane signs",
+  "incidentSince": "Since {time}",
+  "@incidentSince": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "warningOnRoute": "Caution: {notification} in {distance}.",
+  "@warningOnRoute": {
+    "placeholders": {
+      "notification": {
+        "type": "String"
+      },
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "departure": "Depart",
+  "departNow": "Now",
+  "departLater": "Later…",
+  "closureOnRoute": "{count, plural, =1{Planned closure on this route: {window}} other{{count} planned closures on this route, first: {window}}}",
+  "@closureOnRoute": {
+    "placeholders": {
+      "window": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "alongTheRoute": "Along the route",
+  "alongFuel": "Fuel",
+  "alongCharging": "Charging",
+  "alongSupermarket": "Supermarket",
+  "alongFood": "Food",
+  "alongNothing": "Nothing found within a kilometre of the route.",
+  "alongDistance": "{distance} from the route",
+  "@alongDistance": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "stopAdded": "Stop: {label}",
+  "@stopAdded": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "locationSharing": "Location sharing",
+  "locationSharingHelp": "Send your position to your own server, like Colota does. Only while navigating.",
+  "locationSharingEnabled": "Share while navigating",
+  "shareOff": "Off",
+  "shareServer": "Server",
+  "shareCustom": "Custom server",
+  "shareTemplateHelp": "{template, select, dawarich{Dawarich API: points in batches, with heading, battery and transport mode} geopulse{Colota format for GeoPulse} overland{Overland: points in batches (GeoJSON)} owntracks{Standard OwnTracks HTTP format} phonetrack{Nextcloud PhoneTrack} reitti{OwnTracks-compatible format for Reitti} traccar{Traccar, OsmAnd protocol} other{Your own field names}}",
+  "@shareTemplateHelp": {
+    "placeholders": {
+      "template": {
+        "type": "String"
+      }
+    }
+  },
+  "shareUrl": "Address (URL)",
+  "shareUrlInvalid": "Enter an address starting with http:// or https://.",
+  "shareUrlWeb": "In the browser the server must allow CORS.",
+  "shareMethod": "Method",
+  "shareAuth": "Authentication",
+  "shareAuthNone": "None",
+  "shareUsername": "Username",
+  "sharePassword": "Password",
+  "shareToken": "Token",
+  "shareFieldNames": "Field names",
+  "shareFieldNamesHelp": "One per line as field=name, e.g. lat=latitude. Fields: lat, lon, acc, alt, vel, tst, bear.",
+  "shareExtraFields": "Fixed fields",
+  "shareExtraFieldsHelp": "One per line as name=value; sent with every point.",
+  "shareInterval": "Every … seconds",
+  "shareMinDistance": "Or after … metres",
+  "shareTest": "Test connection",
+  "shareTestSucceeded": "The server received the point.",
+  "shareTestFailed": "Failed: {error}",
+  "@shareTestFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "shareStatus": "Status",
+  "shareLastSent": "Last sent at {time}",
+  "@shareLastSent": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shareNothingYet": "Nothing sent yet",
+  "shareQueued": "{count, plural, =0{Queue empty} =1{1 point queued} other{{count} points queued}}",
+  "@shareQueued": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shareError": "Error: {error}",
+  "@shareError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "shareStopped": "Stopped until you change the settings.",
+  "shareClearQueue": "Clear queue",
+  "shareExample": "Example",
+  "navigationNotificationSharing": "HomeMaps follows your location for the route and shares it with your server.",
+  "aboutHomeMaps": "About HomeMaps",
+  "version": "Version {version}",
+  "@version": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutDescription": "Navigation on your own server: map, routes, search and traffic.",
+  "sources": "Data and software",
+  "sourceMapData": "Map data © OpenStreetMap contributors",
+  "sourceTiles": "Map tiles and style",
+  "sourceRouting": "Routing and navigation",
+  "sourceSearch": "Search",
+  "sourceTraffic": "Traffic, roadworks and lane signals",
+  "sourceCode": "Source code",
+  "licenses": "Licenses",
   "dawarich": "Dawarich",
-  "dawarichUitleg": "Enter the address of your own Dawarich. Then sign in, and you can share your location with your family, record your trips while navigating and see family members on the map.",
-  "dawarichNietIngelogd": "Not signed in",
+  "dawarichHelp": "Enter the address of your own Dawarich. Then sign in, and you can share your location with your family, record your trips while navigating and see family members on the map.",
+  "dawarichNotSignedIn": "Not signed in",
   "dawarichServer": "Server",
-  "dawarichMetSleutel": "With an API key",
+  "dawarichWithKey": "With an API key",
   "dawarichEmail": "Email",
-  "dawarichWachtwoord": "Password",
-  "dawarichSleutel": "API key",
-  "dawarichSleutelUitleg": "Found in Dawarich under Settings.",
-  "dawarichInloggen": "Sign in",
-  "dawarichUitloggen": "Sign out",
+  "dawarichPassword": "Password",
+  "dawarichKey": "API key",
+  "dawarichKeyHelp": "Found in Dawarich under Settings.",
+  "dawarichSignIn": "Sign in",
+  "dawarichSignOut": "Sign out",
   "dawarichCode": "Two-factor code",
-  "dawarichCodeUitleg": "The code from your authenticator app, or a backup code.",
-  "dawarichBevestig": "Confirm",
-  "annuleren": "Cancel",
-  "dawarichFoutInlog": "Incorrect credentials.",
-  "dawarichFoutWachtwoordUit": "This server does not allow signing in with a password. Use an API key.",
-  "dawarichFoutGeblokkeerd": "Too many wrong codes. Try again later.",
-  "dawarichFoutVerbinding": "Cannot reach Dawarich ({detail}).",
-  "dawarichFoutOnbekend": "Something went wrong ({detail}).",
-  "dawarichIngelogdAls": "Signed in as {email}",
-  "dawarichFamilie": "Family",
-  "dawarichFamilieDelen": "Share location with family",
-  "dawarichDeeltTot": "Until {tijd}",
-  "dawarichDeeltAltijd": "Until you turn it off",
-  "dawarichDeeltNiet": "Your family can't see your location",
-  "dawarichGeenFamilie": "You're not in a family yet. Create or join one on the Dawarich website.",
-  "dawarichNaarWebsite": "Open website",
-  "dawarichGeenAbonnement": "Family is not included in your Dawarich plan.",
-  "dawarichHoeLang": "Share for how long?",
-  "dawarichDuur": "{duur, select, uur1{1 hour} uur6{6 hours} uur12{12 hours} uur24{24 hours} other{Until I turn it off}}",
-  "dawarichDelenOnderweg": "Share location while navigating",
-  "dawarichDelenOnderwegUitleg": "Sends your trip to Dawarich. Set interval and distance under Location sharing.",
-  "dawarichToonFamilie": "Family members on the map",
-  "dawarichToonFamilieUitleg": "Updated every 30 seconds while the app is open.",
-  "dawarichFamilieDeelt": "family sharing",
-  "deelViaDawarich": "Set up through your Dawarich account.",
-  "familieGeleden": "{minuten, plural, =0{just now} =1{1 minute ago} other{{minuten} minutes ago}}",
-  "familieBatterij": "battery {procent}%",
-  "familieUrenGeleden": "{uren, plural, =1{1 hour ago} other{{uren} hours ago}}",
-  "familieDagenGeleden": "{dagen, plural, =1{1 day ago} other{{dagen} days ago}}",
-  "familieVolgen": "Follow",
-  "familieVolgt": "Following",
-  "instellingenGroepKaart": "Map and route",
-  "instellingenGroepDelen": "Sharing",
-  "instellingenGroepApp": "App",
-  "instellingenKaart": "Map",
-  "dagEnNacht": "Day and night",
-  "themaAlleenKaart": "Only for the Map style; Light and Dark are already a choice.",
-  "lagen": "Layers",
-  "verkeerOpKaartUitleg": "Closures, road works and traffic jams on the map",
-  "vervoer": "Transport",
-  "vervoerUitleg": "Used to calculate a new route.",
-  "opgeslagen": "Saved",
-  "overSamenvatting": "Version, sources and licenses",
+  "dawarichCodeHelp": "The code from your authenticator app, or a backup code.",
+  "dawarichConfirm": "Confirm",
+  "cancelLabel": "Cancel",
+  "dawarichErrorCredentials": "Incorrect credentials.",
+  "dawarichErrorPasswordDisabled": "This server does not allow signing in with a password. Use an API key.",
+  "dawarichErrorBlocked": "Too many wrong codes. Try again later.",
+  "dawarichErrorConnection": "Cannot reach Dawarich ({detail}).",
+  "@dawarichErrorConnection": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "dawarichErrorUnknown": "Something went wrong ({detail}).",
+  "@dawarichErrorUnknown": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "dawarichSignedInAs": "Signed in as {email}",
+  "@dawarichSignedInAs": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "dawarichFamily": "Family",
+  "dawarichShareWithFamily": "Share location with family",
+  "dawarichSharingUntil": "Until {time}",
+  "@dawarichSharingUntil": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "dawarichSharingAlways": "Until you turn it off",
+  "dawarichNotSharing": "Your family can't see your location",
+  "dawarichNoFamily": "You're not in a family yet. Create or join one on the Dawarich website.",
+  "dawarichOpenWebsite": "Open website",
+  "dawarichNoSubscription": "Family is not included in your Dawarich plan.",
+  "dawarichHowLong": "Share for how long?",
+  "dawarichDuration": "{duration, select, hour1{1 hour} hour6{6 hours} hour12{12 hours} hour24{24 hours} other{Until I turn it off}}",
+  "@dawarichDuration": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "dawarichShareEnRoute": "Share location while navigating",
+  "dawarichShareEnRouteHelp": "Sends your trip to Dawarich. Set interval and distance under Location sharing.",
+  "dawarichShowFamily": "Family members on the map",
+  "dawarichShowFamilyHelp": "Updated every 30 seconds while the app is open.",
+  "dawarichFamilySharing": "family sharing",
+  "shareViaDawarich": "Set up through your Dawarich account.",
+  "familyMinutesAgo": "{minutes, plural, =0{just now} =1{1 minute ago} other{{minutes} minutes ago}}",
+  "@familyMinutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "familyBattery": "battery {percent}%",
+  "@familyBattery": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "familyHoursAgo": "{hours, plural, =1{1 hour ago} other{{hours} hours ago}}",
+  "@familyHoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "familyDaysAgo": "{days, plural, =1{1 day ago} other{{days} days ago}}",
+  "@familyDaysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "familyFollow": "Follow",
+  "familyFollowing": "Following",
+  "settingsGroupMap": "Map and route",
+  "settingsGroupSharing": "Sharing",
+  "settingsGroupApp": "App",
+  "settingsMap": "Map",
+  "dayAndNight": "Day and night",
+  "themeOnlyMap": "Only for the Map style; Light and Dark are already a choice.",
+  "layers": "Layers",
+  "trafficOnMapHelp": "Closures, road works and traffic jams on the map",
+  "transport": "Transport",
+  "transportHelp": "Used to calculate a new route.",
+  "saved": "Saved",
+  "aboutSummary": "Version, sources and licenses",
   "dawarichAccount": "Account",
-  "dawarichNavigeren": "Navigation",
-  "deelVerbinding": "Connection",
-  "deelPunten": "Points",
-  "dawarichWebsiteUitleg": "Also for OIDC, such as Keycloak or Authentik. Not with Google.",
-  "dawarichWebsiteInloggen": "Via the Dawarich website",
-  "dawarichWebsiteTitel": "Sign in to Dawarich",
-  "dawarichWebsiteFout": "The page does not load: {fout}",
-  "dawarichFoutCors": "Dawarich cannot be reached from the browser. Dawarich does not allow this itself (CORS); add CORS headers for /api/v1 in your reverse proxy, or use the Android app.",
-  "dawarichFoutGeenDawarich": "No Dawarich answers at this address. If a login proxy (such as Authelia) is in front of it, let /api/v1 through.",
-  "dawarichStapServer": "Server",
-  "dawarichVerbinden": "Connect",
-  "dawarichVerbonden": "Connected",
-  "dawarichVerbondenVersie": "Connected · Dawarich {versie}",
-  "dawarichWijzigen": "Change",
-  "dawarichStapInloggen": "Sign in",
-  "dawarichAndereManieren": "Other ways",
-  "dawarichUitloggenVraag": "Sign out of Dawarich?",
-  "dawarichUitloggenUitleg": "Sharing while navigating stops, and your family disappears from the map.",
-  "dawarichControleren": "Checking connection…",
-  "dawarichSessieVerlopen": "Session expired",
-  "dawarichSessieVerlopenUitleg": "Your API key no longer works. Sign in again.",
-  "dawarichNietBereikbaar": "Not reachable",
-  "dawarichOpnieuwInloggen": "Sign in again"
+  "dawarichNavigation": "Navigation",
+  "shareConnection": "Connection",
+  "sharePoints": "Points",
+  "dawarichWebsiteHelp": "Also for OIDC, such as Keycloak or Authentik. Not with Google.",
+  "dawarichWebsiteSignIn": "Via the Dawarich website",
+  "dawarichWebsiteTitle": "Sign in to Dawarich",
+  "dawarichWebsiteError": "The page does not load: {error}",
+  "@dawarichWebsiteError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "dawarichErrorCors": "Dawarich cannot be reached from the browser. Dawarich does not allow this itself (CORS); add CORS headers for /api/v1 in your reverse proxy, or use the Android app.",
+  "dawarichErrorNotDawarich": "No Dawarich answers at this address. If a login proxy (such as Authelia) is in front of it, let /api/v1 through.",
+  "dawarichStepServer": "Server",
+  "dawarichConnect": "Connect",
+  "dawarichConnected": "Connected",
+  "dawarichConnectedVersion": "Connected · Dawarich {version}",
+  "@dawarichConnectedVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "dawarichChange": "Change",
+  "dawarichStepSignIn": "Sign in",
+  "dawarichOtherWays": "Other ways",
+  "dawarichSignOutQuestion": "Sign out of Dawarich?",
+  "dawarichSignOutHelp": "Sharing while navigating stops, and your family disappears from the map.",
+  "dawarichChecking": "Checking connection…",
+  "dawarichSessionExpired": "Session expired",
+  "dawarichSessionExpiredHelp": "Your API key no longer works. Sign in again.",
+  "dawarichUnreachable": "Not reachable",
+  "dawarichSignInAgain": "Sign in again"
 }

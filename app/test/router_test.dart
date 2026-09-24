@@ -4,17 +4,17 @@ import 'package:homemaps/router/app_router.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('de router start, en een categorie heeft een eigen adres', () {
-    // auto_route controleert pas bij het opbouwen of elke route een eigen
-    // naam heeft; dan zou de app bij het starten al vallen.
+  test('the router starts, and a category has its own address', () {
+    // auto_route only checks on build whether every route has its own
+    // name; the app would then already crash at startup.
     final router = AppRouter();
     expect(router.config, returnsNormally);
 
-    final lijst = router.matcher.match('/instellingen');
-    expect(lijst?.single.name, InstellingenRoute.name);
+    final list = router.matcher.match('/settings');
+    expect(list?.single.name, SettingsRoute.name);
 
-    final categorie = router.matcher.match('/instellingen/locatie-delen');
-    expect(categorie?.single.name, InstellingenCategorieRoute.name);
-    expect(categorie?.single.params.optString('categorie'), 'locatie-delen');
+    final category = router.matcher.match('/settings/location-sharing');
+    expect(category?.single.name, SettingsCategoryRoute.name);
+    expect(category?.single.params.optString('category'), 'location-sharing');
   });
 }

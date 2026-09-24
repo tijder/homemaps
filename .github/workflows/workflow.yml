@@ -8,12 +8,12 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  # Eén plek voor de naam: ghcr.io/<owner>/homemaps-web, -traffic en charts/homemaps.
+  # One place for the name: ghcr.io/<owner>/homemaps-web, -traffic and charts/homemaps.
   IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/homemaps
 
 jobs:
-  # release.yml leidt de versiesprong en de release-notes af uit conventional commits;
-  # een onderwerpregel die daar niet aan voldoet kost een release zijn notes.
+  # release.yml derives the version bump and the release notes from conventional commits;
+  # a subject line that doesn't follow them costs a release its notes.
   commit-lint:
     name: Commit messages
     if: github.event_name == 'pull_request'
@@ -39,7 +39,7 @@ jobs:
 
   build:
     name: App (test, Android, web)
-    # De commit die release.yml pusht is versieboekhouding en al groen gebouwd.
+    # The commit that release.yml pushes is version bookkeeping and already built green.
     if: ${{ github.event_name == 'pull_request' || !startsWith(github.event.head_commit.message, 'chore(release):') }}
     runs-on: ubuntu-latest
     defaults:
@@ -56,8 +56,8 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.pub-cache
-          # Geen restore-keys: een cache van een oudere pubspec.lock kan pub's
-          # resolutie halverwege laten struikelen.
+          # No restore-keys: a cache from an older pubspec.lock can make pub's
+          # resolution trip halfway.
           key: pub-${{ runner.os }}-${{ hashFiles('app/pubspec.lock') }}
       - uses: actions/setup-java@v6
         with:
@@ -66,8 +66,8 @@ jobs:
 
       - run: flutter pub get
 
-      # De gegenereerde bestanden (l10n, auto_route) zijn ingecheckt; dit vangt een
-      # vergeten `build_runner` of `gen-l10n`.
+      # The generated files (l10n, auto_route) are checked in; this catches a
+      # forgotten `build_runner` or `gen-l10n`.
       - name: Generated code is up to date
         run: |
           flutter gen-l10n
@@ -78,11 +78,11 @@ jobs:
       - run: flutter analyze
       - run: flutter test
 
-      # Nog een keer in de browser: bit-operaties gedragen zich in de JavaScript-build
-      # anders dan in de VM en in wasm. De polyline-decoder tekende daardoor elke
-      # route als een rechte lijn naar het noorden, terwijl alle VM-tests groen waren.
-      - name: Tests in de browser (JavaScript)
-        run: flutter test --platform chrome test/valhalla_service_test.dart test/zoekterm_test.dart
+      # Once more in the browser: bit operations behave differently in the JavaScript
+      # build than in the VM and in wasm. Because of that the polyline decoder drew every
+      # route as a straight line to the north, while all VM tests were green.
+      - name: Tests in the browser (JavaScript)
+        run: flutter test --platform chrome test/valhalla_service_test.dart test/search_term_test.dart
 
       - name: Build Android
         run: flutter build apk --release
@@ -90,14 +90,14 @@ jobs:
       - name: Build Web
         run: flutter build web --release --wasm --no-web-resources-cdn
 
-      # De hele reden van dit project: tijdens het gebruik gaat er niets naar buiten.
-      # maplibre_gl valt zonder webLibrarySource terug op unpkg; de string mag in de
-      # bundel staan (het is de default in de plugin), maar de bibliotheek zelf moet
-      # er lokaal bij zitten.
+      # The whole point of this project: nothing goes out while it's in use.
+      # Without webLibrarySource maplibre_gl falls back to unpkg; the string may be in the
+      # bundle (it's the plugin's default), but the library itself must be
+      # bundled locally.
       - name: maplibre-gl-js is bundled
         run: |
           for f in maplibre-gl.mjs maplibre-gl-shared.mjs maplibre-gl-worker.mjs maplibre-gl.css; do
-            test -s "build/web/maplibre/$f" || { echo "::error::build/web/maplibre/$f ontbreekt"; exit 1; }
+            test -s "build/web/maplibre/$f" || { echo "::error::build/web/maplibre/$f is missing"; exit 1; }
           done
 
       - name: Upload Web Build
@@ -112,8 +112,8 @@ jobs:
           name: android-apk
           path: app/build/app/outputs/flutter-apk/app-release.apk
 
-  # Alleen of het compileert: ondertekenen en TestFlight doet release.yml. Zo valt
-  # een wijziging die iOS breekt op zonder dat er iemand een Mac bij hoeft te pakken.
+  # Only whether it compiles: signing and TestFlight are done by release.yml. This way
+  # a change that breaks iOS gets noticed without anyone having to grab a Mac.
   ios:
     name: App (iOS)
     if: ${{ github.event_name == 'pull_request' || !startsWith(github.event.head_commit.message, 'chore(release):') }}
@@ -132,7 +132,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.pub-cache
-          # Geen restore-keys, om dezelfde reden als in de job hierboven.
+          # No restore-keys, for the same reason as in the job above.
           key: pub-${{ runner.os }}-${{ hashFiles('app/pubspec.lock') }}
       - run: flutter pub get
       - name: Build iOS
@@ -163,7 +163,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: azure/setup-helm@v5
       - run: helm lint chart/homemaps --strict
-      - name: Render met de defaults, met alles aan, en met het CI-gebied
+      - name: Render with the defaults, with everything on, and with the CI region
         run: |
           helm template hm chart/homemaps > /dev/null
           helm template hm chart/homemaps \
@@ -172,15 +172,15 @@ jobs:
             --set ingress.enabled=true --set 'ingress.hosts={maps.example.org}' \
             --set monitoring.serviceMonitor.enabled=true --set monitoring.prometheusRule.enabled=true > /dev/null
           helm template hm chart/homemaps -f ci/values-andorra.yaml > /dev/null
-      - name: Het schema weigert een publicUrl zonder slash
+      - name: The schema rejects a publicUrl without a slash
         run: |
           if helm template hm chart/homemaps --set tiles.publicUrl=https://x/tiles >/dev/null 2>&1; then
-            echo "::error::values.schema.json laat een ongeldige publicUrl door"; exit 1
+            echo "::error::values.schema.json lets an invalid publicUrl through"; exit 1
           fi
 
-  # De hele chart in kind, met Andorra als gebied en een nagemaakte NDW-feed: bouwjobs,
-  # helm test over de vier proxypaden, de toets dat live verkeer de route verandert,
-  # en de app in een echte browser (route, navigatie met een nagemaakte GPS).
+  # The whole chart in kind, with Andorra as the region and a fake NDW feed: build jobs,
+  # helm test over the four proxy paths, the check that live traffic changes the route,
+  # and the app in a real browser (route, navigation with a fake GPS).
   e2e:
     name: Chart end-to-end on kind
     needs: [build, importer, chart]
@@ -198,7 +198,7 @@ jobs:
         uses: helm/kind-action@v1
         with:
           install_only: true
-      # Voor de toets van de app in een echte browser (ci/e2e/app_browser.py).
+      # For the test of the app in a real browser (ci/e2e/app_browser.py).
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
@@ -207,23 +207,23 @@ jobs:
           pip install playwright
           playwright install --with-deps chromium
       - name: Bring up the cluster and test it
-        # Op main ook de schermafdrukken voor de App Store: release.yml neemt ze mee.
+        # On main also the screenshots for the App Store: release.yml takes them along.
         env:
-          SCHERMAFDRUKKEN: ${{ github.ref == 'refs/heads/main' && '1' || '' }}
+          SCREENSHOTS: ${{ github.ref == 'refs/heads/main' && '1' || '' }}
         run: ci/up.sh
-      - name: Schermafdrukken voor de App Store
+      - name: Screenshots for the App Store
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v7
         with:
-          name: app-store-schermafdrukken
-          path: ci/e2e/uitvoer/appstore/
+          name: app-store-screenshots
+          path: ci/e2e/output/appstore/
           if-no-files-found: error
-      - name: Schermafdrukken van de browsertoets
+      - name: Screenshots of the browser test
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: app-browser
-          path: ci/e2e/uitvoer/
+          path: ci/e2e/output/
           if-no-files-found: ignore
       - name: Diagnostics
         if: failure()
@@ -283,11 +283,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: azure/setup-helm@v5
-      # Een voorloopversie per run: de echte versies komen uit release.yml. appVersion
-      # `main` laat de chart de images van hierboven trekken.
+      # A prerelease version per run: the real versions come from release.yml. appVersion
+      # `main` makes the chart pull the images from above.
       - name: Package and push
         run: |
-          basis=$(grep '^version:' chart/homemaps/Chart.yaml | awk '{print $2}')
+          base=$(grep '^version:' chart/homemaps/Chart.yaml | awk '{print $2}')
           echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
-          helm package chart/homemaps --version "${basis}-main.${{ github.run_number }}" --app-version main -d dist
+          helm package chart/homemaps --version "${base}-main.${{ github.run_number }}" --app-version main -d dist
           helm push dist/homemaps-*.tgz "oci://ghcr.io/${{ github.repository_owner }}/charts"

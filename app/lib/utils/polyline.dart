@@ -1,67 +1,66 @@
 import 'package:maplibre_gl/maplibre_gl.dart';
 
-/// Valhalla's "encoded polyline" met zes decimalen (Google's formaat kent er vijf).
-List<LatLng> decodeerPolyline(String tekst, {int decimalen = 6}) {
-  final factor = _macht10(decimalen);
-  final punten = <LatLng>[];
+/// Valhalla's "encoded polyline" with six decimals (Google's format has five).
+List<LatLng> decodePolyline(String text, {int decimals = 6}) {
+  final factor = _pow10(decimals);
+  final points = <LatLng>[];
   var index = 0, lat = 0, lon = 0;
-  while (index < tekst.length) {
-    for (var as = 0; as < 2; as++) {
-      var resultaat = 0, schuif = 0, byte = 0;
+  while (index < text.length) {
+    for (var axis = 0; axis < 2; axis++) {
+      var result = 0, shift = 0, byte = 0;
       do {
-        byte = tekst.codeUnitAt(index++) - 63;
-        resultaat |= (byte & 0x1f) << schuif;
-        schuif += 5;
+        byte = text.codeUnitAt(index++) - 63;
+        result |= (byte & 0x1f) << shift;
+        shift += 5;
       } while (byte >= 0x20);
-      // Niet `~(resultaat >> 1)`: gecompileerd naar JavaScript is het resultaat van
-      // een bit-operatie een niet-negatief 32-bits getal, dus een negatieve stap
-      // werd daar ruim vier miljard en de lijn schoot recht naar het noorden. In
-      // de VM en in wasm gaat het goed, en daarom vingen de tests het niet.
-      final half = resultaat >> 1;
-      final delta = (resultaat & 1) != 0 ? -half - 1 : half;
-      if (as == 0) {
+      // Not `~(result >> 1)`: compiled to JavaScript the result of a bit
+      // operation is a non-negative 32-bit number, so a negative step became
+      // over four billion there and the line shot straight north. In the VM and
+      // in wasm it works, which is why the tests didn't catch it.
+      final half = result >> 1;
+      final delta = (result & 1) != 0 ? -half - 1 : half;
+      if (axis == 0) {
         lat += delta;
       } else {
         lon += delta;
       }
     }
-    punten.add(LatLng(lat / factor, lon / factor));
+    points.add(LatLng(lat / factor, lon / factor));
   }
-  return punten;
+  return points;
 }
 
-/// Het omgekeerde van [decodeerPolyline]. Alleen gewone rekenkunde, geen
-/// bit-operaties op mogelijk negatieve getallen: zie de opmerking daar over
-/// JavaScript.
-String codeerPolyline(List<LatLng> punten, {int decimalen = 6}) {
-  final factor = _macht10(decimalen);
-  final uit = StringBuffer();
-  void getal(int waarde) {
+/// The inverse of [decodePolyline]. Only plain arithmetic, no bit operations
+/// on possibly negative numbers: see the comment there about JavaScript.
+String encodePolyline(List<LatLng> points, {int decimals = 6}) {
+  final factor = _pow10(decimals);
+  final out = StringBuffer();
+  void writeNumber(int value) {
     // Zigzag: 0, -1, 1, -2, 2 ... -> 0, 1, 2, 3, 4 ...
-    var v = waarde < 0 ? -2 * waarde - 1 : 2 * waarde;
+    var v = value < 0 ? -2 * value - 1 : 2 * value;
     while (v >= 0x20) {
-      uit.writeCharCode(0x20 + v % 32 + 63);
+      out.writeCharCode(0x20 + v % 32 + 63);
       v = v ~/ 32;
     }
-    uit.writeCharCode(v + 63);
+    out.writeCharCode(v + 63);
   }
 
   var lat = 0, lon = 0;
-  for (final punt in punten) {
-    final nieuwLat = (punt.latitude * factor).round();
-    final nieuwLon = (punt.longitude * factor).round();
-    getal(nieuwLat - lat);
-    getal(nieuwLon - lon);
-    lat = nieuwLat;
-    lon = nieuwLon;
+  for (final point in points) {
+    final newLat = (point.latitude * factor).round();
+    final newLon = (point.longitude * factor).round();
+    writeNumber(newLat - lat);
+    writeNumber(newLon - lon);
+    lat = newLat;
+    lon = newLon;
   }
-  return uit.toString();
+  return out.toString();
 }
 
-double _macht10(int n) {
-  var waarde = 1.0;
+double _pow10(int n) {
+  var value = 1.0;
   for (var i = 0; i < n; i++) {
-    waarde *= 10;
+    value *= 10;
   }
-  return waarde;
+  return value;
 }

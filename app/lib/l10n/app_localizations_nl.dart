@@ -10,439 +10,439 @@ class AppLocalizationsNl extends AppLocalizations {
   AppLocalizationsNl([String locale = 'nl']) : super(locale);
 
   @override
-  String get appTitel => 'HomeMaps';
+  String get appTitle => 'HomeMaps';
 
   @override
-  String get van => 'Van';
+  String get from => 'Van';
 
   @override
-  String get naar => 'Naar';
+  String get to => 'Naar';
 
   @override
   String get via => 'Via';
 
   @override
-  String get zoekPlaats => 'Zoek een plaats of adres';
+  String get searchPlace => 'Zoek een plaats of adres';
 
   @override
-  String get viaToevoegen => 'Tussenpunt toevoegen';
+  String get addViaLabel => 'Tussenpunt toevoegen';
 
   @override
-  String get omdraaien => 'Heen en terug omdraaien';
+  String get swapEnds => 'Heen en terug omdraaien';
 
   @override
-  String get verwijderen => 'Verwijderen';
+  String get removeLabel => 'Verwijderen';
 
   @override
-  String get wissen => 'Route wissen';
+  String get clearRoute => 'Route wissen';
 
   @override
-  String get profielAuto => 'Auto';
+  String get profileCar => 'Auto';
 
   @override
-  String get profielFiets => 'Fiets';
+  String get profileBike => 'Fiets';
 
   @override
-  String get profielLopen => 'Lopen';
+  String get profileWalk => 'Lopen';
 
   @override
-  String get opties => 'Opties';
+  String get options => 'Opties';
 
   @override
-  String get liveVerkeer => 'Actueel verkeer meenemen';
+  String get liveTraffic => 'Actueel verkeer meenemen';
 
   @override
-  String get liveVerkeerUitleg =>
+  String get liveTrafficHelp =>
       'Files en afsluitingen van nu; alleen voor de auto';
 
   @override
-  String get vermijdSnelwegen => 'Snelwegen vermijden';
+  String get avoidMotorways => 'Snelwegen vermijden';
 
   @override
-  String get vermijdTol => 'Tolwegen vermijden';
+  String get avoidTolls => 'Tolwegen vermijden';
 
   @override
-  String get vermijdVeren => 'Veerponten vermijden';
+  String get avoidFerries => 'Veerponten vermijden';
 
   @override
-  String get routeBezig => 'Route berekenen…';
+  String get routeCalculating => 'Route berekenen…';
 
   @override
-  String get geenRoute => 'Geen route gevonden tussen deze punten.';
+  String get noRoute => 'Geen route gevonden tussen deze punten.';
 
   @override
-  String get geenWegInDeBuurt =>
+  String get noRoadNearby =>
       'Bij een van de punten ligt geen weg die je met dit vervoermiddel kunt gebruiken.';
 
   @override
-  String get serverOnbereikbaar => 'De server is niet bereikbaar.';
+  String get serverUnreachable => 'De server is niet bereikbaar.';
 
   @override
-  String get snelste => 'Snelste';
+  String get fastest => 'Snelste';
 
   @override
-  String alternatief(int nummer) {
-    return 'Alternatief $nummer';
+  String alternative(int number) {
+    return 'Alternatief $number';
   }
 
   @override
-  String stijgingDaling(int stijging, int daling) {
-    return '+$stijging m / -$daling m';
+  String ascentDescent(int ascent, int descent) {
+    return '+$ascent m / -$descent m';
   }
 
   @override
-  String get metTol => 'tol';
+  String get withToll => 'tol';
 
   @override
-  String get metVeer => 'veerpont';
+  String get withFerry => 'veerpont';
 
   @override
-  String get instructies => 'Routebeschrijving';
+  String get instructions => 'Routebeschrijving';
 
   @override
-  String get hoogteprofiel => 'Hoogteprofiel';
+  String get elevationProfile => 'Hoogteprofiel';
 
   @override
-  String get hierVandaan => 'Route vanaf hier';
+  String get directionsFrom => 'Route vanaf hier';
 
   @override
-  String get hierNaartoe => 'Route hierheen';
+  String get directionsTo => 'Route hierheen';
 
   @override
-  String get alsTussenpunt => 'Als tussenpunt';
+  String get asStop => 'Als tussenpunt';
 
   @override
-  String get kaartstijl => 'Kaartstijl';
+  String get mapStyle => 'Kaartstijl';
 
   @override
-  String get stijlKaart => 'Kaart';
+  String get styleMap => 'Kaart';
 
   @override
-  String get stijlLicht => 'Licht';
+  String get styleLight => 'Licht';
 
   @override
-  String get stijlDonker => 'Donker';
+  String get styleDark => 'Donker';
 
   @override
-  String get themaAutomatisch => 'Automatisch';
+  String get themeAutomatic => 'Automatisch';
 
   @override
-  String get themaDag => 'Altijd dag';
+  String get themeDay => 'Altijd dag';
 
   @override
-  String get themaNacht => 'Altijd nacht';
+  String get themeNight => 'Altijd nacht';
 
   @override
-  String get instellingen => 'Instellingen';
+  String get settings => 'Instellingen';
 
   @override
   String get server => 'Server';
 
   @override
-  String get serverUitleg =>
+  String get serverHelp =>
       'Het adres van je HomeMaps-installatie, bijvoorbeeld https://maps.example.org';
 
   @override
-  String get serverOngeldig =>
+  String get serverInvalid =>
       'Vul een adres in dat met http:// of https:// begint.';
 
   @override
-  String get opslaan => 'Opslaan';
+  String get save => 'Opslaan';
 
   @override
-  String get serverNodig => 'Stel eerst het adres van je server in.';
+  String get serverRequired => 'Stel eerst het adres van je server in.';
 
   @override
-  String get over => 'Over';
+  String get about => 'Over';
 
   @override
-  String get noordBoven => 'Noorden boven';
+  String get northUp => 'Noorden boven';
 
   @override
-  String get zoekHier => 'Zoek op de kaart';
+  String get searchHere => 'Zoek op de kaart';
 
   @override
   String get route => 'Route';
 
   @override
-  String get terugNaarZoeken => 'Terug naar zoeken';
+  String get backToSearch => 'Terug naar zoeken';
 
   @override
-  String get sleepOmTeVerplaatsen => 'Sleep om de volgorde te wijzigen';
+  String get dragToReorder => 'Sleep om de volgorde te wijzigen';
 
   @override
-  String get verkeerOpKaart => 'Verkeer';
+  String get trafficOnMap => 'Verkeer';
 
   @override
-  String get verkeerWegDicht => 'Weg afgesloten';
+  String get trafficRoadClosed => 'Weg afgesloten';
 
   @override
-  String get verkeerAfritDicht => 'Afrit afgesloten';
+  String get trafficExitClosed => 'Afrit afgesloten';
 
   @override
-  String get verkeerOpritDicht => 'Oprit afgesloten';
+  String get trafficOnRampClosed => 'Oprit afgesloten';
 
   @override
-  String get verkeerVerbindingswegDicht => 'Verbindingsweg afgesloten';
+  String get trafficConnectingRoadClosed => 'Verbindingsweg afgesloten';
 
   @override
-  String get verkeerParallelbaanDicht => 'Parallelbaan afgesloten';
+  String get trafficParallelRoadClosed => 'Parallelbaan afgesloten';
 
   @override
-  String get verkeerRijbaanDicht => 'Rijbaan afgesloten';
+  String get trafficCarriagewayClosed => 'Rijbaan afgesloten';
 
   @override
-  String get verkeerRijstrookDicht => 'Rijstrook afgesloten';
+  String get trafficLaneClosed => 'Rijstrook afgesloten';
 
   @override
-  String verkeerStrokenOpen(int aantal) {
+  String trafficLanesOpen(int count) {
     String _temp0 = intl.Intl.pluralLogic(
-      aantal,
+      count,
       locale: localeName,
-      other: '$aantal rijstroken open',
+      other: '$count rijstroken open',
       one: '1 rijstrook open',
     );
     return '$_temp0';
   }
 
   @override
-  String get verkeerFile => 'File';
+  String get trafficJam => 'File';
 
   @override
-  String get verkeerTraag => 'Langzaam verkeer';
+  String get trafficSlow => 'Langzaam verkeer';
 
   @override
-  String verkeerVertraging(String duur, int kmu) {
-    return '+$duur vertraging · $kmu km/u';
+  String trafficDelay(String duration, int kmh) {
+    return '+$duration vertraging · $kmh km/u';
   }
 
   @override
-  String verkeerTot(String moment) {
+  String trafficUntil(String moment) {
     return 'Tot $moment';
   }
 
   @override
-  String get oorzaakWerk => 'Werkzaamheden';
+  String get causeRoadworks => 'Werkzaamheden';
 
   @override
-  String get oorzaakOngeval => 'Ongeval';
+  String get causeAccident => 'Ongeval';
 
   @override
-  String get oorzaakEvenement => 'Evenement';
+  String get causeEvent => 'Evenement';
 
   @override
-  String get mijnLocatie => 'Mijn locatie';
+  String get myLocation => 'Mijn locatie';
 
   @override
-  String get locatieGeweigerd =>
+  String get locationDenied =>
       'Zonder toestemming kan de app je locatie niet tonen.';
 
   @override
-  String get locatieNooit =>
+  String get locationNever =>
       'Locatie is voor HomeMaps geweigerd. Zet het aan in de instellingen van je telefoon.';
 
   @override
-  String get locatieNooitWeb =>
+  String get locationNeverWeb =>
       'Locatie is voor deze site geblokkeerd. Sta het toe via het slotje naast het adres.';
 
   @override
-  String get locatieDienstUit => 'Locatie staat uit op je apparaat.';
+  String get locationServiceOff => 'Locatie staat uit op je apparaat.';
 
   @override
-  String get locatieNietGevonden =>
+  String get locationNotFound =>
       'Je apparaat kan je locatie niet bepalen; het blijft zoeken. Op een computer lukt dat vaak niet, op een telefoon wel.';
 
   @override
-  String get startNavigatie => 'Start';
+  String get startNavigation => 'Start';
 
   @override
-  String navigatieMeldingTitel(String bestemming) {
-    return 'Navigatie naar $bestemming';
+  String navigationNotificationTitle(String destination) {
+    return 'Navigatie naar $destination';
   }
 
   @override
-  String get navigatieMeldingTekst =>
+  String get navigationNotificationText =>
       'HomeMaps volgt je locatie voor de route.';
 
   @override
-  String get herberekenen => 'Route wordt herberekend.';
+  String get recalculating => 'Route wordt herberekend.';
 
   @override
-  String get herberekenenBezig => 'Route herberekenen…';
+  String get recalculatingBusy => 'Route herberekenen…';
 
   @override
-  String snellereRoute(int minuten) {
+  String fasterRoute(int minutes) {
     String _temp0 = intl.Intl.pluralLogic(
-      minuten,
+      minutes,
       locale: localeName,
       other:
-          'Er is een snellere route, $minuten minuten sneller. Kies op het scherm of je hem neemt.',
+          'Er is een snellere route, $minutes minuten sneller. Kies op het scherm of je hem neemt.',
       one: 'Er is een snellere route, 1 minuut sneller. Kies op het scherm of je hem neemt.',
     );
     return '$_temp0';
   }
 
   @override
-  String overAfstand(String afstand, String zin) {
-    return 'Over $afstand $zin';
+  String inDistance(String distance, String sentence) {
+    return 'Over $distance $sentence';
   }
 
   @override
-  String gesprokenMeter(int meter) {
+  String spokenMeters(int meter) {
     return '$meter meter';
   }
 
   @override
-  String gesprokenKilometer(String km) {
+  String spokenKilometers(String km) {
     return '$km kilometer';
   }
 
   @override
-  String get aangekomen => 'Je bent er';
+  String get arrived => 'Je bent er';
 
   @override
-  String get klaar => 'Klaar';
+  String get done => 'Klaar';
 
   @override
-  String korteActie(String soort) {
-    String _temp0 = intl.Intl.selectLogic(soort, {
-      'oprit': 'Oprit nemen',
-      'afrit': 'Afrit nemen',
-      'rechtdoor': 'Rechtdoor aanhouden',
-      'rechts': 'Rechts aanhouden',
-      'links': 'Links aanhouden',
-      'invoegen': 'Invoegen',
+  String shortAction(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'onRamp': 'Oprit nemen',
+      'exit': 'Afrit nemen',
+      'straight': 'Rechtdoor aanhouden',
+      'right': 'Rechts aanhouden',
+      'left': 'Links aanhouden',
+      'merge': 'Invoegen',
       'other': '',
     });
     return '$_temp0';
   }
 
   @override
-  String afrit(String nummer) {
-    return 'Afrit $nummer';
+  String exit(String number) {
+    return 'Afrit $number';
   }
 
   @override
-  String rijstrokenOver(String afstand, String stroken) {
-    return 'Over $afstand: $stroken';
+  String lanesAhead(String distance, String perLane) {
+    return 'Over $distance: $perLane';
   }
 
   @override
-  String rijstrokenGoed(int goed, int totaal) {
+  String lanesCorrect(int correct, int total) {
     String _temp0 = intl.Intl.pluralLogic(
-      goed,
+      correct,
       locale: localeName,
-      other: '$goed goede rijstroken',
+      other: '$correct goede rijstroken',
       one: '1 goede rijstrook',
     );
-    return '$_temp0 van $totaal';
+    return '$_temp0 van $total';
   }
 
   @override
-  String get hervatten => 'Hervatten';
+  String get resume => 'Hervatten';
 
   @override
-  String get stopNavigatie => 'Stop';
+  String get stopNavigation => 'Stop';
 
   @override
-  String get stemUit => 'Stem uit';
+  String get voiceOff => 'Stem uit';
 
   @override
-  String get stemAan => 'Stem aan';
+  String get voiceOn => 'Stem aan';
 
   @override
-  String aankomst(String tijd) {
-    return 'Aankomst $tijd';
+  String arrival(String time) {
+    return 'Aankomst $time';
   }
 
   @override
-  String get daarna => 'Daarna';
+  String get afterwards => 'Daarna';
 
   @override
-  String get locatieZoeken => 'Locatie zoeken…';
+  String get locationSearching => 'Locatie zoeken…';
 
   @override
-  String get locatieAanOmTeNavigeren => 'Locatie aanzetten om te navigeren';
+  String get locationEnableToNavigate => 'Locatie aanzetten om te navigeren';
 
   @override
-  String get navigerenZonderLocatie =>
+  String get navigatingWithoutLocation =>
       'Navigeren kan pas als je locatie bekend is.';
 
   @override
-  String get opnieuwProberen => 'Opnieuw proberen';
+  String get tryAgain => 'Opnieuw proberen';
 
   @override
-  String aantalTussenpunten(int aantal) {
+  String stopCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
-      aantal,
+      count,
       locale: localeName,
-      other: 'via $aantal tussenpunten',
+      other: 'via $count tussenpunten',
       one: 'via 1 tussenpunt',
     );
     return '$_temp0';
   }
 
   @override
-  String get routeWijzigen => 'Route wijzigen';
+  String get editRoute => 'Route wijzigen';
 
   @override
-  String get eerstStoppen => 'Stop eerst de navigatie.';
+  String get stopFirst => 'Stop eerst de navigatie.';
 
   @override
-  String get vertraging => 'vertraging';
+  String get delay => 'vertraging';
 
   @override
-  String voorstelSneller(int minuten) {
-    return 'Snellere route: $minuten min sneller';
+  String suggestionFaster(int minutes) {
+    return 'Snellere route: $minutes min sneller';
   }
 
   @override
-  String voorstelVia(String weg) {
-    return 'via $weg';
+  String suggestionVia(String road) {
+    return 'via $road';
   }
 
   @override
-  String get nemen => 'Nemen';
+  String get accept => 'Nemen';
 
   @override
-  String get negeren => 'Negeren';
+  String get ignore => 'Negeren';
 
   @override
-  String aankomstOm(String tijd) {
-    return 'aankomst $tijd';
+  String arrivalAt(String time) {
+    return 'aankomst $time';
   }
 
   @override
-  String get thuis => 'Thuis';
+  String get home => 'Thuis';
 
   @override
-  String get werk => 'Werk';
+  String get work => 'Werk';
 
   @override
-  String get alsThuis => 'Als thuis';
+  String get asHome => 'Als thuis';
 
   @override
-  String get alsWerk => 'Als werk';
+  String get asWork => 'Als werk';
 
   @override
-  String get plekken => 'Plekken';
+  String get savedPlaces => 'Plekken';
 
   @override
-  String get plekkenUitleg =>
+  String get savedPlacesHelp =>
       'Thuis en werk stel je in op het kaartje van een gevonden plek.';
 
   @override
-  String get nietIngesteld => 'Niet ingesteld';
+  String get notSet => 'Niet ingesteld';
 
   @override
-  String get recentePlekken => 'Recente plekken';
+  String get recentPlaces => 'Recente plekken';
 
   @override
-  String aantalPlekken(int aantal) {
+  String savedPlaceCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
-      aantal,
+      count,
       locale: localeName,
-      other: '$aantal plekken',
+      other: '$count plekken',
       one: '1 plek',
       zero: 'Geen',
     );
@@ -450,126 +450,127 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get wissenKort => 'Wissen';
+  String get clearLabel => 'Wissen';
 
   @override
-  String nietGevonden(String zoek) {
-    return 'Niet gevonden: $zoek';
+  String notFound(String search) {
+    return 'Niet gevonden: $search';
   }
 
   @override
-  String get kmu => 'km/u';
+  String get kmh => 'km/u';
 
   @override
-  String maximumsnelheid(int kmu) {
-    return 'Maximumsnelheid $kmu km/u';
+  String speedLimit(int kmh) {
+    return 'Maximumsnelheid $kmh km/u';
   }
 
   @override
-  String maximumsnelheidTijdelijk(int kmu) {
-    return 'Tijdelijke maximumsnelheid $kmu km/u';
+  String speedLimitTemporary(int kmh) {
+    return 'Tijdelijke maximumsnelheid $kmh km/u';
   }
 
   @override
-  String maximumsnelheidMatrix(int kmu) {
-    return 'Maximumsnelheid $kmu km/u op de matrixborden';
+  String speedLimitMatrix(int kmh) {
+    return 'Maximumsnelheid $kmh km/u op de matrixborden';
   }
 
   @override
-  String get meldingOngeval => 'Ongeval';
+  String get incidentAccident => 'Ongeval';
 
   @override
-  String get meldingPech => 'Pechgeval';
+  String get incidentBreakdown => 'Pechgeval';
 
   @override
-  String get meldingObstakel => 'Voorwerp op de weg';
+  String get incidentObstacle => 'Voorwerp op de weg';
 
   @override
-  String get meldingBrug => 'Open brug';
+  String get incidentBridge => 'Open brug';
 
   @override
-  String get matrixborden => 'Matrixborden';
+  String get matrixSigns => 'Matrixborden';
 
   @override
-  String meldingSinds(String tijd) {
-    return 'Sinds $tijd';
+  String incidentSince(String time) {
+    return 'Sinds $time';
   }
 
   @override
-  String waarschuwingOpRoute(String melding, String afstand) {
-    return 'Let op: $melding over $afstand.';
+  String warningOnRoute(String notification, String distance) {
+    return 'Let op: $notification over $distance.';
   }
 
   @override
-  String get vertrek => 'Vertrek';
+  String get departure => 'Vertrek';
 
   @override
-  String get vertrekNu => 'Nu';
+  String get departNow => 'Nu';
 
   @override
-  String get vertrekLater => 'Later…';
+  String get departLater => 'Later…';
 
   @override
-  String afsluitingOpRoute(String venster, int aantal) {
+  String closureOnRoute(String window, int count) {
     String _temp0 = intl.Intl.pluralLogic(
-      aantal,
+      count,
       locale: localeName,
-      other: '$aantal geplande afsluitingen op deze route, de eerste: $venster',
-      one: 'Geplande afsluiting op deze route: $venster',
+      other: '$count geplande afsluitingen op deze route, de eerste: $window',
+      one: 'Geplande afsluiting op deze route: $window',
     );
     return '$_temp0';
   }
 
   @override
-  String get langsDeRoute => 'Langs de route';
+  String get alongTheRoute => 'Langs de route';
 
   @override
-  String get langsTanken => 'Tanken';
+  String get alongFuel => 'Tanken';
 
   @override
-  String get langsLaden => 'Laden';
+  String get alongCharging => 'Laden';
 
   @override
-  String get langsSupermarkt => 'Supermarkt';
+  String get alongSupermarket => 'Supermarkt';
 
   @override
-  String get langsEten => 'Eten';
+  String get alongFood => 'Eten';
 
   @override
-  String get langsNiets => 'Niets gevonden binnen een kilometer van de route.';
+  String get alongNothing =>
+      'Niets gevonden binnen een kilometer van de route.';
 
   @override
-  String langsAfstand(String afstand) {
-    return '$afstand van de route';
+  String alongDistance(String distance) {
+    return '$distance van de route';
   }
 
   @override
-  String tussenstopToegevoegd(String naam) {
-    return 'Tussenstop: $naam';
+  String stopAdded(String label) {
+    return 'Tussenstop: $label';
   }
 
   @override
-  String get locatieDelen => 'Locatie delen';
+  String get locationSharing => 'Locatie delen';
 
   @override
-  String get locatieDelenUitleg =>
+  String get locationSharingHelp =>
       'Stuur je positie naar je eigen server, zoals Colota dat doet. Alleen tijdens het navigeren.';
 
   @override
-  String get locatieDelenAan => 'Delen tijdens navigeren';
+  String get locationSharingEnabled => 'Delen tijdens navigeren';
 
   @override
-  String get deelUit => 'Uit';
+  String get shareOff => 'Uit';
 
   @override
-  String get deelServer => 'Server';
+  String get shareServer => 'Server';
 
   @override
-  String get deelAangepast => 'Eigen server';
+  String get shareCustom => 'Eigen server';
 
   @override
-  String deelSjabloonUitleg(String sjabloon) {
-    String _temp0 = intl.Intl.selectLogic(sjabloon, {
+  String shareTemplateHelp(String template) {
+    String _temp0 = intl.Intl.selectLogic(template, {
       'dawarich':
           'Dawarich-API: punten in batches, met richting, batterij en vervoer',
       'geopulse': 'Colota-formaat voor GeoPulse',
@@ -584,81 +585,81 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get deelUrl => 'Adres (URL)';
+  String get shareUrl => 'Adres (URL)';
 
   @override
-  String get deelUrlOngeldig =>
+  String get shareUrlInvalid =>
       'Vul een adres in dat met http:// of https:// begint.';
 
   @override
-  String get deelUrlWeb => 'In de browser moet de server CORS toestaan.';
+  String get shareUrlWeb => 'In de browser moet de server CORS toestaan.';
 
   @override
-  String get deelMethode => 'Methode';
+  String get shareMethod => 'Methode';
 
   @override
-  String get deelInlog => 'Inloggen';
+  String get shareAuth => 'Inloggen';
 
   @override
-  String get deelInlogGeen => 'Geen';
+  String get shareAuthNone => 'Geen';
 
   @override
-  String get deelGebruiker => 'Gebruikersnaam';
+  String get shareUsername => 'Gebruikersnaam';
 
   @override
-  String get deelWachtwoord => 'Wachtwoord';
+  String get sharePassword => 'Wachtwoord';
 
   @override
-  String get deelToken => 'Token';
+  String get shareToken => 'Token';
 
   @override
-  String get deelVeldnamen => 'Veldnamen';
+  String get shareFieldNames => 'Veldnamen';
 
   @override
-  String get deelVeldnamenUitleg =>
+  String get shareFieldNamesHelp =>
       'Per regel veld=naam, bijvoorbeeld lat=latitude. Velden: lat, lon, acc, alt, vel, tst, bear.';
 
   @override
-  String get deelExtraVelden => 'Vaste velden';
+  String get shareExtraFields => 'Vaste velden';
 
   @override
-  String get deelExtraVeldenUitleg =>
+  String get shareExtraFieldsHelp =>
       'Per regel naam=waarde; die gaan bij elk punt mee.';
 
   @override
-  String get deelInterval => 'Elke … seconden';
+  String get shareInterval => 'Elke … seconden';
 
   @override
-  String get deelMinAfstand => 'Of na … meter';
+  String get shareMinDistance => 'Of na … meter';
 
   @override
-  String get deelTesten => 'Verbinding testen';
+  String get shareTest => 'Verbinding testen';
 
   @override
-  String get deelTestGelukt => 'De server heeft het punt ontvangen.';
+  String get shareTestSucceeded => 'De server heeft het punt ontvangen.';
 
   @override
-  String deelTestMislukt(String fout) {
-    return 'Niet gelukt: $fout';
+  String shareTestFailed(String error) {
+    return 'Niet gelukt: $error';
   }
 
   @override
-  String get deelStatus => 'Status';
+  String get shareStatus => 'Status';
 
   @override
-  String deelLaatst(String tijd) {
-    return 'Laatst verstuurd om $tijd';
+  String shareLastSent(String time) {
+    return 'Laatst verstuurd om $time';
   }
 
   @override
-  String get deelNogNiets => 'Nog niets verstuurd';
+  String get shareNothingYet => 'Nog niets verstuurd';
 
   @override
-  String deelInWachtrij(int aantal) {
+  String shareQueued(int count) {
     String _temp0 = intl.Intl.pluralLogic(
-      aantal,
+      count,
       locale: localeName,
-      other: '$aantal punten in de wachtrij',
+      other: '$count punten in de wachtrij',
       one: '1 punt in de wachtrij',
       zero: 'Niets in de wachtrij',
     );
@@ -666,202 +667,201 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String deelFout(String fout) {
-    return 'Fout: $fout';
+  String shareError(String error) {
+    return 'Fout: $error';
   }
 
   @override
-  String get deelGestopt => 'Gestopt tot je de instellingen wijzigt.';
+  String get shareStopped => 'Gestopt tot je de instellingen wijzigt.';
 
   @override
-  String get deelWisWachtrij => 'Wachtrij leegmaken';
+  String get shareClearQueue => 'Wachtrij leegmaken';
 
   @override
-  String get deelVoorbeeld => 'Voorbeeld';
+  String get shareExample => 'Voorbeeld';
 
   @override
-  String get navigatieMeldingDelen =>
+  String get navigationNotificationSharing =>
       'HomeMaps volgt je locatie voor de route en deelt hem met je server.';
 
   @override
-  String get overHomeMaps => 'Over HomeMaps';
+  String get aboutHomeMaps => 'Over HomeMaps';
 
   @override
-  String versie(String versie) {
-    return 'Versie $versie';
+  String version(String version) {
+    return 'Versie $version';
   }
 
   @override
-  String get overBeschrijving =>
+  String get aboutDescription =>
       'Navigatie op je eigen server: kaart, routes, zoeken en verkeer.';
 
   @override
-  String get bronnen => 'Gegevens en software';
+  String get sources => 'Gegevens en software';
 
   @override
-  String get bronKaartgegevens => 'Kaartgegevens © OpenStreetMap-bijdragers';
+  String get sourceMapData => 'Kaartgegevens © OpenStreetMap-bijdragers';
 
   @override
-  String get bronTegels => 'Kaarttegels en -stijl';
+  String get sourceTiles => 'Kaarttegels en -stijl';
 
   @override
-  String get bronRoutes => 'Routes en navigatie';
+  String get sourceRouting => 'Routes en navigatie';
 
   @override
-  String get bronZoeken => 'Zoeken';
+  String get sourceSearch => 'Zoeken';
 
   @override
-  String get bronVerkeer => 'Verkeer, werk en matrixborden';
+  String get sourceTraffic => 'Verkeer, werk en matrixborden';
 
   @override
-  String get broncode => 'Broncode';
+  String get sourceCode => 'Broncode';
 
   @override
-  String get licenties => 'Licenties';
+  String get licenses => 'Licenties';
 
   @override
   String get dawarich => 'Dawarich';
 
   @override
-  String get dawarichUitleg =>
+  String get dawarichHelp =>
       'Vul het adres van je eigen Dawarich in. Daarna log je in, en kun je je locatie met je familie delen, onderweg je rit bijhouden en familieleden op de kaart zien.';
 
   @override
-  String get dawarichNietIngelogd => 'Niet ingelogd';
+  String get dawarichNotSignedIn => 'Niet ingelogd';
 
   @override
   String get dawarichServer => 'Server';
 
   @override
-  String get dawarichMetSleutel => 'Met een API-sleutel';
+  String get dawarichWithKey => 'Met een API-sleutel';
 
   @override
   String get dawarichEmail => 'E-mail';
 
   @override
-  String get dawarichWachtwoord => 'Wachtwoord';
+  String get dawarichPassword => 'Wachtwoord';
 
   @override
-  String get dawarichSleutel => 'API-sleutel';
+  String get dawarichKey => 'API-sleutel';
 
   @override
-  String get dawarichSleutelUitleg =>
-      'Te vinden in Dawarich onder Instellingen.';
+  String get dawarichKeyHelp => 'Te vinden in Dawarich onder Instellingen.';
 
   @override
-  String get dawarichInloggen => 'Inloggen';
+  String get dawarichSignIn => 'Inloggen';
 
   @override
-  String get dawarichUitloggen => 'Uitloggen';
+  String get dawarichSignOut => 'Uitloggen';
 
   @override
   String get dawarichCode => 'Code voor tweestapsverificatie';
 
   @override
-  String get dawarichCodeUitleg =>
+  String get dawarichCodeHelp =>
       'De code uit je authenticator-app, of een back-upcode.';
 
   @override
-  String get dawarichBevestig => 'Bevestigen';
+  String get dawarichConfirm => 'Bevestigen';
 
   @override
-  String get annuleren => 'Annuleren';
+  String get cancelLabel => 'Annuleren';
 
   @override
-  String get dawarichFoutInlog => 'Onjuiste gegevens.';
+  String get dawarichErrorCredentials => 'Onjuiste gegevens.';
 
   @override
-  String get dawarichFoutWachtwoordUit =>
+  String get dawarichErrorPasswordDisabled =>
       'Deze server staat inloggen met een wachtwoord niet toe. Gebruik een API-sleutel.';
 
   @override
-  String get dawarichFoutGeblokkeerd =>
+  String get dawarichErrorBlocked =>
       'Te vaak een verkeerde code. Probeer het later opnieuw.';
 
   @override
-  String dawarichFoutVerbinding(String detail) {
+  String dawarichErrorConnection(String detail) {
     return 'Dawarich is niet te bereiken ($detail).';
   }
 
   @override
-  String dawarichFoutOnbekend(String detail) {
+  String dawarichErrorUnknown(String detail) {
     return 'Er ging iets mis ($detail).';
   }
 
   @override
-  String dawarichIngelogdAls(String email) {
+  String dawarichSignedInAs(String email) {
     return 'Ingelogd als $email';
   }
 
   @override
-  String get dawarichFamilie => 'Familie';
+  String get dawarichFamily => 'Familie';
 
   @override
-  String get dawarichFamilieDelen => 'Locatie delen met familie';
+  String get dawarichShareWithFamily => 'Locatie delen met familie';
 
   @override
-  String dawarichDeeltTot(String tijd) {
-    return 'Tot $tijd';
+  String dawarichSharingUntil(String time) {
+    return 'Tot $time';
   }
 
   @override
-  String get dawarichDeeltAltijd => 'Tot je het uitzet';
+  String get dawarichSharingAlways => 'Tot je het uitzet';
 
   @override
-  String get dawarichDeeltNiet => 'Je familie ziet je locatie niet';
+  String get dawarichNotSharing => 'Je familie ziet je locatie niet';
 
   @override
-  String get dawarichGeenFamilie =>
+  String get dawarichNoFamily =>
       'Je zit nog niet in een familie. Maak er een of word lid op de Dawarich-website.';
 
   @override
-  String get dawarichNaarWebsite => 'Naar de website';
+  String get dawarichOpenWebsite => 'Naar de website';
 
   @override
-  String get dawarichGeenAbonnement =>
+  String get dawarichNoSubscription =>
       'Familie zit niet in je Dawarich-abonnement.';
 
   @override
-  String get dawarichHoeLang => 'Hoe lang delen?';
+  String get dawarichHowLong => 'Hoe lang delen?';
 
   @override
-  String dawarichDuur(String duur) {
-    String _temp0 = intl.Intl.selectLogic(duur, {
-      'uur1': '1 uur',
-      'uur6': '6 uur',
-      'uur12': '12 uur',
-      'uur24': '24 uur',
+  String dawarichDuration(String duration) {
+    String _temp0 = intl.Intl.selectLogic(duration, {
+      'hour1': '1 uur',
+      'hour6': '6 uur',
+      'hour12': '12 uur',
+      'hour24': '24 uur',
       'other': 'Tot ik het uitzet',
     });
     return '$_temp0';
   }
 
   @override
-  String get dawarichDelenOnderweg => 'Locatie delen tijdens navigeren';
+  String get dawarichShareEnRoute => 'Locatie delen tijdens navigeren';
 
   @override
-  String get dawarichDelenOnderwegUitleg =>
+  String get dawarichShareEnRouteHelp =>
       'Stuurt je rit naar Dawarich. Interval en afstand stel je in bij Locatie delen.';
 
   @override
-  String get dawarichToonFamilie => 'Familieleden op de kaart';
+  String get dawarichShowFamily => 'Familieleden op de kaart';
 
   @override
-  String get dawarichToonFamilieUitleg =>
+  String get dawarichShowFamilyHelp =>
       'Elke 30 seconden bijgewerkt, zolang de app open is.';
 
   @override
-  String get dawarichFamilieDeelt => 'familie deelt';
+  String get dawarichFamilySharing => 'familie deelt';
 
   @override
-  String get deelViaDawarich => 'Ingesteld via je Dawarich-account.';
+  String get shareViaDawarich => 'Ingesteld via je Dawarich-account.';
 
   @override
-  String familieGeleden(int minuten) {
+  String familyMinutesAgo(int minutes) {
     String _temp0 = intl.Intl.pluralLogic(
-      minuten,
+      minutes,
       locale: localeName,
-      other: '$minuten minuten geleden',
+      other: '$minutes minuten geleden',
       one: '1 minuut geleden',
       zero: 'zojuist',
     );
@@ -869,154 +869,154 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String familieBatterij(int procent) {
-    return 'batterij $procent%';
+  String familyBattery(int percent) {
+    return 'batterij $percent%';
   }
 
   @override
-  String familieUrenGeleden(int uren) {
+  String familyHoursAgo(int hours) {
     String _temp0 = intl.Intl.pluralLogic(
-      uren,
+      hours,
       locale: localeName,
-      other: '$uren uur geleden',
+      other: '$hours uur geleden',
       one: '1 uur geleden',
     );
     return '$_temp0';
   }
 
   @override
-  String familieDagenGeleden(int dagen) {
+  String familyDaysAgo(int days) {
     String _temp0 = intl.Intl.pluralLogic(
-      dagen,
+      days,
       locale: localeName,
-      other: '$dagen dagen geleden',
+      other: '$days dagen geleden',
       one: '1 dag geleden',
     );
     return '$_temp0';
   }
 
   @override
-  String get familieVolgen => 'Volgen';
+  String get familyFollow => 'Volgen';
 
   @override
-  String get familieVolgt => 'Wordt gevolgd';
+  String get familyFollowing => 'Wordt gevolgd';
 
   @override
-  String get instellingenGroepKaart => 'Kaart en route';
+  String get settingsGroupMap => 'Kaart en route';
 
   @override
-  String get instellingenGroepDelen => 'Delen';
+  String get settingsGroupSharing => 'Delen';
 
   @override
-  String get instellingenGroepApp => 'App';
+  String get settingsGroupApp => 'App';
 
   @override
-  String get instellingenKaart => 'Kaart';
+  String get settingsMap => 'Kaart';
 
   @override
-  String get dagEnNacht => 'Dag en nacht';
+  String get dayAndNight => 'Dag en nacht';
 
   @override
-  String get themaAlleenKaart =>
+  String get themeOnlyMap =>
       'Alleen bij de stijl Kaart; Licht en Donker zijn al een keuze.';
 
   @override
-  String get lagen => 'Lagen';
+  String get layers => 'Lagen';
 
   @override
-  String get verkeerOpKaartUitleg =>
+  String get trafficOnMapHelp =>
       'Afsluitingen, werk op de weg en files op de kaart';
 
   @override
-  String get vervoer => 'Vervoer';
+  String get transport => 'Vervoer';
 
   @override
-  String get vervoerUitleg => 'Waarmee een nieuwe route berekend wordt.';
+  String get transportHelp => 'Waarmee een nieuwe route berekend wordt.';
 
   @override
-  String get opgeslagen => 'Opgeslagen';
+  String get saved => 'Opgeslagen';
 
   @override
-  String get overSamenvatting => 'Versie, bronnen en licenties';
+  String get aboutSummary => 'Versie, bronnen en licenties';
 
   @override
   String get dawarichAccount => 'Account';
 
   @override
-  String get dawarichNavigeren => 'Navigeren';
+  String get dawarichNavigation => 'Navigeren';
 
   @override
-  String get deelVerbinding => 'Verbinding';
+  String get shareConnection => 'Verbinding';
 
   @override
-  String get deelPunten => 'Punten';
+  String get sharePoints => 'Punten';
 
   @override
-  String get dawarichWebsiteUitleg =>
+  String get dawarichWebsiteHelp =>
       'Ook voor OIDC, zoals Keycloak of Authentik. Niet met Google.';
 
   @override
-  String get dawarichWebsiteInloggen => 'Via de Dawarich-website';
+  String get dawarichWebsiteSignIn => 'Via de Dawarich-website';
 
   @override
-  String get dawarichWebsiteTitel => 'Inloggen bij Dawarich';
+  String get dawarichWebsiteTitle => 'Inloggen bij Dawarich';
 
   @override
-  String dawarichWebsiteFout(String fout) {
-    return 'De pagina laadt niet: $fout';
+  String dawarichWebsiteError(String error) {
+    return 'De pagina laadt niet: $error';
   }
 
   @override
-  String get dawarichFoutCors =>
+  String get dawarichErrorCors =>
       'Dawarich is niet te bereiken vanuit de browser. Dawarich staat dat zelf niet toe (CORS); voeg in je reverse proxy CORS-headers toe voor /api/v1, of gebruik de Android-app.';
 
   @override
-  String get dawarichFoutGeenDawarich =>
+  String get dawarichErrorNotDawarich =>
       'Op dit adres antwoordt geen Dawarich. Staat er een inlogproxy voor (zoals Authelia), laat dan /api/v1 door.';
 
   @override
-  String get dawarichStapServer => 'Server';
+  String get dawarichStepServer => 'Server';
 
   @override
-  String get dawarichVerbinden => 'Verbinden';
+  String get dawarichConnect => 'Verbinden';
 
   @override
-  String get dawarichVerbonden => 'Verbonden';
+  String get dawarichConnected => 'Verbonden';
 
   @override
-  String dawarichVerbondenVersie(String versie) {
-    return 'Verbonden · Dawarich $versie';
+  String dawarichConnectedVersion(String version) {
+    return 'Verbonden · Dawarich $version';
   }
 
   @override
-  String get dawarichWijzigen => 'Wijzigen';
+  String get dawarichChange => 'Wijzigen';
 
   @override
-  String get dawarichStapInloggen => 'Inloggen';
+  String get dawarichStepSignIn => 'Inloggen';
 
   @override
-  String get dawarichAndereManieren => 'Andere manieren';
+  String get dawarichOtherWays => 'Andere manieren';
 
   @override
-  String get dawarichUitloggenVraag => 'Uitloggen bij Dawarich?';
+  String get dawarichSignOutQuestion => 'Uitloggen bij Dawarich?';
 
   @override
-  String get dawarichUitloggenUitleg =>
+  String get dawarichSignOutHelp =>
       'Delen tijdens het navigeren stopt, en de familie verdwijnt van de kaart.';
 
   @override
-  String get dawarichControleren => 'Verbinding controleren…';
+  String get dawarichChecking => 'Verbinding controleren…';
 
   @override
-  String get dawarichSessieVerlopen => 'Sessie verlopen';
+  String get dawarichSessionExpired => 'Sessie verlopen';
 
   @override
-  String get dawarichSessieVerlopenUitleg =>
+  String get dawarichSessionExpiredHelp =>
       'Je API-sleutel werkt niet meer. Log opnieuw in.';
 
   @override
-  String get dawarichNietBereikbaar => 'Niet bereikbaar';
+  String get dawarichUnreachable => 'Niet bereikbaar';
 
   @override
-  String get dawarichOpnieuwInloggen => 'Opnieuw inloggen';
+  String get dawarichSignInAgain => 'Opnieuw inloggen';
 }

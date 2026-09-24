@@ -98,1595 +98,1595 @@ abstract class AppLocalizations {
     Locale('nl'),
   ];
 
-  /// No description provided for @appTitel.
+  /// No description provided for @appTitle.
   ///
-  /// In nl, this message translates to:
+  /// In en, this message translates to:
   /// **'HomeMaps'**
-  String get appTitel;
+  String get appTitle;
 
-  /// No description provided for @van.
+  /// No description provided for @from.
   ///
-  /// In nl, this message translates to:
-  /// **'Van'**
-  String get van;
+  /// In en, this message translates to:
+  /// **'From'**
+  String get from;
 
-  /// No description provided for @naar.
+  /// No description provided for @to.
   ///
-  /// In nl, this message translates to:
-  /// **'Naar'**
-  String get naar;
+  /// In en, this message translates to:
+  /// **'To'**
+  String get to;
 
   /// No description provided for @via.
   ///
-  /// In nl, this message translates to:
+  /// In en, this message translates to:
   /// **'Via'**
   String get via;
 
-  /// No description provided for @zoekPlaats.
+  /// No description provided for @searchPlace.
   ///
-  /// In nl, this message translates to:
-  /// **'Zoek een plaats of adres'**
-  String get zoekPlaats;
+  /// In en, this message translates to:
+  /// **'Search a place or address'**
+  String get searchPlace;
 
-  /// No description provided for @viaToevoegen.
+  /// No description provided for @addViaLabel.
   ///
-  /// In nl, this message translates to:
-  /// **'Tussenpunt toevoegen'**
-  String get viaToevoegen;
+  /// In en, this message translates to:
+  /// **'Add stop'**
+  String get addViaLabel;
 
-  /// No description provided for @omdraaien.
+  /// No description provided for @swapEnds.
   ///
-  /// In nl, this message translates to:
-  /// **'Heen en terug omdraaien'**
-  String get omdraaien;
+  /// In en, this message translates to:
+  /// **'Swap start and destination'**
+  String get swapEnds;
 
-  /// No description provided for @verwijderen.
+  /// No description provided for @removeLabel.
   ///
-  /// In nl, this message translates to:
-  /// **'Verwijderen'**
-  String get verwijderen;
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get removeLabel;
 
-  /// No description provided for @wissen.
+  /// No description provided for @clearRoute.
   ///
-  /// In nl, this message translates to:
-  /// **'Route wissen'**
-  String get wissen;
+  /// In en, this message translates to:
+  /// **'Clear route'**
+  String get clearRoute;
 
-  /// No description provided for @profielAuto.
+  /// No description provided for @profileCar.
   ///
-  /// In nl, this message translates to:
-  /// **'Auto'**
-  String get profielAuto;
+  /// In en, this message translates to:
+  /// **'Car'**
+  String get profileCar;
 
-  /// No description provided for @profielFiets.
+  /// No description provided for @profileBike.
   ///
-  /// In nl, this message translates to:
-  /// **'Fiets'**
-  String get profielFiets;
+  /// In en, this message translates to:
+  /// **'Bike'**
+  String get profileBike;
 
-  /// No description provided for @profielLopen.
+  /// No description provided for @profileWalk.
   ///
-  /// In nl, this message translates to:
-  /// **'Lopen'**
-  String get profielLopen;
+  /// In en, this message translates to:
+  /// **'Walk'**
+  String get profileWalk;
 
-  /// No description provided for @opties.
+  /// No description provided for @options.
   ///
-  /// In nl, this message translates to:
-  /// **'Opties'**
-  String get opties;
+  /// In en, this message translates to:
+  /// **'Options'**
+  String get options;
 
-  /// No description provided for @liveVerkeer.
+  /// No description provided for @liveTraffic.
   ///
-  /// In nl, this message translates to:
-  /// **'Actueel verkeer meenemen'**
-  String get liveVerkeer;
+  /// In en, this message translates to:
+  /// **'Use live traffic'**
+  String get liveTraffic;
 
-  /// No description provided for @liveVerkeerUitleg.
+  /// No description provided for @liveTrafficHelp.
   ///
-  /// In nl, this message translates to:
-  /// **'Files en afsluitingen van nu; alleen voor de auto'**
-  String get liveVerkeerUitleg;
+  /// In en, this message translates to:
+  /// **'Current congestion and closures; car only'**
+  String get liveTrafficHelp;
 
-  /// No description provided for @vermijdSnelwegen.
+  /// No description provided for @avoidMotorways.
   ///
-  /// In nl, this message translates to:
-  /// **'Snelwegen vermijden'**
-  String get vermijdSnelwegen;
+  /// In en, this message translates to:
+  /// **'Avoid motorways'**
+  String get avoidMotorways;
 
-  /// No description provided for @vermijdTol.
+  /// No description provided for @avoidTolls.
   ///
-  /// In nl, this message translates to:
-  /// **'Tolwegen vermijden'**
-  String get vermijdTol;
+  /// In en, this message translates to:
+  /// **'Avoid toll roads'**
+  String get avoidTolls;
 
-  /// No description provided for @vermijdVeren.
+  /// No description provided for @avoidFerries.
   ///
-  /// In nl, this message translates to:
-  /// **'Veerponten vermijden'**
-  String get vermijdVeren;
+  /// In en, this message translates to:
+  /// **'Avoid ferries'**
+  String get avoidFerries;
 
-  /// No description provided for @routeBezig.
+  /// No description provided for @routeCalculating.
   ///
-  /// In nl, this message translates to:
-  /// **'Route berekenen…'**
-  String get routeBezig;
+  /// In en, this message translates to:
+  /// **'Calculating route…'**
+  String get routeCalculating;
 
-  /// No description provided for @geenRoute.
+  /// No description provided for @noRoute.
   ///
-  /// In nl, this message translates to:
-  /// **'Geen route gevonden tussen deze punten.'**
-  String get geenRoute;
+  /// In en, this message translates to:
+  /// **'No route found between these points.'**
+  String get noRoute;
 
-  /// No description provided for @geenWegInDeBuurt.
+  /// No description provided for @noRoadNearby.
   ///
-  /// In nl, this message translates to:
-  /// **'Bij een van de punten ligt geen weg die je met dit vervoermiddel kunt gebruiken.'**
-  String get geenWegInDeBuurt;
+  /// In en, this message translates to:
+  /// **'There is no road near one of the points that this mode of travel can use.'**
+  String get noRoadNearby;
 
-  /// No description provided for @serverOnbereikbaar.
+  /// No description provided for @serverUnreachable.
   ///
-  /// In nl, this message translates to:
-  /// **'De server is niet bereikbaar.'**
-  String get serverOnbereikbaar;
+  /// In en, this message translates to:
+  /// **'The server cannot be reached.'**
+  String get serverUnreachable;
 
-  /// No description provided for @snelste.
+  /// No description provided for @fastest.
   ///
-  /// In nl, this message translates to:
-  /// **'Snelste'**
-  String get snelste;
+  /// In en, this message translates to:
+  /// **'Fastest'**
+  String get fastest;
 
-  /// No description provided for @alternatief.
+  /// No description provided for @alternative.
   ///
-  /// In nl, this message translates to:
-  /// **'Alternatief {nummer}'**
-  String alternatief(int nummer);
+  /// In en, this message translates to:
+  /// **'Alternative {number}'**
+  String alternative(int number);
 
-  /// No description provided for @stijgingDaling.
+  /// No description provided for @ascentDescent.
   ///
-  /// In nl, this message translates to:
-  /// **'+{stijging} m / -{daling} m'**
-  String stijgingDaling(int stijging, int daling);
+  /// In en, this message translates to:
+  /// **'+{ascent} m / -{descent} m'**
+  String ascentDescent(int ascent, int descent);
 
-  /// No description provided for @metTol.
+  /// No description provided for @withToll.
   ///
-  /// In nl, this message translates to:
-  /// **'tol'**
-  String get metTol;
+  /// In en, this message translates to:
+  /// **'toll'**
+  String get withToll;
 
-  /// No description provided for @metVeer.
+  /// No description provided for @withFerry.
   ///
-  /// In nl, this message translates to:
-  /// **'veerpont'**
-  String get metVeer;
+  /// In en, this message translates to:
+  /// **'ferry'**
+  String get withFerry;
 
-  /// No description provided for @instructies.
+  /// No description provided for @instructions.
   ///
-  /// In nl, this message translates to:
-  /// **'Routebeschrijving'**
-  String get instructies;
+  /// In en, this message translates to:
+  /// **'Directions'**
+  String get instructions;
 
-  /// No description provided for @hoogteprofiel.
+  /// No description provided for @elevationProfile.
   ///
-  /// In nl, this message translates to:
-  /// **'Hoogteprofiel'**
-  String get hoogteprofiel;
+  /// In en, this message translates to:
+  /// **'Elevation profile'**
+  String get elevationProfile;
 
-  /// No description provided for @hierVandaan.
+  /// No description provided for @directionsFrom.
   ///
-  /// In nl, this message translates to:
-  /// **'Route vanaf hier'**
-  String get hierVandaan;
+  /// In en, this message translates to:
+  /// **'Directions from here'**
+  String get directionsFrom;
 
-  /// No description provided for @hierNaartoe.
+  /// No description provided for @directionsTo.
   ///
-  /// In nl, this message translates to:
-  /// **'Route hierheen'**
-  String get hierNaartoe;
+  /// In en, this message translates to:
+  /// **'Directions to here'**
+  String get directionsTo;
 
-  /// No description provided for @alsTussenpunt.
+  /// No description provided for @asStop.
   ///
-  /// In nl, this message translates to:
-  /// **'Als tussenpunt'**
-  String get alsTussenpunt;
+  /// In en, this message translates to:
+  /// **'Add as stop'**
+  String get asStop;
 
-  /// No description provided for @kaartstijl.
+  /// No description provided for @mapStyle.
   ///
-  /// In nl, this message translates to:
-  /// **'Kaartstijl'**
-  String get kaartstijl;
+  /// In en, this message translates to:
+  /// **'Map style'**
+  String get mapStyle;
 
-  /// No description provided for @stijlKaart.
+  /// No description provided for @styleMap.
   ///
-  /// In nl, this message translates to:
-  /// **'Kaart'**
-  String get stijlKaart;
+  /// In en, this message translates to:
+  /// **'Map'**
+  String get styleMap;
 
-  /// No description provided for @stijlLicht.
+  /// No description provided for @styleLight.
   ///
-  /// In nl, this message translates to:
-  /// **'Licht'**
-  String get stijlLicht;
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get styleLight;
 
-  /// No description provided for @stijlDonker.
+  /// No description provided for @styleDark.
   ///
-  /// In nl, this message translates to:
-  /// **'Donker'**
-  String get stijlDonker;
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get styleDark;
 
-  /// No description provided for @themaAutomatisch.
+  /// No description provided for @themeAutomatic.
   ///
-  /// In nl, this message translates to:
-  /// **'Automatisch'**
-  String get themaAutomatisch;
+  /// In en, this message translates to:
+  /// **'Automatic'**
+  String get themeAutomatic;
 
-  /// No description provided for @themaDag.
+  /// No description provided for @themeDay.
   ///
-  /// In nl, this message translates to:
-  /// **'Altijd dag'**
-  String get themaDag;
+  /// In en, this message translates to:
+  /// **'Always day'**
+  String get themeDay;
 
-  /// No description provided for @themaNacht.
+  /// No description provided for @themeNight.
   ///
-  /// In nl, this message translates to:
-  /// **'Altijd nacht'**
-  String get themaNacht;
+  /// In en, this message translates to:
+  /// **'Always night'**
+  String get themeNight;
 
-  /// No description provided for @instellingen.
+  /// No description provided for @settings.
   ///
-  /// In nl, this message translates to:
-  /// **'Instellingen'**
-  String get instellingen;
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settings;
 
   /// No description provided for @server.
   ///
-  /// In nl, this message translates to:
+  /// In en, this message translates to:
   /// **'Server'**
   String get server;
 
-  /// No description provided for @serverUitleg.
+  /// No description provided for @serverHelp.
   ///
-  /// In nl, this message translates to:
-  /// **'Het adres van je HomeMaps-installatie, bijvoorbeeld https://maps.example.org'**
-  String get serverUitleg;
+  /// In en, this message translates to:
+  /// **'The address of your HomeMaps installation, for example https://maps.example.org'**
+  String get serverHelp;
 
-  /// No description provided for @serverOngeldig.
+  /// No description provided for @serverInvalid.
   ///
-  /// In nl, this message translates to:
-  /// **'Vul een adres in dat met http:// of https:// begint.'**
-  String get serverOngeldig;
+  /// In en, this message translates to:
+  /// **'Enter an address starting with http:// or https://.'**
+  String get serverInvalid;
 
-  /// No description provided for @opslaan.
+  /// No description provided for @save.
   ///
-  /// In nl, this message translates to:
-  /// **'Opslaan'**
-  String get opslaan;
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
 
-  /// No description provided for @serverNodig.
+  /// No description provided for @serverRequired.
   ///
-  /// In nl, this message translates to:
-  /// **'Stel eerst het adres van je server in.'**
-  String get serverNodig;
+  /// In en, this message translates to:
+  /// **'Set the address of your server first.'**
+  String get serverRequired;
 
-  /// No description provided for @over.
+  /// No description provided for @about.
   ///
-  /// In nl, this message translates to:
-  /// **'Over'**
-  String get over;
+  /// In en, this message translates to:
+  /// **'About'**
+  String get about;
 
-  /// No description provided for @noordBoven.
+  /// No description provided for @northUp.
   ///
-  /// In nl, this message translates to:
-  /// **'Noorden boven'**
-  String get noordBoven;
+  /// In en, this message translates to:
+  /// **'North up'**
+  String get northUp;
 
-  /// No description provided for @zoekHier.
+  /// No description provided for @searchHere.
   ///
-  /// In nl, this message translates to:
-  /// **'Zoek op de kaart'**
-  String get zoekHier;
+  /// In en, this message translates to:
+  /// **'Search the map'**
+  String get searchHere;
 
   /// No description provided for @route.
   ///
-  /// In nl, this message translates to:
-  /// **'Route'**
+  /// In en, this message translates to:
+  /// **'Directions'**
   String get route;
 
-  /// No description provided for @terugNaarZoeken.
+  /// No description provided for @backToSearch.
   ///
-  /// In nl, this message translates to:
-  /// **'Terug naar zoeken'**
-  String get terugNaarZoeken;
+  /// In en, this message translates to:
+  /// **'Back to search'**
+  String get backToSearch;
 
-  /// No description provided for @sleepOmTeVerplaatsen.
+  /// No description provided for @dragToReorder.
   ///
-  /// In nl, this message translates to:
-  /// **'Sleep om de volgorde te wijzigen'**
-  String get sleepOmTeVerplaatsen;
+  /// In en, this message translates to:
+  /// **'Drag to reorder'**
+  String get dragToReorder;
 
-  /// No description provided for @verkeerOpKaart.
+  /// No description provided for @trafficOnMap.
   ///
-  /// In nl, this message translates to:
-  /// **'Verkeer'**
-  String get verkeerOpKaart;
+  /// In en, this message translates to:
+  /// **'Traffic'**
+  String get trafficOnMap;
 
-  /// No description provided for @verkeerWegDicht.
+  /// No description provided for @trafficRoadClosed.
   ///
-  /// In nl, this message translates to:
-  /// **'Weg afgesloten'**
-  String get verkeerWegDicht;
+  /// In en, this message translates to:
+  /// **'Road closed'**
+  String get trafficRoadClosed;
 
-  /// No description provided for @verkeerAfritDicht.
+  /// No description provided for @trafficExitClosed.
   ///
-  /// In nl, this message translates to:
-  /// **'Afrit afgesloten'**
-  String get verkeerAfritDicht;
+  /// In en, this message translates to:
+  /// **'Exit closed'**
+  String get trafficExitClosed;
 
-  /// No description provided for @verkeerOpritDicht.
+  /// No description provided for @trafficOnRampClosed.
   ///
-  /// In nl, this message translates to:
-  /// **'Oprit afgesloten'**
-  String get verkeerOpritDicht;
+  /// In en, this message translates to:
+  /// **'On-ramp closed'**
+  String get trafficOnRampClosed;
 
-  /// No description provided for @verkeerVerbindingswegDicht.
+  /// No description provided for @trafficConnectingRoadClosed.
   ///
-  /// In nl, this message translates to:
-  /// **'Verbindingsweg afgesloten'**
-  String get verkeerVerbindingswegDicht;
+  /// In en, this message translates to:
+  /// **'Connecting road closed'**
+  String get trafficConnectingRoadClosed;
 
-  /// No description provided for @verkeerParallelbaanDicht.
+  /// No description provided for @trafficParallelRoadClosed.
   ///
-  /// In nl, this message translates to:
-  /// **'Parallelbaan afgesloten'**
-  String get verkeerParallelbaanDicht;
+  /// In en, this message translates to:
+  /// **'Parallel road closed'**
+  String get trafficParallelRoadClosed;
 
-  /// No description provided for @verkeerRijbaanDicht.
+  /// No description provided for @trafficCarriagewayClosed.
   ///
-  /// In nl, this message translates to:
-  /// **'Rijbaan afgesloten'**
-  String get verkeerRijbaanDicht;
+  /// In en, this message translates to:
+  /// **'Carriageway closed'**
+  String get trafficCarriagewayClosed;
 
-  /// No description provided for @verkeerRijstrookDicht.
+  /// No description provided for @trafficLaneClosed.
   ///
-  /// In nl, this message translates to:
-  /// **'Rijstrook afgesloten'**
-  String get verkeerRijstrookDicht;
+  /// In en, this message translates to:
+  /// **'Lane closed'**
+  String get trafficLaneClosed;
 
-  /// No description provided for @verkeerStrokenOpen.
+  /// No description provided for @trafficLanesOpen.
   ///
-  /// In nl, this message translates to:
-  /// **'{aantal, plural, =1{1 rijstrook open} other{{aantal} rijstroken open}}'**
-  String verkeerStrokenOpen(int aantal);
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 lane open} other{{count} lanes open}}'**
+  String trafficLanesOpen(int count);
 
-  /// No description provided for @verkeerFile.
+  /// No description provided for @trafficJam.
   ///
-  /// In nl, this message translates to:
-  /// **'File'**
-  String get verkeerFile;
+  /// In en, this message translates to:
+  /// **'Traffic jam'**
+  String get trafficJam;
 
-  /// No description provided for @verkeerTraag.
+  /// No description provided for @trafficSlow.
   ///
-  /// In nl, this message translates to:
-  /// **'Langzaam verkeer'**
-  String get verkeerTraag;
+  /// In en, this message translates to:
+  /// **'Slow traffic'**
+  String get trafficSlow;
 
-  /// No description provided for @verkeerVertraging.
+  /// No description provided for @trafficDelay.
   ///
-  /// In nl, this message translates to:
-  /// **'+{duur} vertraging · {kmu} km/u'**
-  String verkeerVertraging(String duur, int kmu);
+  /// In en, this message translates to:
+  /// **'+{duration} delay · {kmh} km/h'**
+  String trafficDelay(String duration, int kmh);
 
-  /// No description provided for @verkeerTot.
+  /// No description provided for @trafficUntil.
   ///
-  /// In nl, this message translates to:
-  /// **'Tot {moment}'**
-  String verkeerTot(String moment);
+  /// In en, this message translates to:
+  /// **'Until {moment}'**
+  String trafficUntil(String moment);
 
-  /// No description provided for @oorzaakWerk.
+  /// No description provided for @causeRoadworks.
   ///
-  /// In nl, this message translates to:
-  /// **'Werkzaamheden'**
-  String get oorzaakWerk;
+  /// In en, this message translates to:
+  /// **'Roadworks'**
+  String get causeRoadworks;
 
-  /// No description provided for @oorzaakOngeval.
+  /// No description provided for @causeAccident.
   ///
-  /// In nl, this message translates to:
-  /// **'Ongeval'**
-  String get oorzaakOngeval;
+  /// In en, this message translates to:
+  /// **'Accident'**
+  String get causeAccident;
 
-  /// No description provided for @oorzaakEvenement.
+  /// No description provided for @causeEvent.
   ///
-  /// In nl, this message translates to:
-  /// **'Evenement'**
-  String get oorzaakEvenement;
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get causeEvent;
 
-  /// No description provided for @mijnLocatie.
+  /// No description provided for @myLocation.
   ///
-  /// In nl, this message translates to:
-  /// **'Mijn locatie'**
-  String get mijnLocatie;
+  /// In en, this message translates to:
+  /// **'My location'**
+  String get myLocation;
 
-  /// No description provided for @locatieGeweigerd.
+  /// No description provided for @locationDenied.
   ///
-  /// In nl, this message translates to:
-  /// **'Zonder toestemming kan de app je locatie niet tonen.'**
-  String get locatieGeweigerd;
+  /// In en, this message translates to:
+  /// **'Without permission the app can\'t show your location.'**
+  String get locationDenied;
 
-  /// No description provided for @locatieNooit.
+  /// No description provided for @locationNever.
   ///
-  /// In nl, this message translates to:
-  /// **'Locatie is voor HomeMaps geweigerd. Zet het aan in de instellingen van je telefoon.'**
-  String get locatieNooit;
+  /// In en, this message translates to:
+  /// **'Location is denied for HomeMaps. Turn it on in your phone\'s settings.'**
+  String get locationNever;
 
-  /// No description provided for @locatieNooitWeb.
+  /// No description provided for @locationNeverWeb.
   ///
-  /// In nl, this message translates to:
-  /// **'Locatie is voor deze site geblokkeerd. Sta het toe via het slotje naast het adres.'**
-  String get locatieNooitWeb;
+  /// In en, this message translates to:
+  /// **'Location is blocked for this site. Allow it via the padlock next to the address.'**
+  String get locationNeverWeb;
 
-  /// No description provided for @locatieDienstUit.
+  /// No description provided for @locationServiceOff.
   ///
-  /// In nl, this message translates to:
-  /// **'Locatie staat uit op je apparaat.'**
-  String get locatieDienstUit;
+  /// In en, this message translates to:
+  /// **'Location is turned off on your device.'**
+  String get locationServiceOff;
 
-  /// No description provided for @locatieNietGevonden.
+  /// No description provided for @locationNotFound.
   ///
-  /// In nl, this message translates to:
-  /// **'Je apparaat kan je locatie niet bepalen; het blijft zoeken. Op een computer lukt dat vaak niet, op een telefoon wel.'**
-  String get locatieNietGevonden;
+  /// In en, this message translates to:
+  /// **'Your device can\'t determine your location; it keeps trying. Computers often can\'t, phones can.'**
+  String get locationNotFound;
 
-  /// No description provided for @startNavigatie.
+  /// No description provided for @startNavigation.
   ///
-  /// In nl, this message translates to:
+  /// In en, this message translates to:
   /// **'Start'**
-  String get startNavigatie;
+  String get startNavigation;
 
-  /// No description provided for @navigatieMeldingTitel.
+  /// No description provided for @navigationNotificationTitle.
   ///
-  /// In nl, this message translates to:
-  /// **'Navigatie naar {bestemming}'**
-  String navigatieMeldingTitel(String bestemming);
+  /// In en, this message translates to:
+  /// **'Navigating to {destination}'**
+  String navigationNotificationTitle(String destination);
 
-  /// No description provided for @navigatieMeldingTekst.
+  /// No description provided for @navigationNotificationText.
   ///
-  /// In nl, this message translates to:
-  /// **'HomeMaps volgt je locatie voor de route.'**
-  String get navigatieMeldingTekst;
+  /// In en, this message translates to:
+  /// **'HomeMaps is following your location for directions.'**
+  String get navigationNotificationText;
 
-  /// No description provided for @herberekenen.
+  /// No description provided for @recalculating.
   ///
-  /// In nl, this message translates to:
-  /// **'Route wordt herberekend.'**
-  String get herberekenen;
+  /// In en, this message translates to:
+  /// **'Recalculating route.'**
+  String get recalculating;
 
-  /// No description provided for @herberekenenBezig.
+  /// No description provided for @recalculatingBusy.
   ///
-  /// In nl, this message translates to:
-  /// **'Route herberekenen…'**
-  String get herberekenenBezig;
+  /// In en, this message translates to:
+  /// **'Recalculating…'**
+  String get recalculatingBusy;
 
-  /// No description provided for @snellereRoute.
+  /// No description provided for @fasterRoute.
   ///
-  /// In nl, this message translates to:
-  /// **'{minuten, plural, =1{Er is een snellere route, 1 minuut sneller. Kies op het scherm of je hem neemt.} other{Er is een snellere route, {minuten} minuten sneller. Kies op het scherm of je hem neemt.}}'**
-  String snellereRoute(int minuten);
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =1{There is a faster route, 1 minute faster. Choose on screen whether to take it.} other{There is a faster route, {minutes} minutes faster. Choose on screen whether to take it.}}'**
+  String fasterRoute(int minutes);
 
-  /// No description provided for @overAfstand.
+  /// No description provided for @inDistance.
   ///
-  /// In nl, this message translates to:
-  /// **'Over {afstand} {zin}'**
-  String overAfstand(String afstand, String zin);
+  /// In en, this message translates to:
+  /// **'In {distance}, {sentence}'**
+  String inDistance(String distance, String sentence);
 
-  /// No description provided for @gesprokenMeter.
+  /// No description provided for @spokenMeters.
   ///
-  /// In nl, this message translates to:
-  /// **'{meter} meter'**
-  String gesprokenMeter(int meter);
+  /// In en, this message translates to:
+  /// **'{meter} meters'**
+  String spokenMeters(int meter);
 
-  /// No description provided for @gesprokenKilometer.
+  /// No description provided for @spokenKilometers.
   ///
-  /// In nl, this message translates to:
-  /// **'{km} kilometer'**
-  String gesprokenKilometer(String km);
+  /// In en, this message translates to:
+  /// **'{km} kilometers'**
+  String spokenKilometers(String km);
 
-  /// No description provided for @aangekomen.
+  /// No description provided for @arrived.
   ///
-  /// In nl, this message translates to:
-  /// **'Je bent er'**
-  String get aangekomen;
+  /// In en, this message translates to:
+  /// **'You have arrived'**
+  String get arrived;
 
-  /// No description provided for @klaar.
+  /// No description provided for @done.
   ///
-  /// In nl, this message translates to:
-  /// **'Klaar'**
-  String get klaar;
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done;
 
-  /// Wat je doet bij een op- of afrit, splitsing of invoegstrook, kort, in de navigatiekop.
+  /// What you do at an on- or off-ramp, fork or merge lane, short, in the navigation header.
   ///
-  /// In nl, this message translates to:
-  /// **'{soort, select, oprit{Oprit nemen} afrit{Afrit nemen} rechtdoor{Rechtdoor aanhouden} rechts{Rechts aanhouden} links{Links aanhouden} invoegen{Invoegen} other{}}'**
-  String korteActie(String soort);
+  /// In en, this message translates to:
+  /// **'{kind, select, onRamp{Take the ramp} exit{Take the exit} straight{Keep straight} right{Keep right} left{Keep left} merge{Merge} other{}}'**
+  String shortAction(String kind);
 
-  /// No description provided for @afrit.
+  /// No description provided for @exit.
   ///
-  /// In nl, this message translates to:
-  /// **'Afrit {nummer}'**
-  String afrit(String nummer);
+  /// In en, this message translates to:
+  /// **'Exit {number}'**
+  String exit(String number);
 
-  /// No description provided for @rijstrokenOver.
+  /// No description provided for @lanesAhead.
   ///
-  /// In nl, this message translates to:
-  /// **'Over {afstand}: {stroken}'**
-  String rijstrokenOver(String afstand, String stroken);
+  /// In en, this message translates to:
+  /// **'In {distance}: {perLane}'**
+  String lanesAhead(String distance, String perLane);
 
-  /// No description provided for @rijstrokenGoed.
+  /// No description provided for @lanesCorrect.
   ///
-  /// In nl, this message translates to:
-  /// **'{goed, plural, =1{1 goede rijstrook} other{{goed} goede rijstroken}} van {totaal}'**
-  String rijstrokenGoed(int goed, int totaal);
+  /// In en, this message translates to:
+  /// **'{correct, plural, =1{1 correct lane} other{{correct} correct lanes}} of {total}'**
+  String lanesCorrect(int correct, int total);
 
-  /// No description provided for @hervatten.
+  /// No description provided for @resume.
   ///
-  /// In nl, this message translates to:
-  /// **'Hervatten'**
-  String get hervatten;
+  /// In en, this message translates to:
+  /// **'Re-centre'**
+  String get resume;
 
-  /// No description provided for @stopNavigatie.
+  /// No description provided for @stopNavigation.
   ///
-  /// In nl, this message translates to:
+  /// In en, this message translates to:
   /// **'Stop'**
-  String get stopNavigatie;
+  String get stopNavigation;
 
-  /// No description provided for @stemUit.
+  /// No description provided for @voiceOff.
   ///
-  /// In nl, this message translates to:
-  /// **'Stem uit'**
-  String get stemUit;
+  /// In en, this message translates to:
+  /// **'Mute'**
+  String get voiceOff;
 
-  /// No description provided for @stemAan.
+  /// No description provided for @voiceOn.
   ///
-  /// In nl, this message translates to:
-  /// **'Stem aan'**
-  String get stemAan;
+  /// In en, this message translates to:
+  /// **'Unmute'**
+  String get voiceOn;
 
-  /// No description provided for @aankomst.
+  /// No description provided for @arrival.
   ///
-  /// In nl, this message translates to:
-  /// **'Aankomst {tijd}'**
-  String aankomst(String tijd);
+  /// In en, this message translates to:
+  /// **'Arrive {time}'**
+  String arrival(String time);
 
-  /// No description provided for @daarna.
+  /// No description provided for @afterwards.
   ///
-  /// In nl, this message translates to:
-  /// **'Daarna'**
-  String get daarna;
+  /// In en, this message translates to:
+  /// **'Then'**
+  String get afterwards;
 
-  /// No description provided for @locatieZoeken.
+  /// No description provided for @locationSearching.
   ///
-  /// In nl, this message translates to:
-  /// **'Locatie zoeken…'**
-  String get locatieZoeken;
+  /// In en, this message translates to:
+  /// **'Finding location…'**
+  String get locationSearching;
 
-  /// No description provided for @locatieAanOmTeNavigeren.
+  /// No description provided for @locationEnableToNavigate.
   ///
-  /// In nl, this message translates to:
-  /// **'Locatie aanzetten om te navigeren'**
-  String get locatieAanOmTeNavigeren;
+  /// In en, this message translates to:
+  /// **'Turn on location to navigate'**
+  String get locationEnableToNavigate;
 
-  /// No description provided for @navigerenZonderLocatie.
+  /// No description provided for @navigatingWithoutLocation.
   ///
-  /// In nl, this message translates to:
-  /// **'Navigeren kan pas als je locatie bekend is.'**
-  String get navigerenZonderLocatie;
+  /// In en, this message translates to:
+  /// **'Navigation needs your location.'**
+  String get navigatingWithoutLocation;
 
-  /// No description provided for @opnieuwProberen.
+  /// No description provided for @tryAgain.
   ///
-  /// In nl, this message translates to:
-  /// **'Opnieuw proberen'**
-  String get opnieuwProberen;
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryAgain;
 
-  /// No description provided for @aantalTussenpunten.
+  /// No description provided for @stopCount.
   ///
-  /// In nl, this message translates to:
-  /// **'{aantal, plural, =1{via 1 tussenpunt} other{via {aantal} tussenpunten}}'**
-  String aantalTussenpunten(int aantal);
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{via 1 stop} other{via {count} stops}}'**
+  String stopCount(int count);
 
-  /// No description provided for @routeWijzigen.
+  /// No description provided for @editRoute.
   ///
-  /// In nl, this message translates to:
-  /// **'Route wijzigen'**
-  String get routeWijzigen;
+  /// In en, this message translates to:
+  /// **'Edit route'**
+  String get editRoute;
 
-  /// No description provided for @eerstStoppen.
+  /// No description provided for @stopFirst.
   ///
-  /// In nl, this message translates to:
-  /// **'Stop eerst de navigatie.'**
-  String get eerstStoppen;
+  /// In en, this message translates to:
+  /// **'Stop navigation first.'**
+  String get stopFirst;
 
-  /// No description provided for @vertraging.
+  /// No description provided for @delay.
   ///
-  /// In nl, this message translates to:
-  /// **'vertraging'**
-  String get vertraging;
+  /// In en, this message translates to:
+  /// **'delay'**
+  String get delay;
 
-  /// No description provided for @voorstelSneller.
+  /// No description provided for @suggestionFaster.
   ///
-  /// In nl, this message translates to:
-  /// **'Snellere route: {minuten} min sneller'**
-  String voorstelSneller(int minuten);
+  /// In en, this message translates to:
+  /// **'Faster route: {minutes} min faster'**
+  String suggestionFaster(int minutes);
 
-  /// No description provided for @voorstelVia.
+  /// No description provided for @suggestionVia.
   ///
-  /// In nl, this message translates to:
-  /// **'via {weg}'**
-  String voorstelVia(String weg);
+  /// In en, this message translates to:
+  /// **'via {road}'**
+  String suggestionVia(String road);
 
-  /// No description provided for @nemen.
+  /// No description provided for @accept.
   ///
-  /// In nl, this message translates to:
-  /// **'Nemen'**
-  String get nemen;
+  /// In en, this message translates to:
+  /// **'Take it'**
+  String get accept;
 
-  /// No description provided for @negeren.
+  /// No description provided for @ignore.
   ///
-  /// In nl, this message translates to:
-  /// **'Negeren'**
-  String get negeren;
+  /// In en, this message translates to:
+  /// **'Ignore'**
+  String get ignore;
 
-  /// No description provided for @aankomstOm.
+  /// No description provided for @arrivalAt.
   ///
-  /// In nl, this message translates to:
-  /// **'aankomst {tijd}'**
-  String aankomstOm(String tijd);
+  /// In en, this message translates to:
+  /// **'arrive {time}'**
+  String arrivalAt(String time);
 
-  /// No description provided for @thuis.
+  /// No description provided for @home.
   ///
-  /// In nl, this message translates to:
-  /// **'Thuis'**
-  String get thuis;
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get home;
 
-  /// No description provided for @werk.
+  /// No description provided for @work.
   ///
-  /// In nl, this message translates to:
-  /// **'Werk'**
-  String get werk;
+  /// In en, this message translates to:
+  /// **'Work'**
+  String get work;
 
-  /// No description provided for @alsThuis.
+  /// No description provided for @asHome.
   ///
-  /// In nl, this message translates to:
-  /// **'Als thuis'**
-  String get alsThuis;
+  /// In en, this message translates to:
+  /// **'Set as home'**
+  String get asHome;
 
-  /// No description provided for @alsWerk.
+  /// No description provided for @asWork.
   ///
-  /// In nl, this message translates to:
-  /// **'Als werk'**
-  String get alsWerk;
+  /// In en, this message translates to:
+  /// **'Set as work'**
+  String get asWork;
 
-  /// No description provided for @plekken.
+  /// No description provided for @savedPlaces.
   ///
-  /// In nl, this message translates to:
-  /// **'Plekken'**
-  String get plekken;
+  /// In en, this message translates to:
+  /// **'Places'**
+  String get savedPlaces;
 
-  /// No description provided for @plekkenUitleg.
+  /// No description provided for @savedPlacesHelp.
   ///
-  /// In nl, this message translates to:
-  /// **'Thuis en werk stel je in op het kaartje van een gevonden plek.'**
-  String get plekkenUitleg;
+  /// In en, this message translates to:
+  /// **'Set home and work on the card of a place you found.'**
+  String get savedPlacesHelp;
 
-  /// No description provided for @nietIngesteld.
+  /// No description provided for @notSet.
   ///
-  /// In nl, this message translates to:
-  /// **'Niet ingesteld'**
-  String get nietIngesteld;
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get notSet;
 
-  /// No description provided for @recentePlekken.
+  /// No description provided for @recentPlaces.
   ///
-  /// In nl, this message translates to:
-  /// **'Recente plekken'**
-  String get recentePlekken;
+  /// In en, this message translates to:
+  /// **'Recent places'**
+  String get recentPlaces;
 
-  /// No description provided for @aantalPlekken.
+  /// No description provided for @savedPlaceCount.
   ///
-  /// In nl, this message translates to:
-  /// **'{aantal, plural, =0{Geen} =1{1 plek} other{{aantal} plekken}}'**
-  String aantalPlekken(int aantal);
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{None} =1{1 place} other{{count} places}}'**
+  String savedPlaceCount(int count);
 
-  /// No description provided for @wissenKort.
+  /// No description provided for @clearLabel.
   ///
-  /// In nl, this message translates to:
-  /// **'Wissen'**
-  String get wissenKort;
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clearLabel;
 
-  /// No description provided for @nietGevonden.
+  /// No description provided for @notFound.
   ///
-  /// In nl, this message translates to:
-  /// **'Niet gevonden: {zoek}'**
-  String nietGevonden(String zoek);
+  /// In en, this message translates to:
+  /// **'Not found: {search}'**
+  String notFound(String search);
 
-  /// No description provided for @kmu.
+  /// No description provided for @kmh.
   ///
-  /// In nl, this message translates to:
-  /// **'km/u'**
-  String get kmu;
+  /// In en, this message translates to:
+  /// **'km/h'**
+  String get kmh;
 
-  /// No description provided for @maximumsnelheid.
+  /// No description provided for @speedLimit.
   ///
-  /// In nl, this message translates to:
-  /// **'Maximumsnelheid {kmu} km/u'**
-  String maximumsnelheid(int kmu);
+  /// In en, this message translates to:
+  /// **'Speed limit {kmh} km/h'**
+  String speedLimit(int kmh);
 
-  /// No description provided for @maximumsnelheidTijdelijk.
+  /// No description provided for @speedLimitTemporary.
   ///
-  /// In nl, this message translates to:
-  /// **'Tijdelijke maximumsnelheid {kmu} km/u'**
-  String maximumsnelheidTijdelijk(int kmu);
+  /// In en, this message translates to:
+  /// **'Temporary speed limit {kmh} km/h'**
+  String speedLimitTemporary(int kmh);
 
-  /// No description provided for @maximumsnelheidMatrix.
+  /// No description provided for @speedLimitMatrix.
   ///
-  /// In nl, this message translates to:
-  /// **'Maximumsnelheid {kmu} km/u op de matrixborden'**
-  String maximumsnelheidMatrix(int kmu);
+  /// In en, this message translates to:
+  /// **'Speed limit {kmh} km/h on the overhead signs'**
+  String speedLimitMatrix(int kmh);
 
-  /// No description provided for @meldingOngeval.
+  /// No description provided for @incidentAccident.
   ///
-  /// In nl, this message translates to:
-  /// **'Ongeval'**
-  String get meldingOngeval;
+  /// In en, this message translates to:
+  /// **'Accident'**
+  String get incidentAccident;
 
-  /// No description provided for @meldingPech.
+  /// No description provided for @incidentBreakdown.
   ///
-  /// In nl, this message translates to:
-  /// **'Pechgeval'**
-  String get meldingPech;
+  /// In en, this message translates to:
+  /// **'Broken-down vehicle'**
+  String get incidentBreakdown;
 
-  /// No description provided for @meldingObstakel.
+  /// No description provided for @incidentObstacle.
   ///
-  /// In nl, this message translates to:
-  /// **'Voorwerp op de weg'**
-  String get meldingObstakel;
+  /// In en, this message translates to:
+  /// **'Object on the road'**
+  String get incidentObstacle;
 
-  /// No description provided for @meldingBrug.
+  /// No description provided for @incidentBridge.
   ///
-  /// In nl, this message translates to:
-  /// **'Open brug'**
-  String get meldingBrug;
+  /// In en, this message translates to:
+  /// **'Open bridge'**
+  String get incidentBridge;
 
-  /// No description provided for @matrixborden.
+  /// No description provided for @matrixSigns.
   ///
-  /// In nl, this message translates to:
-  /// **'Matrixborden'**
-  String get matrixborden;
+  /// In en, this message translates to:
+  /// **'Overhead lane signs'**
+  String get matrixSigns;
 
-  /// No description provided for @meldingSinds.
+  /// No description provided for @incidentSince.
   ///
-  /// In nl, this message translates to:
-  /// **'Sinds {tijd}'**
-  String meldingSinds(String tijd);
+  /// In en, this message translates to:
+  /// **'Since {time}'**
+  String incidentSince(String time);
 
-  /// No description provided for @waarschuwingOpRoute.
+  /// No description provided for @warningOnRoute.
   ///
-  /// In nl, this message translates to:
-  /// **'Let op: {melding} over {afstand}.'**
-  String waarschuwingOpRoute(String melding, String afstand);
+  /// In en, this message translates to:
+  /// **'Caution: {notification} in {distance}.'**
+  String warningOnRoute(String notification, String distance);
 
-  /// No description provided for @vertrek.
+  /// No description provided for @departure.
   ///
-  /// In nl, this message translates to:
-  /// **'Vertrek'**
-  String get vertrek;
+  /// In en, this message translates to:
+  /// **'Depart'**
+  String get departure;
 
-  /// No description provided for @vertrekNu.
+  /// No description provided for @departNow.
   ///
-  /// In nl, this message translates to:
-  /// **'Nu'**
-  String get vertrekNu;
+  /// In en, this message translates to:
+  /// **'Now'**
+  String get departNow;
 
-  /// No description provided for @vertrekLater.
+  /// No description provided for @departLater.
   ///
-  /// In nl, this message translates to:
+  /// In en, this message translates to:
   /// **'Later…'**
-  String get vertrekLater;
+  String get departLater;
 
-  /// No description provided for @afsluitingOpRoute.
+  /// No description provided for @closureOnRoute.
   ///
-  /// In nl, this message translates to:
-  /// **'{aantal, plural, =1{Geplande afsluiting op deze route: {venster}} other{{aantal} geplande afsluitingen op deze route, de eerste: {venster}}}'**
-  String afsluitingOpRoute(String venster, int aantal);
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Planned closure on this route: {window}} other{{count} planned closures on this route, first: {window}}}'**
+  String closureOnRoute(String window, int count);
 
-  /// No description provided for @langsDeRoute.
+  /// No description provided for @alongTheRoute.
   ///
-  /// In nl, this message translates to:
-  /// **'Langs de route'**
-  String get langsDeRoute;
+  /// In en, this message translates to:
+  /// **'Along the route'**
+  String get alongTheRoute;
 
-  /// No description provided for @langsTanken.
+  /// No description provided for @alongFuel.
   ///
-  /// In nl, this message translates to:
-  /// **'Tanken'**
-  String get langsTanken;
+  /// In en, this message translates to:
+  /// **'Fuel'**
+  String get alongFuel;
 
-  /// No description provided for @langsLaden.
+  /// No description provided for @alongCharging.
   ///
-  /// In nl, this message translates to:
-  /// **'Laden'**
-  String get langsLaden;
+  /// In en, this message translates to:
+  /// **'Charging'**
+  String get alongCharging;
 
-  /// No description provided for @langsSupermarkt.
+  /// No description provided for @alongSupermarket.
   ///
-  /// In nl, this message translates to:
-  /// **'Supermarkt'**
-  String get langsSupermarkt;
+  /// In en, this message translates to:
+  /// **'Supermarket'**
+  String get alongSupermarket;
 
-  /// No description provided for @langsEten.
+  /// No description provided for @alongFood.
   ///
-  /// In nl, this message translates to:
-  /// **'Eten'**
-  String get langsEten;
+  /// In en, this message translates to:
+  /// **'Food'**
+  String get alongFood;
 
-  /// No description provided for @langsNiets.
+  /// No description provided for @alongNothing.
   ///
-  /// In nl, this message translates to:
-  /// **'Niets gevonden binnen een kilometer van de route.'**
-  String get langsNiets;
+  /// In en, this message translates to:
+  /// **'Nothing found within a kilometre of the route.'**
+  String get alongNothing;
 
-  /// No description provided for @langsAfstand.
+  /// No description provided for @alongDistance.
   ///
-  /// In nl, this message translates to:
-  /// **'{afstand} van de route'**
-  String langsAfstand(String afstand);
+  /// In en, this message translates to:
+  /// **'{distance} from the route'**
+  String alongDistance(String distance);
 
-  /// No description provided for @tussenstopToegevoegd.
+  /// No description provided for @stopAdded.
   ///
-  /// In nl, this message translates to:
-  /// **'Tussenstop: {naam}'**
-  String tussenstopToegevoegd(String naam);
+  /// In en, this message translates to:
+  /// **'Stop: {label}'**
+  String stopAdded(String label);
 
-  /// No description provided for @locatieDelen.
+  /// No description provided for @locationSharing.
   ///
-  /// In nl, this message translates to:
-  /// **'Locatie delen'**
-  String get locatieDelen;
+  /// In en, this message translates to:
+  /// **'Location sharing'**
+  String get locationSharing;
 
-  /// No description provided for @locatieDelenUitleg.
+  /// No description provided for @locationSharingHelp.
   ///
-  /// In nl, this message translates to:
-  /// **'Stuur je positie naar je eigen server, zoals Colota dat doet. Alleen tijdens het navigeren.'**
-  String get locatieDelenUitleg;
+  /// In en, this message translates to:
+  /// **'Send your position to your own server, like Colota does. Only while navigating.'**
+  String get locationSharingHelp;
 
-  /// No description provided for @locatieDelenAan.
+  /// No description provided for @locationSharingEnabled.
   ///
-  /// In nl, this message translates to:
-  /// **'Delen tijdens navigeren'**
-  String get locatieDelenAan;
+  /// In en, this message translates to:
+  /// **'Share while navigating'**
+  String get locationSharingEnabled;
 
-  /// No description provided for @deelUit.
+  /// No description provided for @shareOff.
   ///
-  /// In nl, this message translates to:
-  /// **'Uit'**
-  String get deelUit;
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get shareOff;
 
-  /// No description provided for @deelServer.
+  /// No description provided for @shareServer.
   ///
-  /// In nl, this message translates to:
+  /// In en, this message translates to:
   /// **'Server'**
-  String get deelServer;
+  String get shareServer;
 
-  /// No description provided for @deelAangepast.
+  /// No description provided for @shareCustom.
   ///
-  /// In nl, this message translates to:
-  /// **'Eigen server'**
-  String get deelAangepast;
+  /// In en, this message translates to:
+  /// **'Custom server'**
+  String get shareCustom;
 
-  /// No description provided for @deelSjabloonUitleg.
+  /// No description provided for @shareTemplateHelp.
   ///
-  /// In nl, this message translates to:
-  /// **'{sjabloon, select, dawarich{Dawarich-API: punten in batches, met richting, batterij en vervoer} geopulse{Colota-formaat voor GeoPulse} overland{Overland: punten in batches (GeoJSON)} owntracks{Standaard OwnTracks over HTTP} phonetrack{Nextcloud PhoneTrack} reitti{OwnTracks-formaat voor Reitti} traccar{Traccar, OsmAnd-protocol} other{Je eigen veldnamen}}'**
-  String deelSjabloonUitleg(String sjabloon);
+  /// In en, this message translates to:
+  /// **'{template, select, dawarich{Dawarich API: points in batches, with heading, battery and transport mode} geopulse{Colota format for GeoPulse} overland{Overland: points in batches (GeoJSON)} owntracks{Standard OwnTracks HTTP format} phonetrack{Nextcloud PhoneTrack} reitti{OwnTracks-compatible format for Reitti} traccar{Traccar, OsmAnd protocol} other{Your own field names}}'**
+  String shareTemplateHelp(String template);
 
-  /// No description provided for @deelUrl.
+  /// No description provided for @shareUrl.
   ///
-  /// In nl, this message translates to:
-  /// **'Adres (URL)'**
-  String get deelUrl;
+  /// In en, this message translates to:
+  /// **'Address (URL)'**
+  String get shareUrl;
 
-  /// No description provided for @deelUrlOngeldig.
+  /// No description provided for @shareUrlInvalid.
   ///
-  /// In nl, this message translates to:
-  /// **'Vul een adres in dat met http:// of https:// begint.'**
-  String get deelUrlOngeldig;
+  /// In en, this message translates to:
+  /// **'Enter an address starting with http:// or https://.'**
+  String get shareUrlInvalid;
 
-  /// No description provided for @deelUrlWeb.
+  /// No description provided for @shareUrlWeb.
   ///
-  /// In nl, this message translates to:
-  /// **'In de browser moet de server CORS toestaan.'**
-  String get deelUrlWeb;
+  /// In en, this message translates to:
+  /// **'In the browser the server must allow CORS.'**
+  String get shareUrlWeb;
 
-  /// No description provided for @deelMethode.
+  /// No description provided for @shareMethod.
   ///
-  /// In nl, this message translates to:
-  /// **'Methode'**
-  String get deelMethode;
+  /// In en, this message translates to:
+  /// **'Method'**
+  String get shareMethod;
 
-  /// No description provided for @deelInlog.
+  /// No description provided for @shareAuth.
   ///
-  /// In nl, this message translates to:
-  /// **'Inloggen'**
-  String get deelInlog;
+  /// In en, this message translates to:
+  /// **'Authentication'**
+  String get shareAuth;
 
-  /// No description provided for @deelInlogGeen.
+  /// No description provided for @shareAuthNone.
   ///
-  /// In nl, this message translates to:
-  /// **'Geen'**
-  String get deelInlogGeen;
+  /// In en, this message translates to:
+  /// **'None'**
+  String get shareAuthNone;
 
-  /// No description provided for @deelGebruiker.
+  /// No description provided for @shareUsername.
   ///
-  /// In nl, this message translates to:
-  /// **'Gebruikersnaam'**
-  String get deelGebruiker;
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get shareUsername;
 
-  /// No description provided for @deelWachtwoord.
+  /// No description provided for @sharePassword.
   ///
-  /// In nl, this message translates to:
-  /// **'Wachtwoord'**
-  String get deelWachtwoord;
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get sharePassword;
 
-  /// No description provided for @deelToken.
+  /// No description provided for @shareToken.
   ///
-  /// In nl, this message translates to:
+  /// In en, this message translates to:
   /// **'Token'**
-  String get deelToken;
+  String get shareToken;
 
-  /// No description provided for @deelVeldnamen.
+  /// No description provided for @shareFieldNames.
   ///
-  /// In nl, this message translates to:
-  /// **'Veldnamen'**
-  String get deelVeldnamen;
+  /// In en, this message translates to:
+  /// **'Field names'**
+  String get shareFieldNames;
 
-  /// No description provided for @deelVeldnamenUitleg.
+  /// No description provided for @shareFieldNamesHelp.
   ///
-  /// In nl, this message translates to:
-  /// **'Per regel veld=naam, bijvoorbeeld lat=latitude. Velden: lat, lon, acc, alt, vel, tst, bear.'**
-  String get deelVeldnamenUitleg;
+  /// In en, this message translates to:
+  /// **'One per line as field=name, e.g. lat=latitude. Fields: lat, lon, acc, alt, vel, tst, bear.'**
+  String get shareFieldNamesHelp;
 
-  /// No description provided for @deelExtraVelden.
+  /// No description provided for @shareExtraFields.
   ///
-  /// In nl, this message translates to:
-  /// **'Vaste velden'**
-  String get deelExtraVelden;
+  /// In en, this message translates to:
+  /// **'Fixed fields'**
+  String get shareExtraFields;
 
-  /// No description provided for @deelExtraVeldenUitleg.
+  /// No description provided for @shareExtraFieldsHelp.
   ///
-  /// In nl, this message translates to:
-  /// **'Per regel naam=waarde; die gaan bij elk punt mee.'**
-  String get deelExtraVeldenUitleg;
+  /// In en, this message translates to:
+  /// **'One per line as name=value; sent with every point.'**
+  String get shareExtraFieldsHelp;
 
-  /// No description provided for @deelInterval.
+  /// No description provided for @shareInterval.
   ///
-  /// In nl, this message translates to:
-  /// **'Elke … seconden'**
-  String get deelInterval;
+  /// In en, this message translates to:
+  /// **'Every … seconds'**
+  String get shareInterval;
 
-  /// No description provided for @deelMinAfstand.
+  /// No description provided for @shareMinDistance.
   ///
-  /// In nl, this message translates to:
-  /// **'Of na … meter'**
-  String get deelMinAfstand;
+  /// In en, this message translates to:
+  /// **'Or after … metres'**
+  String get shareMinDistance;
 
-  /// No description provided for @deelTesten.
+  /// No description provided for @shareTest.
   ///
-  /// In nl, this message translates to:
-  /// **'Verbinding testen'**
-  String get deelTesten;
+  /// In en, this message translates to:
+  /// **'Test connection'**
+  String get shareTest;
 
-  /// No description provided for @deelTestGelukt.
+  /// No description provided for @shareTestSucceeded.
   ///
-  /// In nl, this message translates to:
-  /// **'De server heeft het punt ontvangen.'**
-  String get deelTestGelukt;
+  /// In en, this message translates to:
+  /// **'The server received the point.'**
+  String get shareTestSucceeded;
 
-  /// No description provided for @deelTestMislukt.
+  /// No description provided for @shareTestFailed.
   ///
-  /// In nl, this message translates to:
-  /// **'Niet gelukt: {fout}'**
-  String deelTestMislukt(String fout);
+  /// In en, this message translates to:
+  /// **'Failed: {error}'**
+  String shareTestFailed(String error);
 
-  /// No description provided for @deelStatus.
+  /// No description provided for @shareStatus.
   ///
-  /// In nl, this message translates to:
+  /// In en, this message translates to:
   /// **'Status'**
-  String get deelStatus;
+  String get shareStatus;
 
-  /// No description provided for @deelLaatst.
+  /// No description provided for @shareLastSent.
   ///
-  /// In nl, this message translates to:
-  /// **'Laatst verstuurd om {tijd}'**
-  String deelLaatst(String tijd);
+  /// In en, this message translates to:
+  /// **'Last sent at {time}'**
+  String shareLastSent(String time);
 
-  /// No description provided for @deelNogNiets.
+  /// No description provided for @shareNothingYet.
   ///
-  /// In nl, this message translates to:
-  /// **'Nog niets verstuurd'**
-  String get deelNogNiets;
+  /// In en, this message translates to:
+  /// **'Nothing sent yet'**
+  String get shareNothingYet;
 
-  /// No description provided for @deelInWachtrij.
+  /// No description provided for @shareQueued.
   ///
-  /// In nl, this message translates to:
-  /// **'{aantal, plural, =0{Niets in de wachtrij} =1{1 punt in de wachtrij} other{{aantal} punten in de wachtrij}}'**
-  String deelInWachtrij(int aantal);
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Queue empty} =1{1 point queued} other{{count} points queued}}'**
+  String shareQueued(int count);
 
-  /// No description provided for @deelFout.
+  /// No description provided for @shareError.
   ///
-  /// In nl, this message translates to:
-  /// **'Fout: {fout}'**
-  String deelFout(String fout);
+  /// In en, this message translates to:
+  /// **'Error: {error}'**
+  String shareError(String error);
 
-  /// No description provided for @deelGestopt.
+  /// No description provided for @shareStopped.
   ///
-  /// In nl, this message translates to:
-  /// **'Gestopt tot je de instellingen wijzigt.'**
-  String get deelGestopt;
+  /// In en, this message translates to:
+  /// **'Stopped until you change the settings.'**
+  String get shareStopped;
 
-  /// No description provided for @deelWisWachtrij.
+  /// No description provided for @shareClearQueue.
   ///
-  /// In nl, this message translates to:
-  /// **'Wachtrij leegmaken'**
-  String get deelWisWachtrij;
+  /// In en, this message translates to:
+  /// **'Clear queue'**
+  String get shareClearQueue;
 
-  /// No description provided for @deelVoorbeeld.
+  /// No description provided for @shareExample.
   ///
-  /// In nl, this message translates to:
-  /// **'Voorbeeld'**
-  String get deelVoorbeeld;
+  /// In en, this message translates to:
+  /// **'Example'**
+  String get shareExample;
 
-  /// No description provided for @navigatieMeldingDelen.
+  /// No description provided for @navigationNotificationSharing.
   ///
-  /// In nl, this message translates to:
-  /// **'HomeMaps volgt je locatie voor de route en deelt hem met je server.'**
-  String get navigatieMeldingDelen;
+  /// In en, this message translates to:
+  /// **'HomeMaps follows your location for the route and shares it with your server.'**
+  String get navigationNotificationSharing;
 
-  /// No description provided for @overHomeMaps.
+  /// No description provided for @aboutHomeMaps.
   ///
-  /// In nl, this message translates to:
-  /// **'Over HomeMaps'**
-  String get overHomeMaps;
+  /// In en, this message translates to:
+  /// **'About HomeMaps'**
+  String get aboutHomeMaps;
 
-  /// No description provided for @versie.
+  /// No description provided for @version.
   ///
-  /// In nl, this message translates to:
-  /// **'Versie {versie}'**
-  String versie(String versie);
+  /// In en, this message translates to:
+  /// **'Version {version}'**
+  String version(String version);
 
-  /// No description provided for @overBeschrijving.
+  /// No description provided for @aboutDescription.
   ///
-  /// In nl, this message translates to:
-  /// **'Navigatie op je eigen server: kaart, routes, zoeken en verkeer.'**
-  String get overBeschrijving;
+  /// In en, this message translates to:
+  /// **'Navigation on your own server: map, routes, search and traffic.'**
+  String get aboutDescription;
 
-  /// No description provided for @bronnen.
+  /// No description provided for @sources.
   ///
-  /// In nl, this message translates to:
-  /// **'Gegevens en software'**
-  String get bronnen;
+  /// In en, this message translates to:
+  /// **'Data and software'**
+  String get sources;
 
-  /// No description provided for @bronKaartgegevens.
+  /// No description provided for @sourceMapData.
   ///
-  /// In nl, this message translates to:
-  /// **'Kaartgegevens © OpenStreetMap-bijdragers'**
-  String get bronKaartgegevens;
+  /// In en, this message translates to:
+  /// **'Map data © OpenStreetMap contributors'**
+  String get sourceMapData;
 
-  /// No description provided for @bronTegels.
+  /// No description provided for @sourceTiles.
   ///
-  /// In nl, this message translates to:
-  /// **'Kaarttegels en -stijl'**
-  String get bronTegels;
+  /// In en, this message translates to:
+  /// **'Map tiles and style'**
+  String get sourceTiles;
 
-  /// No description provided for @bronRoutes.
+  /// No description provided for @sourceRouting.
   ///
-  /// In nl, this message translates to:
-  /// **'Routes en navigatie'**
-  String get bronRoutes;
+  /// In en, this message translates to:
+  /// **'Routing and navigation'**
+  String get sourceRouting;
 
-  /// No description provided for @bronZoeken.
+  /// No description provided for @sourceSearch.
   ///
-  /// In nl, this message translates to:
-  /// **'Zoeken'**
-  String get bronZoeken;
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get sourceSearch;
 
-  /// No description provided for @bronVerkeer.
+  /// No description provided for @sourceTraffic.
   ///
-  /// In nl, this message translates to:
-  /// **'Verkeer, werk en matrixborden'**
-  String get bronVerkeer;
+  /// In en, this message translates to:
+  /// **'Traffic, roadworks and lane signals'**
+  String get sourceTraffic;
 
-  /// No description provided for @broncode.
+  /// No description provided for @sourceCode.
   ///
-  /// In nl, this message translates to:
-  /// **'Broncode'**
-  String get broncode;
+  /// In en, this message translates to:
+  /// **'Source code'**
+  String get sourceCode;
 
-  /// No description provided for @licenties.
+  /// No description provided for @licenses.
   ///
-  /// In nl, this message translates to:
-  /// **'Licenties'**
-  String get licenties;
+  /// In en, this message translates to:
+  /// **'Licenses'**
+  String get licenses;
 
   /// No description provided for @dawarich.
   ///
-  /// In nl, this message translates to:
+  /// In en, this message translates to:
   /// **'Dawarich'**
   String get dawarich;
 
-  /// No description provided for @dawarichUitleg.
+  /// No description provided for @dawarichHelp.
   ///
-  /// In nl, this message translates to:
-  /// **'Vul het adres van je eigen Dawarich in. Daarna log je in, en kun je je locatie met je familie delen, onderweg je rit bijhouden en familieleden op de kaart zien.'**
-  String get dawarichUitleg;
+  /// In en, this message translates to:
+  /// **'Enter the address of your own Dawarich. Then sign in, and you can share your location with your family, record your trips while navigating and see family members on the map.'**
+  String get dawarichHelp;
 
-  /// No description provided for @dawarichNietIngelogd.
+  /// No description provided for @dawarichNotSignedIn.
   ///
-  /// In nl, this message translates to:
-  /// **'Niet ingelogd'**
-  String get dawarichNietIngelogd;
+  /// In en, this message translates to:
+  /// **'Not signed in'**
+  String get dawarichNotSignedIn;
 
   /// No description provided for @dawarichServer.
   ///
-  /// In nl, this message translates to:
+  /// In en, this message translates to:
   /// **'Server'**
   String get dawarichServer;
 
-  /// No description provided for @dawarichMetSleutel.
+  /// No description provided for @dawarichWithKey.
   ///
-  /// In nl, this message translates to:
-  /// **'Met een API-sleutel'**
-  String get dawarichMetSleutel;
+  /// In en, this message translates to:
+  /// **'With an API key'**
+  String get dawarichWithKey;
 
   /// No description provided for @dawarichEmail.
   ///
-  /// In nl, this message translates to:
-  /// **'E-mail'**
+  /// In en, this message translates to:
+  /// **'Email'**
   String get dawarichEmail;
 
-  /// No description provided for @dawarichWachtwoord.
+  /// No description provided for @dawarichPassword.
   ///
-  /// In nl, this message translates to:
-  /// **'Wachtwoord'**
-  String get dawarichWachtwoord;
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get dawarichPassword;
 
-  /// No description provided for @dawarichSleutel.
+  /// No description provided for @dawarichKey.
   ///
-  /// In nl, this message translates to:
-  /// **'API-sleutel'**
-  String get dawarichSleutel;
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get dawarichKey;
 
-  /// No description provided for @dawarichSleutelUitleg.
+  /// No description provided for @dawarichKeyHelp.
   ///
-  /// In nl, this message translates to:
-  /// **'Te vinden in Dawarich onder Instellingen.'**
-  String get dawarichSleutelUitleg;
+  /// In en, this message translates to:
+  /// **'Found in Dawarich under Settings.'**
+  String get dawarichKeyHelp;
 
-  /// No description provided for @dawarichInloggen.
+  /// No description provided for @dawarichSignIn.
   ///
-  /// In nl, this message translates to:
-  /// **'Inloggen'**
-  String get dawarichInloggen;
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get dawarichSignIn;
 
-  /// No description provided for @dawarichUitloggen.
+  /// No description provided for @dawarichSignOut.
   ///
-  /// In nl, this message translates to:
-  /// **'Uitloggen'**
-  String get dawarichUitloggen;
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get dawarichSignOut;
 
   /// No description provided for @dawarichCode.
   ///
-  /// In nl, this message translates to:
-  /// **'Code voor tweestapsverificatie'**
+  /// In en, this message translates to:
+  /// **'Two-factor code'**
   String get dawarichCode;
 
-  /// No description provided for @dawarichCodeUitleg.
+  /// No description provided for @dawarichCodeHelp.
   ///
-  /// In nl, this message translates to:
-  /// **'De code uit je authenticator-app, of een back-upcode.'**
-  String get dawarichCodeUitleg;
+  /// In en, this message translates to:
+  /// **'The code from your authenticator app, or a backup code.'**
+  String get dawarichCodeHelp;
 
-  /// No description provided for @dawarichBevestig.
+  /// No description provided for @dawarichConfirm.
   ///
-  /// In nl, this message translates to:
-  /// **'Bevestigen'**
-  String get dawarichBevestig;
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get dawarichConfirm;
 
-  /// No description provided for @annuleren.
+  /// No description provided for @cancelLabel.
   ///
-  /// In nl, this message translates to:
-  /// **'Annuleren'**
-  String get annuleren;
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelLabel;
 
-  /// No description provided for @dawarichFoutInlog.
+  /// No description provided for @dawarichErrorCredentials.
   ///
-  /// In nl, this message translates to:
-  /// **'Onjuiste gegevens.'**
-  String get dawarichFoutInlog;
+  /// In en, this message translates to:
+  /// **'Incorrect credentials.'**
+  String get dawarichErrorCredentials;
 
-  /// No description provided for @dawarichFoutWachtwoordUit.
+  /// No description provided for @dawarichErrorPasswordDisabled.
   ///
-  /// In nl, this message translates to:
-  /// **'Deze server staat inloggen met een wachtwoord niet toe. Gebruik een API-sleutel.'**
-  String get dawarichFoutWachtwoordUit;
+  /// In en, this message translates to:
+  /// **'This server does not allow signing in with a password. Use an API key.'**
+  String get dawarichErrorPasswordDisabled;
 
-  /// No description provided for @dawarichFoutGeblokkeerd.
+  /// No description provided for @dawarichErrorBlocked.
   ///
-  /// In nl, this message translates to:
-  /// **'Te vaak een verkeerde code. Probeer het later opnieuw.'**
-  String get dawarichFoutGeblokkeerd;
+  /// In en, this message translates to:
+  /// **'Too many wrong codes. Try again later.'**
+  String get dawarichErrorBlocked;
 
-  /// No description provided for @dawarichFoutVerbinding.
+  /// No description provided for @dawarichErrorConnection.
   ///
-  /// In nl, this message translates to:
-  /// **'Dawarich is niet te bereiken ({detail}).'**
-  String dawarichFoutVerbinding(String detail);
+  /// In en, this message translates to:
+  /// **'Cannot reach Dawarich ({detail}).'**
+  String dawarichErrorConnection(String detail);
 
-  /// No description provided for @dawarichFoutOnbekend.
+  /// No description provided for @dawarichErrorUnknown.
   ///
-  /// In nl, this message translates to:
-  /// **'Er ging iets mis ({detail}).'**
-  String dawarichFoutOnbekend(String detail);
+  /// In en, this message translates to:
+  /// **'Something went wrong ({detail}).'**
+  String dawarichErrorUnknown(String detail);
 
-  /// No description provided for @dawarichIngelogdAls.
+  /// No description provided for @dawarichSignedInAs.
   ///
-  /// In nl, this message translates to:
-  /// **'Ingelogd als {email}'**
-  String dawarichIngelogdAls(String email);
+  /// In en, this message translates to:
+  /// **'Signed in as {email}'**
+  String dawarichSignedInAs(String email);
 
-  /// No description provided for @dawarichFamilie.
+  /// No description provided for @dawarichFamily.
   ///
-  /// In nl, this message translates to:
-  /// **'Familie'**
-  String get dawarichFamilie;
+  /// In en, this message translates to:
+  /// **'Family'**
+  String get dawarichFamily;
 
-  /// No description provided for @dawarichFamilieDelen.
+  /// No description provided for @dawarichShareWithFamily.
   ///
-  /// In nl, this message translates to:
-  /// **'Locatie delen met familie'**
-  String get dawarichFamilieDelen;
+  /// In en, this message translates to:
+  /// **'Share location with family'**
+  String get dawarichShareWithFamily;
 
-  /// No description provided for @dawarichDeeltTot.
+  /// No description provided for @dawarichSharingUntil.
   ///
-  /// In nl, this message translates to:
-  /// **'Tot {tijd}'**
-  String dawarichDeeltTot(String tijd);
+  /// In en, this message translates to:
+  /// **'Until {time}'**
+  String dawarichSharingUntil(String time);
 
-  /// No description provided for @dawarichDeeltAltijd.
+  /// No description provided for @dawarichSharingAlways.
   ///
-  /// In nl, this message translates to:
-  /// **'Tot je het uitzet'**
-  String get dawarichDeeltAltijd;
+  /// In en, this message translates to:
+  /// **'Until you turn it off'**
+  String get dawarichSharingAlways;
 
-  /// No description provided for @dawarichDeeltNiet.
+  /// No description provided for @dawarichNotSharing.
   ///
-  /// In nl, this message translates to:
-  /// **'Je familie ziet je locatie niet'**
-  String get dawarichDeeltNiet;
+  /// In en, this message translates to:
+  /// **'Your family can\'t see your location'**
+  String get dawarichNotSharing;
 
-  /// No description provided for @dawarichGeenFamilie.
+  /// No description provided for @dawarichNoFamily.
   ///
-  /// In nl, this message translates to:
-  /// **'Je zit nog niet in een familie. Maak er een of word lid op de Dawarich-website.'**
-  String get dawarichGeenFamilie;
+  /// In en, this message translates to:
+  /// **'You\'re not in a family yet. Create or join one on the Dawarich website.'**
+  String get dawarichNoFamily;
 
-  /// No description provided for @dawarichNaarWebsite.
+  /// No description provided for @dawarichOpenWebsite.
   ///
-  /// In nl, this message translates to:
-  /// **'Naar de website'**
-  String get dawarichNaarWebsite;
+  /// In en, this message translates to:
+  /// **'Open website'**
+  String get dawarichOpenWebsite;
 
-  /// No description provided for @dawarichGeenAbonnement.
+  /// No description provided for @dawarichNoSubscription.
   ///
-  /// In nl, this message translates to:
-  /// **'Familie zit niet in je Dawarich-abonnement.'**
-  String get dawarichGeenAbonnement;
+  /// In en, this message translates to:
+  /// **'Family is not included in your Dawarich plan.'**
+  String get dawarichNoSubscription;
 
-  /// No description provided for @dawarichHoeLang.
+  /// No description provided for @dawarichHowLong.
   ///
-  /// In nl, this message translates to:
-  /// **'Hoe lang delen?'**
-  String get dawarichHoeLang;
+  /// In en, this message translates to:
+  /// **'Share for how long?'**
+  String get dawarichHowLong;
 
-  /// No description provided for @dawarichDuur.
+  /// No description provided for @dawarichDuration.
   ///
-  /// In nl, this message translates to:
-  /// **'{duur, select, uur1{1 uur} uur6{6 uur} uur12{12 uur} uur24{24 uur} other{Tot ik het uitzet}}'**
-  String dawarichDuur(String duur);
+  /// In en, this message translates to:
+  /// **'{duration, select, hour1{1 hour} hour6{6 hours} hour12{12 hours} hour24{24 hours} other{Until I turn it off}}'**
+  String dawarichDuration(String duration);
 
-  /// No description provided for @dawarichDelenOnderweg.
+  /// No description provided for @dawarichShareEnRoute.
   ///
-  /// In nl, this message translates to:
-  /// **'Locatie delen tijdens navigeren'**
-  String get dawarichDelenOnderweg;
+  /// In en, this message translates to:
+  /// **'Share location while navigating'**
+  String get dawarichShareEnRoute;
 
-  /// No description provided for @dawarichDelenOnderwegUitleg.
+  /// No description provided for @dawarichShareEnRouteHelp.
   ///
-  /// In nl, this message translates to:
-  /// **'Stuurt je rit naar Dawarich. Interval en afstand stel je in bij Locatie delen.'**
-  String get dawarichDelenOnderwegUitleg;
+  /// In en, this message translates to:
+  /// **'Sends your trip to Dawarich. Set interval and distance under Location sharing.'**
+  String get dawarichShareEnRouteHelp;
 
-  /// No description provided for @dawarichToonFamilie.
+  /// No description provided for @dawarichShowFamily.
   ///
-  /// In nl, this message translates to:
-  /// **'Familieleden op de kaart'**
-  String get dawarichToonFamilie;
+  /// In en, this message translates to:
+  /// **'Family members on the map'**
+  String get dawarichShowFamily;
 
-  /// No description provided for @dawarichToonFamilieUitleg.
+  /// No description provided for @dawarichShowFamilyHelp.
   ///
-  /// In nl, this message translates to:
-  /// **'Elke 30 seconden bijgewerkt, zolang de app open is.'**
-  String get dawarichToonFamilieUitleg;
+  /// In en, this message translates to:
+  /// **'Updated every 30 seconds while the app is open.'**
+  String get dawarichShowFamilyHelp;
 
-  /// No description provided for @dawarichFamilieDeelt.
+  /// No description provided for @dawarichFamilySharing.
   ///
-  /// In nl, this message translates to:
-  /// **'familie deelt'**
-  String get dawarichFamilieDeelt;
+  /// In en, this message translates to:
+  /// **'family sharing'**
+  String get dawarichFamilySharing;
 
-  /// No description provided for @deelViaDawarich.
+  /// No description provided for @shareViaDawarich.
   ///
-  /// In nl, this message translates to:
-  /// **'Ingesteld via je Dawarich-account.'**
-  String get deelViaDawarich;
+  /// In en, this message translates to:
+  /// **'Set up through your Dawarich account.'**
+  String get shareViaDawarich;
 
-  /// No description provided for @familieGeleden.
+  /// No description provided for @familyMinutesAgo.
   ///
-  /// In nl, this message translates to:
-  /// **'{minuten, plural, =0{zojuist} =1{1 minuut geleden} other{{minuten} minuten geleden}}'**
-  String familieGeleden(int minuten);
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =0{just now} =1{1 minute ago} other{{minutes} minutes ago}}'**
+  String familyMinutesAgo(int minutes);
 
-  /// No description provided for @familieBatterij.
+  /// No description provided for @familyBattery.
   ///
-  /// In nl, this message translates to:
-  /// **'batterij {procent}%'**
-  String familieBatterij(int procent);
+  /// In en, this message translates to:
+  /// **'battery {percent}%'**
+  String familyBattery(int percent);
 
-  /// No description provided for @familieUrenGeleden.
+  /// No description provided for @familyHoursAgo.
   ///
-  /// In nl, this message translates to:
-  /// **'{uren, plural, =1{1 uur geleden} other{{uren} uur geleden}}'**
-  String familieUrenGeleden(int uren);
+  /// In en, this message translates to:
+  /// **'{hours, plural, =1{1 hour ago} other{{hours} hours ago}}'**
+  String familyHoursAgo(int hours);
 
-  /// No description provided for @familieDagenGeleden.
+  /// No description provided for @familyDaysAgo.
   ///
-  /// In nl, this message translates to:
-  /// **'{dagen, plural, =1{1 dag geleden} other{{dagen} dagen geleden}}'**
-  String familieDagenGeleden(int dagen);
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{1 day ago} other{{days} days ago}}'**
+  String familyDaysAgo(int days);
 
-  /// No description provided for @familieVolgen.
+  /// No description provided for @familyFollow.
   ///
-  /// In nl, this message translates to:
-  /// **'Volgen'**
-  String get familieVolgen;
+  /// In en, this message translates to:
+  /// **'Follow'**
+  String get familyFollow;
 
-  /// No description provided for @familieVolgt.
+  /// No description provided for @familyFollowing.
   ///
-  /// In nl, this message translates to:
-  /// **'Wordt gevolgd'**
-  String get familieVolgt;
+  /// In en, this message translates to:
+  /// **'Following'**
+  String get familyFollowing;
 
-  /// No description provided for @instellingenGroepKaart.
+  /// No description provided for @settingsGroupMap.
   ///
-  /// In nl, this message translates to:
-  /// **'Kaart en route'**
-  String get instellingenGroepKaart;
+  /// In en, this message translates to:
+  /// **'Map and route'**
+  String get settingsGroupMap;
 
-  /// No description provided for @instellingenGroepDelen.
+  /// No description provided for @settingsGroupSharing.
   ///
-  /// In nl, this message translates to:
-  /// **'Delen'**
-  String get instellingenGroepDelen;
+  /// In en, this message translates to:
+  /// **'Sharing'**
+  String get settingsGroupSharing;
 
-  /// No description provided for @instellingenGroepApp.
+  /// No description provided for @settingsGroupApp.
   ///
-  /// In nl, this message translates to:
+  /// In en, this message translates to:
   /// **'App'**
-  String get instellingenGroepApp;
+  String get settingsGroupApp;
 
-  /// No description provided for @instellingenKaart.
+  /// No description provided for @settingsMap.
   ///
-  /// In nl, this message translates to:
-  /// **'Kaart'**
-  String get instellingenKaart;
+  /// In en, this message translates to:
+  /// **'Map'**
+  String get settingsMap;
 
-  /// No description provided for @dagEnNacht.
+  /// No description provided for @dayAndNight.
   ///
-  /// In nl, this message translates to:
-  /// **'Dag en nacht'**
-  String get dagEnNacht;
+  /// In en, this message translates to:
+  /// **'Day and night'**
+  String get dayAndNight;
 
-  /// No description provided for @themaAlleenKaart.
+  /// No description provided for @themeOnlyMap.
   ///
-  /// In nl, this message translates to:
-  /// **'Alleen bij de stijl Kaart; Licht en Donker zijn al een keuze.'**
-  String get themaAlleenKaart;
+  /// In en, this message translates to:
+  /// **'Only for the Map style; Light and Dark are already a choice.'**
+  String get themeOnlyMap;
 
-  /// No description provided for @lagen.
+  /// No description provided for @layers.
   ///
-  /// In nl, this message translates to:
-  /// **'Lagen'**
-  String get lagen;
+  /// In en, this message translates to:
+  /// **'Layers'**
+  String get layers;
 
-  /// No description provided for @verkeerOpKaartUitleg.
+  /// No description provided for @trafficOnMapHelp.
   ///
-  /// In nl, this message translates to:
-  /// **'Afsluitingen, werk op de weg en files op de kaart'**
-  String get verkeerOpKaartUitleg;
+  /// In en, this message translates to:
+  /// **'Closures, road works and traffic jams on the map'**
+  String get trafficOnMapHelp;
 
-  /// No description provided for @vervoer.
+  /// No description provided for @transport.
   ///
-  /// In nl, this message translates to:
-  /// **'Vervoer'**
-  String get vervoer;
+  /// In en, this message translates to:
+  /// **'Transport'**
+  String get transport;
 
-  /// No description provided for @vervoerUitleg.
+  /// No description provided for @transportHelp.
   ///
-  /// In nl, this message translates to:
-  /// **'Waarmee een nieuwe route berekend wordt.'**
-  String get vervoerUitleg;
+  /// In en, this message translates to:
+  /// **'Used to calculate a new route.'**
+  String get transportHelp;
 
-  /// No description provided for @opgeslagen.
+  /// No description provided for @saved.
   ///
-  /// In nl, this message translates to:
-  /// **'Opgeslagen'**
-  String get opgeslagen;
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get saved;
 
-  /// No description provided for @overSamenvatting.
+  /// No description provided for @aboutSummary.
   ///
-  /// In nl, this message translates to:
-  /// **'Versie, bronnen en licenties'**
-  String get overSamenvatting;
+  /// In en, this message translates to:
+  /// **'Version, sources and licenses'**
+  String get aboutSummary;
 
   /// No description provided for @dawarichAccount.
   ///
-  /// In nl, this message translates to:
+  /// In en, this message translates to:
   /// **'Account'**
   String get dawarichAccount;
 
-  /// No description provided for @dawarichNavigeren.
+  /// No description provided for @dawarichNavigation.
   ///
-  /// In nl, this message translates to:
-  /// **'Navigeren'**
-  String get dawarichNavigeren;
+  /// In en, this message translates to:
+  /// **'Navigation'**
+  String get dawarichNavigation;
 
-  /// No description provided for @deelVerbinding.
+  /// No description provided for @shareConnection.
   ///
-  /// In nl, this message translates to:
-  /// **'Verbinding'**
-  String get deelVerbinding;
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get shareConnection;
 
-  /// No description provided for @deelPunten.
+  /// No description provided for @sharePoints.
   ///
-  /// In nl, this message translates to:
-  /// **'Punten'**
-  String get deelPunten;
+  /// In en, this message translates to:
+  /// **'Points'**
+  String get sharePoints;
 
-  /// No description provided for @dawarichWebsiteUitleg.
+  /// No description provided for @dawarichWebsiteHelp.
   ///
-  /// In nl, this message translates to:
-  /// **'Ook voor OIDC, zoals Keycloak of Authentik. Niet met Google.'**
-  String get dawarichWebsiteUitleg;
+  /// In en, this message translates to:
+  /// **'Also for OIDC, such as Keycloak or Authentik. Not with Google.'**
+  String get dawarichWebsiteHelp;
 
-  /// No description provided for @dawarichWebsiteInloggen.
+  /// No description provided for @dawarichWebsiteSignIn.
   ///
-  /// In nl, this message translates to:
-  /// **'Via de Dawarich-website'**
-  String get dawarichWebsiteInloggen;
+  /// In en, this message translates to:
+  /// **'Via the Dawarich website'**
+  String get dawarichWebsiteSignIn;
 
-  /// No description provided for @dawarichWebsiteTitel.
+  /// No description provided for @dawarichWebsiteTitle.
   ///
-  /// In nl, this message translates to:
-  /// **'Inloggen bij Dawarich'**
-  String get dawarichWebsiteTitel;
+  /// In en, this message translates to:
+  /// **'Sign in to Dawarich'**
+  String get dawarichWebsiteTitle;
 
-  /// No description provided for @dawarichWebsiteFout.
+  /// No description provided for @dawarichWebsiteError.
   ///
-  /// In nl, this message translates to:
-  /// **'De pagina laadt niet: {fout}'**
-  String dawarichWebsiteFout(String fout);
+  /// In en, this message translates to:
+  /// **'The page does not load: {error}'**
+  String dawarichWebsiteError(String error);
 
-  /// No description provided for @dawarichFoutCors.
+  /// No description provided for @dawarichErrorCors.
   ///
-  /// In nl, this message translates to:
-  /// **'Dawarich is niet te bereiken vanuit de browser. Dawarich staat dat zelf niet toe (CORS); voeg in je reverse proxy CORS-headers toe voor /api/v1, of gebruik de Android-app.'**
-  String get dawarichFoutCors;
+  /// In en, this message translates to:
+  /// **'Dawarich cannot be reached from the browser. Dawarich does not allow this itself (CORS); add CORS headers for /api/v1 in your reverse proxy, or use the Android app.'**
+  String get dawarichErrorCors;
 
-  /// No description provided for @dawarichFoutGeenDawarich.
+  /// No description provided for @dawarichErrorNotDawarich.
   ///
-  /// In nl, this message translates to:
-  /// **'Op dit adres antwoordt geen Dawarich. Staat er een inlogproxy voor (zoals Authelia), laat dan /api/v1 door.'**
-  String get dawarichFoutGeenDawarich;
+  /// In en, this message translates to:
+  /// **'No Dawarich answers at this address. If a login proxy (such as Authelia) is in front of it, let /api/v1 through.'**
+  String get dawarichErrorNotDawarich;
 
-  /// No description provided for @dawarichStapServer.
+  /// No description provided for @dawarichStepServer.
   ///
-  /// In nl, this message translates to:
+  /// In en, this message translates to:
   /// **'Server'**
-  String get dawarichStapServer;
+  String get dawarichStepServer;
 
-  /// No description provided for @dawarichVerbinden.
+  /// No description provided for @dawarichConnect.
   ///
-  /// In nl, this message translates to:
-  /// **'Verbinden'**
-  String get dawarichVerbinden;
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get dawarichConnect;
 
-  /// No description provided for @dawarichVerbonden.
+  /// No description provided for @dawarichConnected.
   ///
-  /// In nl, this message translates to:
-  /// **'Verbonden'**
-  String get dawarichVerbonden;
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get dawarichConnected;
 
-  /// No description provided for @dawarichVerbondenVersie.
+  /// No description provided for @dawarichConnectedVersion.
   ///
-  /// In nl, this message translates to:
-  /// **'Verbonden · Dawarich {versie}'**
-  String dawarichVerbondenVersie(String versie);
+  /// In en, this message translates to:
+  /// **'Connected · Dawarich {version}'**
+  String dawarichConnectedVersion(String version);
 
-  /// No description provided for @dawarichWijzigen.
+  /// No description provided for @dawarichChange.
   ///
-  /// In nl, this message translates to:
-  /// **'Wijzigen'**
-  String get dawarichWijzigen;
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get dawarichChange;
 
-  /// No description provided for @dawarichStapInloggen.
+  /// No description provided for @dawarichStepSignIn.
   ///
-  /// In nl, this message translates to:
-  /// **'Inloggen'**
-  String get dawarichStapInloggen;
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get dawarichStepSignIn;
 
-  /// No description provided for @dawarichAndereManieren.
+  /// No description provided for @dawarichOtherWays.
   ///
-  /// In nl, this message translates to:
-  /// **'Andere manieren'**
-  String get dawarichAndereManieren;
+  /// In en, this message translates to:
+  /// **'Other ways'**
+  String get dawarichOtherWays;
 
-  /// No description provided for @dawarichUitloggenVraag.
+  /// No description provided for @dawarichSignOutQuestion.
   ///
-  /// In nl, this message translates to:
-  /// **'Uitloggen bij Dawarich?'**
-  String get dawarichUitloggenVraag;
+  /// In en, this message translates to:
+  /// **'Sign out of Dawarich?'**
+  String get dawarichSignOutQuestion;
 
-  /// No description provided for @dawarichUitloggenUitleg.
+  /// No description provided for @dawarichSignOutHelp.
   ///
-  /// In nl, this message translates to:
-  /// **'Delen tijdens het navigeren stopt, en de familie verdwijnt van de kaart.'**
-  String get dawarichUitloggenUitleg;
+  /// In en, this message translates to:
+  /// **'Sharing while navigating stops, and your family disappears from the map.'**
+  String get dawarichSignOutHelp;
 
-  /// No description provided for @dawarichControleren.
+  /// No description provided for @dawarichChecking.
   ///
-  /// In nl, this message translates to:
-  /// **'Verbinding controleren…'**
-  String get dawarichControleren;
+  /// In en, this message translates to:
+  /// **'Checking connection…'**
+  String get dawarichChecking;
 
-  /// No description provided for @dawarichSessieVerlopen.
+  /// No description provided for @dawarichSessionExpired.
   ///
-  /// In nl, this message translates to:
-  /// **'Sessie verlopen'**
-  String get dawarichSessieVerlopen;
+  /// In en, this message translates to:
+  /// **'Session expired'**
+  String get dawarichSessionExpired;
 
-  /// No description provided for @dawarichSessieVerlopenUitleg.
+  /// No description provided for @dawarichSessionExpiredHelp.
   ///
-  /// In nl, this message translates to:
-  /// **'Je API-sleutel werkt niet meer. Log opnieuw in.'**
-  String get dawarichSessieVerlopenUitleg;
+  /// In en, this message translates to:
+  /// **'Your API key no longer works. Sign in again.'**
+  String get dawarichSessionExpiredHelp;
 
-  /// No description provided for @dawarichNietBereikbaar.
+  /// No description provided for @dawarichUnreachable.
   ///
-  /// In nl, this message translates to:
-  /// **'Niet bereikbaar'**
-  String get dawarichNietBereikbaar;
+  /// In en, this message translates to:
+  /// **'Not reachable'**
+  String get dawarichUnreachable;
 
-  /// No description provided for @dawarichOpnieuwInloggen.
+  /// No description provided for @dawarichSignInAgain.
   ///
-  /// In nl, this message translates to:
-  /// **'Opnieuw inloggen'**
-  String get dawarichOpnieuwInloggen;
+  /// In en, this message translates to:
+  /// **'Sign in again'**
+  String get dawarichSignInAgain;
 }
 
 class _AppLocalizationsDelegate

@@ -1,49 +1,49 @@
 {{- if .Values.valhalla.enabled }}
-{{- $v := dict "root" . "naam" "valhalla" }}
-{{- $naam := include "homemaps.onderdeel" $v }}
-{{- $verkeer := .Values.valhalla.verkeer }}
+{{- $v := dict "root" . "name" "valhalla" }}
+{{- $name := include "homemaps.component" $v }}
+{{- $traffic := .Values.valhalla.traffic }}
 {{ include "homemaps.pvc" (merge (dict "size" .Values.valhalla.size) $v) }}
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ $naam }}
+  name: {{ $name }}
   labels: {{- include "homemaps.labels" $v | nindent 4 }}
 data:
-  bouw.sh: | {{- .Files.Get "files/valhalla-bouw.sh" | nindent 4 }}
-  haal.py: | {{- .Files.Get "files/haal.py" | nindent 4 }}
-  hoogte.py: | {{- .Files.Get "files/hoogte.py" | nindent 4 }}
-  # De config wordt bij elke start opnieuw gegenereerd, zodat hij bij de versie van
-  # het image hoort. De paden wijzen naar /data/actief: daar zet de bouwjob een
-  # complete tileset neer, in één hernoeming.
+  build.sh: | {{- .Files.Get "files/valhalla-build.sh" | nindent 4 }}
+  fetch.py: | {{- .Files.Get "files/fetch.py" | nindent 4 }}
+  elevation.py: | {{- .Files.Get "files/elevation.py" | nindent 4 }}
+  # The config is regenerated on every start, so it matches the version of the
+  # image. The paths point to /data/active: that is where the build job puts a
+  # complete tileset, in a single rename.
   start.sh: |
     #!/bin/bash
     set -euo pipefail
     valhalla_build_config \
-      --mjolnir-tile-extract /data/actief/tiles.tar \
-      --mjolnir-traffic-extract /data/actief/traffic.tar \
-      --mjolnir-timezone /data/actief/timezones.sqlite \
-      --mjolnir-admin /data/actief/admins.sqlite \
-      --additional-data-elevation /data/hoogte > /tmp/valhalla.json
+      --mjolnir-tile-extract /data/active/tiles.tar \
+      --mjolnir-traffic-extract /data/active/traffic.tar \
+      --mjolnir-timezone /data/active/timezones.sqlite \
+      --mjolnir-admin /data/active/admins.sqlite \
+      --additional-data-elevation /data/elevation > /tmp/valhalla.json
     exec valhalla_service /tmp/valhalla.json {{ .Values.valhalla.threads }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ $naam }}
+  name: {{ $name }}
   labels: {{- include "homemaps.labels" $v | nindent 4 }}
 spec:
   selector: {{- include "homemaps.selector" $v | nindent 4 }}
   ports:
     - { name: http, port: 8002, targetPort: http }
-    {{- if $verkeer.enabled }}
+    {{- if $traffic.enabled }}
     - { name: metrics, port: 9100, targetPort: metrics }
     {{- end }}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ $naam }}
+  name: {{ $name }}
   labels: {{- include "homemaps.labels" $v | nindent 4 }}
 spec:
   replicas: 1
@@ -62,17 +62,17 @@ spec:
       {{- end }}
       securityContext: {{- include "homemaps.podSecurity" (dict "root" .) | nindent 8 }}
       initContainers:
-        # Bij een verse installatie is er nog geen tileset; wachten is netter dan
-        # een CrashLoopBackOff.
-        - name: wacht
+        # On a fresh install there is no tileset yet; waiting is neater than a
+        # CrashLoopBackOff.
+        - name: wait
           image: docker.io/library/alpine:3.24
           imagePullPolicy: IfNotPresent
           command: ["/bin/sh", "-c"]
           args:
             - |
-              while [ ! -s /data/actief/tiles.tar ]; do
-                echo "wacht op /data/actief/tiles.tar -- draai de bouwjob:"
-                echo "  kubectl create job --from=cronjob/{{ $naam }}-bouw valhalla-eerste"
+              while [ ! -s /data/active/tiles.tar ]; do
+                echo "waiting for /data/active/tiles.tar -- run the build job:"
+                echo "  kubectl create job --from=cronjob/{{ $name }}-build valhalla-initial"
                 sleep 60
               done
           securityContext: {{- include "homemaps.containerSecurity" . | nindent 12 }}
@@ -103,49 +103,49 @@ spec:
             - { name: data, mountPath: /data }
             - { name: script, mountPath: /script }
             - { name: tmp, mountPath: /tmp }
-        {{- if $verkeer.enabled }}
-        # In dezelfde pod, en dat moet: Valhalla houdt traffic.tar via mmap open en
-        # de importer schrijft in datzelfde bestand. Zo ziet Valhalla elke wijziging
-        # zonder herstart.
-        - name: verkeer
-          image: {{ include "homemaps.image" (dict "root" . "image" $verkeer.image) }}
-          imagePullPolicy: {{ $verkeer.image.pullPolicy }}
+        {{- if $traffic.enabled }}
+        # In the same pod, and it has to be: Valhalla keeps traffic.tar open via mmap
+        # and the importer writes into that same file. That way Valhalla sees every
+        # change without a restart.
+        - name: traffic
+          image: {{ include "homemaps.image" (dict "root" . "image" $traffic.image) }}
+          imagePullPolicy: {{ $traffic.image.pullPolicy }}
           env:
-            - { name: TRAFFIC_TAR, value: /data/actief/traffic.tar }
+            - { name: TRAFFIC_TAR, value: /data/active/traffic.tar }
             - { name: VALHALLA_URL, value: "http://localhost:8002" }
             - { name: CACHE_DIR, value: /data/importer }
-            - { name: NDW_URL, value: {{ $verkeer.ndwUrl | quote }} }
-            - { name: INTERVAL_SECONDEN, value: {{ $verkeer.intervalSeconden | quote }} }
-            - { name: AFSLUITINGEN, value: {{ $verkeer.afsluitingen | quote }} }
-            - { name: MSI_SECONDEN, value: {{ $verkeer.msiSeconden | quote }} }
-            # Het OSM-bestand van de laatste tileset-bouw (zelfde volume): voor
-            # maximumsnelheden naar tijdstip.
-            - { name: OSM_PBF, value: /data/bron/gebied.osm.pbf }
+            - { name: NDW_URL, value: {{ $traffic.ndwUrl | quote }} }
+            - { name: INTERVAL_SECONDS, value: {{ $traffic.intervalSeconds | quote }} }
+            - { name: CLOSURES, value: {{ $traffic.closures | quote }} }
+            - { name: MSI_SECONDS, value: {{ $traffic.msiSeconds | quote }} }
+            # The OSM file of the last tileset build (same volume): for speed
+            # limits by time of day.
+            - { name: OSM_PBF, value: /data/source/region.osm.pbf }
           securityContext:
             {{- include "homemaps.containerSecurity" . | nindent 12 }}
             readOnlyRootFilesystem: true
           ports:
             - { name: metrics, containerPort: 9100 }
-          resources: {{- toYaml $verkeer.resources | nindent 12 }}
+          resources: {{- toYaml $traffic.resources | nindent 12 }}
           volumeMounts:
             - { name: data, mountPath: /data }
             - { name: tmp, mountPath: /tmp }
         {{- end }}
       volumes:
         - name: data
-          persistentVolumeClaim: { claimName: {{ $naam }} }
+          persistentVolumeClaim: { claimName: {{ $name }} }
         - name: script
-          configMap: { name: {{ $naam }} }
+          configMap: { name: {{ $name }} }
         - name: tmp
           emptyDir: { sizeLimit: 256Mi }
 ---
-# Bouwt periodiek een verse tileset. Bij de eerste installatie handmatig:
-#   kubectl create job --from=cronjob/{{ $naam }}-bouw valhalla-eerste
+# Periodically builds a fresh tileset. On first install, by hand:
+#   kubectl create job --from=cronjob/{{ $name }}-build valhalla-initial
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ $naam }}-bouw
-  labels: {{- include "homemaps.labels" (dict "root" . "naam" "valhalla-bouw") | nindent 4 }}
+  name: {{ $name }}-build
+  labels: {{- include "homemaps.labels" (dict "root" . "name" "valhalla-build") | nindent 4 }}
 spec:
   schedule: {{ .Values.valhalla.build.schedule | quote }}
   timeZone: {{ .Values.valhalla.build.timeZone }}
@@ -160,20 +160,20 @@ spec:
       ttlSecondsAfterFinished: 86400
       template:
         metadata:
-          labels: {{- include "homemaps.labels" (dict "root" . "naam" "valhalla-bouw") | nindent 12 }}
+          labels: {{- include "homemaps.labels" (dict "root" . "name" "valhalla-build") | nindent 12 }}
         spec:
           restartPolicy: Never
-          serviceAccountName: {{ include "homemaps.fullname" . }}-ververs
+          serviceAccountName: {{ include "homemaps.fullname" . }}-refresher
           securityContext: {{- include "homemaps.podSecurity" (dict "root" .) | nindent 12 }}
           initContainers:
-            - name: bouw
+            - name: build
               image: {{ include "homemaps.image" (dict "root" . "image" .Values.valhalla.image) }}
               imagePullPolicy: {{ .Values.valhalla.image.pullPolicy }}
-              command: ["/bin/bash", "/script/bouw.sh"]
+              command: ["/bin/bash", "/script/build.sh"]
               env:
-                - { name: PBF_URL, value: {{ .Values.gebied.pbfUrl | quote }} }
-                - { name: HOOGTE_BBOX, value: {{ .Values.gebied.bbox | quote }} }
-                - { name: BOUW_THREADS, value: {{ .Values.valhalla.build.threads | quote }} }
+                - { name: PBF_URL, value: {{ .Values.region.pbfUrl | quote }} }
+                - { name: ELEVATION_BBOX, value: {{ .Values.region.bbox | quote }} }
+                - { name: BUILD_THREADS, value: {{ .Values.valhalla.build.threads | quote }} }
               securityContext: {{- include "homemaps.containerSecurity" . | nindent 16 }}
               resources: {{- toYaml .Values.valhalla.build.resources | nindent 16 }}
               volumeMounts:
@@ -181,23 +181,23 @@ spec:
                 - { name: script, mountPath: /script }
                 - { name: tmp, mountPath: /tmp }
           containers:
-            # Twee hernoemingen binnen hetzelfde volume. De draaiende Valhalla houdt
-            # zijn oude bestanden via mmap vast tot de pod weg is, dus er is geen
-            # moment waarop hij een halve tileset ziet. De match-cache van de
-            # importer vervalt vanzelf: die is gebonden aan de tileset.
-            - name: wissel
+            # Two renames within the same volume. The running Valhalla holds on to
+            # its old files via mmap until the pod is gone, so there is no moment
+            # at which it sees half a tileset. The importer's match cache expires
+            # by itself: it is tied to the tileset.
+            - name: swap
               image: docker.io/alpine/kubectl:1.37.0
               imagePullPolicy: IfNotPresent
               command: ["/bin/sh", "-c"]
               args:
                 - |
                   set -eu
-                  test -s /data/nieuw/tiles.tar
-                  rm -rf /data/oud
-                  if [ -d /data/actief ]; then mv /data/actief /data/oud; fi
-                  mv /data/nieuw /data/actief
+                  test -s /data/new/tiles.tar
+                  rm -rf /data/old
+                  if [ -d /data/active ]; then mv /data/active /data/old; fi
+                  mv /data/new /data/active
                   kubectl delete pod -l app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/component=valhalla --ignore-not-found
-                  rm -rf /data/oud
+                  rm -rf /data/old
               securityContext: {{- include "homemaps.containerSecurity" . | nindent 16 }}
               resources:
                 requests: { cpu: 50m, memory: 64Mi }
@@ -206,9 +206,9 @@ spec:
                 - { name: data, mountPath: /data }
           volumes:
             - name: data
-              persistentVolumeClaim: { claimName: {{ $naam }} }
+              persistentVolumeClaim: { claimName: {{ $name }} }
             - name: script
-              configMap: { name: {{ $naam }} }
+              configMap: { name: {{ $name }} }
             - name: tmp
               emptyDir: { sizeLimit: 1Gi }
 {{- end }}

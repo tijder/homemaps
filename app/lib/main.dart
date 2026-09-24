@@ -6,57 +6,58 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import 'l10n/app_localizations.dart';
-import 'navigatie/simulatie.dart';
-import 'providers/diensten.dart';
-import 'providers/instellingen.dart';
-import 'providers/locatie.dart';
-import 'providers/locatie_delen.dart';
+import 'navigation/simulation.dart';
+import 'providers/services.dart';
+import 'providers/settings.dart';
+import 'providers/location.dart';
+import 'providers/location_sharing.dart';
 import 'router/app_router.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   var webConfig = const <String, dynamic>{};
   if (kIsWeb) {
-    // maplibre-gl-js staat in web/maplibre/ en niet op een CDN: anders gaat elke
-    // kaartweergave naar buiten. Het moet een volledige URL zijn -- een relatieve
-    // leest import() als kale modulenaam.
+    // maplibre-gl-js lives in web/maplibre/ and not on a CDN: otherwise every
+    // map view would call out. It has to be a full URL -- import() reads a
+    // relative one as a bare module name.
     MapLibreMap.webLibrarySource = MapLibreJsSource.urls(
       scriptUrl: Uri.base.resolve('maplibre/maplibre-gl.mjs').toString(),
       styleUrl: Uri.base.resolve('maplibre/maplibre-gl.css').toString(),
     );
-    webConfig = await _laadWebConfig();
-    // De rechtermuisknop is hier van de app (het puntmenu op de kaart); het menu
-    // van de browser zou eroverheen komen.
+    webConfig = await _loadWebConfig();
+    // The right mouse button belongs to the app here (the point menu on the
+    // map); the browser's menu would appear on top of it.
     await BrowserContextMenu.disableContextMenu();
   }
-  final doos = await openInstellingen();
-  final wachtrij = await openDeelWachtrij();
-  // Navigatie testen zonder te rijden: ?simulatie=lat,lon (zie SimulatieBron).
-  final simulatie = kIsWeb ? SimulatieBron.uitUrl(Uri.base) : null;
+  final box = await openSettings();
+  final queue = await openShareQueue();
+  // Test navigation without driving: ?simulate=lat,lon (see SimulationSource).
+  final simulation = kIsWeb ? SimulationSource.fromUrl(Uri.base) : null;
   final container = ProviderContainer(
     overrides: [
-      instellingenDoosProvider.overrideWithValue(doos),
-      deelWachtrijDoosProvider.overrideWithValue(wachtrij),
+      settingsBoxProvider.overrideWithValue(box),
+      shareQueueBoxProvider.overrideWithValue(queue),
       webConfigProvider.overrideWithValue(webConfig),
-      if (simulatie != null) locatieBronProvider.overrideWithValue(simulatie),
+      if (simulation != null)
+        locationSourceProvider.overrideWithValue(simulation),
     ],
   );
-  // Locatie delen luistert zelf naar de navigatie; hij moet er vanaf het begin
-  // zijn, ook om een wachtrij van de vorige keer alsnog te versturen.
-  container.read(locatieDelerProvider);
+  // Location sharing listens to navigation itself; it has to be there from the
+  // start, also to send a queue left over from last time.
+  container.read(locationSharerProvider);
   runApp(
     UncontrolledProviderScope(container: container, child: const HomeMapsApp()),
   );
 }
 
-/// `/config.json` is optioneel: de chart mount hem, een kale webserver niet.
-Future<Map<String, dynamic>> _laadWebConfig() async {
+/// `/config.json` is optional: the chart mounts it, a bare web server doesn't.
+Future<Map<String, dynamic>> _loadWebConfig() async {
   try {
-    final antwoord = await Dio().getUri<Map<String, dynamic>>(
+    final response = await Dio().getUri<Map<String, dynamic>>(
       Uri.base.resolve('config.json'),
       options: Options(receiveTimeout: const Duration(seconds: 5)),
     );
-    return antwoord.data ?? const {};
+    return response.data ?? const {};
   } on Object {
     return const {};
   }
@@ -74,7 +75,7 @@ class _HomeMapsAppState extends State<HomeMapsApp> {
 
   @override
   Widget build(BuildContext context) => MaterialApp.router(
-    onGenerateTitle: (context) => AppLocalizations.of(context).appTitel,
+    onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
     routerConfig: _router.config(),
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,

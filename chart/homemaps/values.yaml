@@ -1,29 +1,29 @@
-# -- Naam-overrides, zoals in elke chart.
+# -- Name overrides, as in every chart.
 nameOverride: ""
 fullnameOverride: ""
 commonLabels: {}
 imagePullSecrets: []
-# -- DNS-domein van het cluster; nginx heeft volledige servicenamen nodig.
+# -- DNS domain of the cluster; nginx needs fully qualified service names.
 clusterDomain: cluster.local
 
-# Het gebied dat gebouwd wordt. Tiles en routing delen één PBF-bron; Photon heeft
-# zijn eigen kant-en-klare index (photon.dbUrl).
-gebied:
-  # -- Geofabrik-gebied zoals planetiler het kent (`--area`).
-  naam: netherlands
-  # -- Dezelfde PBF voor Valhalla.
+# The region that gets built. Tiles and routing share one PBF source; Photon has
+# its own ready-made index (photon.dbUrl).
+region:
+  # -- Geofabrik region as planetiler knows it (`--area`).
+  name: netherlands
+  # -- The same PBF for Valhalla.
   pbfUrl: https://download.geofabrik.de/europe/netherlands-latest.osm.pbf
-  # -- minlon,minlat,maxlon,maxlat voor de hoogtetegels; leeg = geen hoogtedata
-  # (dan is er geen hoogteprofiel en weegt de fiets geen hellingen).
+  # -- minlon,minlat,maxlon,maxlat for the elevation tiles; empty = no elevation data
+  # (then there is no elevation profile and cycling ignores slopes).
   bbox: "3.3,50.7,7.3,53.6"
 
-# Alle volumes. `longhorn-no-backup` of iets dergelijks is hier op zijn plaats:
-# alles wat erop staat is herbouwbaar.
+# All volumes. `longhorn-no-backup` or similar fits here: everything on them
+# can be rebuilt.
 storage:
   storageClassName: ""
   accessMode: ReadWriteOnce
 
-# Pods draaien als deze gebruiker, non-root, zonder capabilities.
+# Pods run as this user, non-root, without capabilities.
 securityContext:
   runAsUser: 1000
   runAsGroup: 1000
@@ -33,13 +33,13 @@ web:
   enabled: true
   image:
     repository: ghcr.io/tijder/homemaps-web
-    tag: ""  # leeg = appVersion van de chart
+    tag: ""  # empty = appVersion of the chart
     pullPolicy: IfNotPresent
   resources:
     requests: { cpu: 10m, memory: 32Mi }
     limits: { memory: 128Mi }
-  # -- Inhoud van /config.json, de runtime-config van de app. Leeg laten is goed:
-  # de app leidt alles af van zijn eigen origin (/valhalla, /geocode, /tiles).
+  # -- Contents of /config.json, the app's runtime config. Leaving it empty is fine:
+  # the app derives everything from its own origin (/valhalla, /geocode, /tiles).
   config: {}
 
 tiles:
@@ -48,21 +48,21 @@ tiles:
     repository: docker.io/maptiler/tileserver-gl
     tag: v5.6.0
     pullPolicy: IfNotPresent
-  # -- Leeg (aanbevolen): tileserver-gl leidt de URL's in style.json af uit het
-  # verzoek, zodat dezelfde installatie onder meerdere hostnamen werkt. Alleen
-  # invullen als de tegels van buiten op één vaste URL moeten staan, mét slash aan
-  # het eind.
+  # -- Empty (recommended): tileserver-gl derives the URLs in style.json from the
+  # request, so the same installation works under several hostnames. Only fill
+  # this in when the tiles must be reachable from outside at one fixed URL, with a
+  # trailing slash.
   publicUrl: ""
-  # -- Hostnamen die tileserver-gl naast die van `httpRoute`/`ingress` vertrouwt,
-  # bijvoorbeeld `localhost` voor een port-forward. Zonder enige hostnaam is alles
-  # toegestaan.
+  # -- Hostnames tileserver-gl trusts besides those of `httpRoute`/`ingress`,
+  # for example `localhost` for a port-forward. Without any hostname everything is
+  # allowed.
   extraAllowedHosts: []
   size: 20Gi
   resources:
     requests: { cpu: 50m, memory: 512Mi }
     limits: { memory: 2Gi }
-  # Hooguit zoveel renderers per stijl ([1x, 2x]); de default van tileserver-gl
-  # is veel te ruim voor een gedeelde node.
+  # At most this many renderers per style ([1x, 2x]); tileserver-gl's default is
+  # far too generous for a shared node.
   rendererPool: { min: [1, 1], max: [3, 1] }
   styles: [osm-bright, positron, dark-matter]
   planetiler:
@@ -73,14 +73,14 @@ tiles:
     timeZone: Europe/Amsterdam
     scratchSize: 40Gi
     javaOpts: "-Xmx2g"
-    # De request is alleen de drempel om ingepland te worden; zonder limit gebruikt
-    # de job wat er vrij is.
+    # The request is only the threshold for getting scheduled; without a limit the
+    # job uses whatever is free.
     resources:
       requests: { cpu: 100m, memory: 3Gi }
       limits: { memory: 6Gi }
-    # -- De wereld op lage zoom (z0-z`maxzoom`) onder het gebied, als vormen zonder
-    # labels. Uit = alleen het gebied, vanaf z0.
-    wereld:
+    # -- The world at low zoom (z0-z`maxzoom`) beneath the region, as shapes without
+    # labels. Off = only the region, from z0.
+    world:
       enabled: true
       maxzoom: 7
 
@@ -103,18 +103,18 @@ valhalla:
       requests: { cpu: 100m, memory: 2Gi }
       limits: { memory: 8Gi }
 
-  # De sidecar die live NDW-verkeer in traffic.tar schrijft. Alleen zinnig voor
-  # Nederland.
-  verkeer:
+  # The sidecar that writes live NDW traffic into traffic.tar. Only useful for
+  # the Netherlands.
+  traffic:
     enabled: true
     image:
       repository: ghcr.io/tijder/homemaps-traffic
-      tag: ""  # leeg = appVersion van de chart
+      tag: ""  # empty = appVersion of the chart
       pullPolicy: IfNotPresent
-    intervalSeconden: 300
-    afsluitingen: true
-    # -- Hoe vaak de matrixborden boven de snelweg (MSI); 0 zet ze uit.
-    msiSeconden: 60
+    intervalSeconds: 300
+    closures: true
+    # -- How often to fetch the MSI signs above the motorway; 0 turns them off.
+    msiSeconds: 60
     ndwUrl: https://opendata.ndw.nu
     resources:
       requests: { cpu: 20m, memory: 256Mi }
@@ -126,23 +126,23 @@ photon:
     repository: docker.io/rtuszik/photon-docker
     tag: 2.4.0
     pullPolicy: IfNotPresent
-  # -- Kant-en-klare index; zie https://download1.graphhopper.com/public/
+  # -- Ready-made index; see https://download1.graphhopper.com/public/
   dbUrl: https://download1.graphhopper.com/public/europe/netherlands/photon-db-netherlands-1.0-latest.tar.bz2
   size: 20Gi
-  # -- Heap van de JVM. Houd hem ruim onder de geheugenlimiet hieronder: OpenSearch
-  # wil daarnaast evenveel ruimte buiten de heap.
+  # -- JVM heap. Keep it well below the memory limit below: OpenSearch wants as
+  # much room again outside the heap.
   heap: 1g
-  # Het image draait als deze vaste gebruiker.
+  # The image runs as this fixed user.
   runAsUser: 9011
-  # -- Photon bindt alleen IPv4. Op een cluster waar IPv6 de eerste familie is
-  # moet de Service dat expliciet zeggen, anders krijgt hij een IPv6-ClusterIP
-  # waar niemand achter luistert. Leeg = de default van het cluster.
+  # -- Photon only binds IPv4. On a cluster where IPv6 is the primary family the
+  # Service must say so explicitly, otherwise it gets an IPv6 ClusterIP that
+  # nobody listens behind. Empty = the cluster default.
   ipFamilies: [IPv4]
   resources:
     requests: { cpu: 50m, memory: 2Gi }
     limits: { memory: 4Gi }
 
-# Gateway API. Eén route, alles naar de web-service.
+# Gateway API. One route, everything to the web service.
 httpRoute:
   enabled: false
   hostnames: []
@@ -160,18 +160,18 @@ ingress:
 
 networkPolicy:
   enabled: true
-  # -- Namespaces die bij de web-service mogen (de ingress-controller of gateway).
+  # -- Namespaces allowed to reach the web service (the ingress controller or gateway).
   ingressNamespaces: [envoy-gateway-system]
-  # -- Namespace van Prometheus, voor de scrape van de verkeersimporter.
+  # -- Namespace of Prometheus, for scraping the traffic importer.
   monitoringNamespace: monitoring
 
 monitoring:
   serviceMonitor:
     enabled: false
     labels: {}
-  # -- Alert als de verkeersimporter stilvalt. Valhalla kent geen veroudering, dus
-  # een stille importer betekent files van uren geleden in de routes.
+  # -- Alert when the traffic importer stalls. Valhalla has no notion of staleness,
+  # so a silent importer means traffic jams from hours ago in the routes.
   prometheusRule:
     enabled: false
     labels: {}
-    maxLeeftijdSeconden: 1800
+    maxAgeSeconds: 1800

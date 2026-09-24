@@ -1,51 +1,55 @@
-/// Waar de app zijn backends vindt. Alles hangt onder één server: `/valhalla`,
-/// `/geocode`, `/tiles` en `/verkeer` (zo levert de chart het).
+/// Where the app finds its backends. Everything hangs off one server:
+/// `/valhalla`, `/geocode`, `/tiles` and `/traffic` (that's how the chart
+/// serves it).
 class AppConfig {
   const AppConfig({
     required this.valhallaUrl,
     required this.geocodeUrl,
     required this.tilesUrl,
-    required this.verkeerUrl,
-    required this.verkeerGeplandUrl,
-    required this.snelheidTijdenUrl,
+    required this.trafficUrl,
+    required this.trafficPlannedUrl,
+    required this.conditionalSpeedsUrl,
   });
 
   final String valhallaUrl;
   final String geocodeUrl;
   final String tilesUrl;
 
-  /// De verkeerslaag (GeoJSON) die de importer elke ronde maakt.
-  final String verkeerUrl;
+  /// The traffic layer (GeoJSON) the importer builds every cycle.
+  final String trafficUrl;
 
-  /// Geplande afsluitingen van de komende week, voor "later vertrekken".
-  final String verkeerGeplandUrl;
+  /// Planned closures for the coming week, for "depart later".
+  final String trafficPlannedUrl;
 
-  /// Maximumsnelheden naar tijdstip, per OSM-way.
-  final String snelheidTijdenUrl;
+  /// Speed limits by time of day, per OSM way.
+  final String conditionalSpeedsUrl;
 
-  /// [overschrijf] is de inhoud van `/config.json` (web) en mag elk ervan
-  /// vervangen, bijvoorbeeld als de tegels op een eigen hostnaam staan.
-  factory AppConfig.vanServer(
+  /// [overrides] is the content of `/config.json` (web) and may replace any of
+  /// them, for example when the tiles live on their own host name.
+  factory AppConfig.fromServer(
     String server, [
-    Map<String, dynamic> overschrijf = const {},
+    Map<String, dynamic> overrides = const {},
   ]) {
-    final basis = server.endsWith('/')
+    final base = server.endsWith('/')
         ? server.substring(0, server.length - 1)
         : server;
-    String kies(String sleutel, String pad) {
-      final waarde = overschrijf[sleutel];
-      return waarde is String && waarde.isNotEmpty ? waarde : '$basis$pad';
+    String choose(String key, String path) {
+      final value = overrides[key];
+      return value is String && value.isNotEmpty ? value : '$base$path';
     }
 
     return AppConfig(
-      valhallaUrl: kies('valhallaUrl', '/valhalla'),
-      geocodeUrl: kies('geocodeUrl', '/geocode'),
-      tilesUrl: kies('tilesUrl', '/tiles'),
-      verkeerUrl: kies('verkeerUrl', '/verkeer'),
-      verkeerGeplandUrl: kies('verkeerGeplandUrl', '/verkeer-gepland'),
-      snelheidTijdenUrl: kies('snelheidTijdenUrl', '/snelheid-tijden'),
+      valhallaUrl: choose('valhallaUrl', '/valhalla'),
+      geocodeUrl: choose('geocodeUrl', '/geocode'),
+      tilesUrl: choose('tilesUrl', '/tiles'),
+      trafficUrl: choose('trafficUrl', '/traffic'),
+      trafficPlannedUrl: choose('trafficPlannedUrl', '/traffic-planned'),
+      conditionalSpeedsUrl: choose(
+        'conditionalSpeedsUrl',
+        '/conditional-speeds',
+      ),
     );
   }
 
-  String stijlUrl(String stijl) => '$tilesUrl/styles/$stijl/style.json';
+  String styleUrl(String style) => '$tilesUrl/styles/$style/style.json';
 }

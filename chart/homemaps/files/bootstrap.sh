@@ -7,36 +7,36 @@ dark-matter-gl-style:v1.9:dark-matter"
 
 mkdir -p /data/styles /data/fonts /data/tiles
 
-echo "$STYLES" | while IFS=: read -r repo tag naam; do
+echo "$STYLES" | while IFS=: read -r repo tag name; do
   [ -n "$repo" ] || continue
-  if [ -f "/data/styles/$naam/style-local.json" ]; then
-    echo "stijl $naam staat er al"
+  if [ -f "/data/styles/$name/style-local.json" ]; then
+    echo "style $name already present"
     continue
   fi
-  echo "stijl $naam ophalen ($repo $tag)"
-  rm -rf "/data/styles/$naam.tmp"
-  mkdir -p "/data/styles/$naam.tmp"
+  echo "fetching style $name ($repo $tag)"
+  rm -rf "/data/styles/$name.tmp"
+  mkdir -p "/data/styles/$name.tmp"
   wget -q -O /tmp/style.zip \
     "https://github.com/openmaptiles/$repo/releases/download/$tag/$tag.zip"
-  unzip -q -o /tmp/style.zip -d "/data/styles/$naam.tmp"
+  unzip -q -o /tmp/style.zip -d "/data/styles/$name.tmp"
   rm -f /tmp/style.zip
-  # style-local.json verwijst naar mbtiles://{v3} en {styleJsonFolder}/sprite,
-  # dus geen enkele externe URL. style-cdn.json en style-mb.json wel: die
-  # wijzen naar api.maptiler.com en gaan er daarom uit.
-  rm -f "/data/styles/$naam.tmp/style-cdn.json" \
-        "/data/styles/$naam.tmp/style-mb.json" \
-        "/data/styles/$naam.tmp/index.html"
-  rm -rf "/data/styles/$naam"
-  mv "/data/styles/$naam.tmp" "/data/styles/$naam"
+  # style-local.json refers to mbtiles://{v3} and {styleJsonFolder}/sprite,
+  # so not a single external URL. style-cdn.json and style-mb.json do: they
+  # point to api.maptiler.com and are therefore removed.
+  rm -f "/data/styles/$name.tmp/style-cdn.json" \
+        "/data/styles/$name.tmp/style-mb.json" \
+        "/data/styles/$name.tmp/index.html"
+  rm -rf "/data/styles/$name"
+  mv "/data/styles/$name.tmp" "/data/styles/$name"
 done
 
-# Alle fontstacks in één archief (~74 MB, uitgepakt ~250 MB). Bevat naast
-# Noto Sans ook Metropolis, dat positron en dark-matter nodig hebben; de
-# losse noto-sans.zip uit dezelfde release is dus niet genoeg.
+# All font stacks in one archive (~74 MB, ~250 MB unpacked). Besides Noto Sans
+# it also contains Metropolis, which positron and dark-matter need; the separate
+# noto-sans.zip from the same release is therefore not enough.
 if [ -d "/data/fonts/Metropolis Regular" ]; then
-  echo "fonts staan er al"
+  echo "fonts already present"
 else
-  echo "fonts ophalen"
+  echo "fetching fonts"
   rm -rf /data/fonts.tmp
   mkdir -p /data/fonts.tmp
   wget -q -O /tmp/fonts.zip \
@@ -47,12 +47,12 @@ else
   mv /data/fonts.tmp /data/fonts
 fi
 
-# tileserver-gl stopt met een fout als het mbtiles-bestand ontbreekt. Bij een
-# verse installatie is de planetiler-CronJob nog niet gedraaid; wachten is dan
-# netter dan een CrashLoopBackOff.
-while [ ! -f /data/tiles/kaart.mbtiles ]; do
-  echo "wacht op /data/tiles/kaart.mbtiles -- draai de planetiler-job:"
-  echo "  kubectl create job --from=cronjob/$PLANETILER_CRONJOB planetiler-eerste"
+# tileserver-gl exits with an error if the mbtiles file is missing. On a fresh
+# install the planetiler CronJob has not run yet; waiting is then neater than a
+# CrashLoopBackOff.
+while [ ! -f /data/tiles/map.mbtiles ]; do
+  echo "waiting for /data/tiles/map.mbtiles -- run the planetiler job:"
+  echo "  kubectl create job --from=cronjob/$PLANETILER_CRONJOB planetiler-initial"
   sleep 60
 done
-echo "klaar"
+echo "done"

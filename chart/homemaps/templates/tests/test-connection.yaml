@@ -1,0 +1,42 @@
+{{- if .Values.web.enabled }}
+# `helm test`: everything goes through the web pod, so one pod requesting the four
+# paths proves that the proxy and the backends find each other.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "homemaps.fullname" . }}-test
+  labels: {{- include "homemaps.labels" (dict "root" . "name" "test") | nindent 4 }}
+  annotations:
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  securityContext:
+    runAsUser: 1000
+    runAsNonRoot: true
+    seccompProfile: { type: RuntimeDefault }
+  containers:
+    - name: test
+      image: docker.io/curlimages/curl:8.22.0
+      securityContext: {{- include "homemaps.containerSecurity" . | nindent 8 }}
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          set -eu
+          W=http://{{ include "homemaps.component" (dict "root" . "name" "web") }}:8080
+          # Right after a restart the Service points at nothing for a moment; that
+          # is not an outage.
+          curl -fsS --retry 10 --retry-delay 3 --retry-connrefused $W/healthz
+          curl -fsS -o /dev/null $W/
+          {{- if .Values.valhalla.enabled }}
+          curl -fsS $W/valhalla/status | grep -q version
+          {{- end }}
+          {{- if .Values.tiles.enabled }}
+          curl -fsS $W/tiles/data/v3.json | grep -q tiles
+          {{- end }}
+          {{- if .Values.photon.enabled }}
+          curl -fsS "$W/geocode?q=a&limit=1" | grep -q features
+          {{- end }}
+          echo all reachable
+{{- end }}

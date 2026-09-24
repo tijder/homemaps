@@ -1,11 +1,11 @@
-# Bijdragen
+# Contributing
 
-## Commitberichten
+## Commit messages
 
-`<type>[(scope)][!]: <beschrijving>` — bijvoorbeeld `feat(app): hoogteprofiel` of
-`fix(importer): verouderde edges terug op onbekend`. De CI weigert een pull request
-met een onderwerpregel die hier niet aan voldoet, omdat `release.yml` de
-versiesprong en de release-notes eruit afleidt: `fix` → patch, `feat` → minor,
-`!` of `BREAKING CHANGE` → major.
+`<type>[(scope)][!]: <description>` — for example `feat(app): elevation profile` or
+`fix(importer): stale edges back to unknown`. CI rejects a pull request
+whose subject line doesn't follow this, because `release.yml` derives the
+version bump and the release notes from it: `fix` → patch, `feat` → minor,
+`!` or `BREAKING CHANGE` → major.
 
-Gangbare scopes: `app`, `chart`, `importer`, `ci`.
+Common scopes: `app`, `chart`, `importer`, `ci`.

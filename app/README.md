@@ -1,6 +1,6 @@
 # homemaps
 
-Eigen kaart- en routeplanner op zelfgehoste tiles, Valhalla en Photon
+Personal map and route planner on self-hosted tiles, Valhalla and Photon
 
 ## Getting Started
 

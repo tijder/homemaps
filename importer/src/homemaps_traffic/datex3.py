@@ -1,7 +1,7 @@
-"""De NDW-feeds (DATEX II v3) die de importer gebruikt, streamend gelezen.
+"""The NDW feeds (DATEX II v3) the importer uses, read as a stream.
 
-De configuratie van de meetlocaties is uitgepakt ruim 100 MB; alles gaat daarom
-via iterparse en elk afgehandeld element wordt direct weer losgelaten.
+The measurement site configuration is well over 100 MB unpacked; everything
+therefore goes through iterparse and every handled element is released right away.
 """
 
 import gzip
@@ -11,441 +11,450 @@ from datetime import UTC, datetime, timedelta
 from typing import BinaryIO
 from xml.etree.ElementTree import Element, iterparse
 
-Punt = tuple[float, float]  # (lat, lon)
+Point = tuple[float, float]  # (lat, lon)
 
 XSI_TYPE = "{http://www.w3.org/2001/XMLSchema-instance}type"
-AFSLUITTYPES = {"carriagewayClosures", "roadClosed"}
+CLOSURE_TYPES = {"carriagewayClosures", "roadClosed"}
 
 
-def _naam(element: Element) -> str:
+def _name(element: Element) -> str:
     return element.tag.rsplit("}", 1)[-1]
 
 
-def _vind(element: Element, naam: str) -> Iterator[Element]:
-    return (kind for kind in element.iter() if _naam(kind) == naam)
+def _find(element: Element, name: str) -> Iterator[Element]:
+    return (child for child in element.iter() if _name(child) == name)
 
 
-def _eerste(element: Element, naam: str) -> Element | None:
-    return next(_vind(element, naam), None)
+def _first(element: Element, name: str) -> Element | None:
+    return next(_find(element, name), None)
 
 
-def _punten(poslist: str) -> list[Punt]:
-    getallen = [float(deel) for deel in poslist.split()]
-    return list(zip(getallen[0::2], getallen[1::2], strict=True))
+def _points(poslist: str) -> list[Point]:
+    numbers = [float(part) for part in poslist.split()]
+    return list(zip(numbers[0::2], numbers[1::2], strict=True))
 
 
-def _records(stroom: BinaryIO, naam: str) -> Iterator[Element]:
-    """Geeft elk element `naam` zodra het compleet is, en ruimt het daarna op."""
-    wortel = None
-    for gebeurtenis, element in iterparse(stroom, events=("start", "end")):
-        if gebeurtenis == "start":
-            if wortel is None:
-                wortel = element
+def _records(stream: BinaryIO, name: str) -> Iterator[Element]:
+    """Yields every element `name` as soon as it is complete, and clears it afterwards."""
+    root = None
+    for event, element in iterparse(stream, events=("start", "end")):
+        if event == "start":
+            if root is None:
+                root = element
             continue
-        if _naam(element) == naam:
+        if _name(element) == name:
             yield element
             element.clear()
-            # De ouder houdt anders 67.000 lege hulzen vast.
-            wortel.clear()
+            # Otherwise the parent holds on to 67,000 empty shells.
+            root.clear()
 
 
-def open_feed(pad_of_stroom) -> BinaryIO:
-    return gzip.open(pad_of_stroom, "rb")
-
-
-@dataclass(frozen=True)
-class Meetlocatie:
-    id: str
-    versie: str
-    punten: tuple[Punt, ...]
-
-    @property
-    def sleutel(self) -> str:
-        return f"{self.id}@{self.versie}"
-
-
-def lees_meetlocaties(stroom: BinaryIO) -> Iterator[Meetlocatie]:
-    for site in _records(stroom, "measurementSite"):
-        punten: list[Punt] = []
-        for lijn in _vind(site, "posList"):
-            punten.extend(_punten(lijn.text or ""))
-        if len(punten) >= 2:
-            yield Meetlocatie(site.attrib["id"], site.attrib.get("version", ""), tuple(punten))
+def open_feed(path_or_stream) -> BinaryIO:
+    return gzip.open(path_or_stream, "rb")
 
 
 @dataclass(frozen=True)
-class Reistijd:
+class MeasurementSite:
     id: str
-    versie: str
-    seconden: float
-    normaal_seconden: float | None
+    version: str
+    points: tuple[Point, ...]
 
     @property
-    def sleutel(self) -> str:
-        return f"{self.id}@{self.versie}"
+    def key(self) -> str:
+        return f"{self.id}@{self.version}"
 
 
-def _duur(basis: Element, naam: str) -> float | None:
-    veld = _eerste(basis, naam)
-    if veld is None or _eerste(veld, "dataError") is not None:
+def read_measurement_sites(stream: BinaryIO) -> Iterator[MeasurementSite]:
+    for site in _records(stream, "measurementSite"):
+        points: list[Point] = []
+        for line in _find(site, "posList"):
+            points.extend(_points(line.text or ""))
+        if len(points) >= 2:
+            yield MeasurementSite(site.attrib["id"], site.attrib.get("version", ""), tuple(points))
+
+
+@dataclass(frozen=True)
+class TravelTime:
+    id: str
+    version: str
+    seconds: float
+    normal_seconds: float | None
+
+    @property
+    def key(self) -> str:
+        return f"{self.id}@{self.version}"
+
+
+def _duration(base: Element, name: str) -> float | None:
+    field = _first(base, name)
+    if field is None or _first(field, "dataError") is not None:
         return None
-    if veld.attrib.get("numberOfInputValuesUsed") == "0":
+    if field.attrib.get("numberOfInputValuesUsed") == "0":
         return None
-    duur = _eerste(veld, "duration")
-    if duur is None or not duur.text:
+    duration = _first(field, "duration")
+    if duration is None or not duration.text:
         return None
-    waarde = float(duur.text)
-    return waarde if waarde > 0 else None
+    value = float(duration.text)
+    return value if value > 0 else None
 
 
-def lees_reistijden(stroom: BinaryIO) -> Iterator[Reistijd]:
-    for meting in _records(stroom, "siteMeasurements"):
-        verwijzing = _eerste(meting, "measurementSiteReference")
-        seconden = _duur(meting, "travelTime")
-        if verwijzing is None or seconden is None:
+def read_travel_times(stream: BinaryIO) -> Iterator[TravelTime]:
+    for measurement in _records(stream, "siteMeasurements"):
+        reference = _first(measurement, "measurementSiteReference")
+        seconds = _duration(measurement, "travelTime")
+        if reference is None or seconds is None:
             continue
-        yield Reistijd(
-            verwijzing.attrib["id"],
-            verwijzing.attrib.get("version", ""),
-            seconden,
-            _duur(meting, "normallyExpectedTravelTime"),
+        yield TravelTime(
+            reference.attrib["id"],
+            reference.attrib.get("version", ""),
+            seconds,
+            _duration(measurement, "normallyExpectedTravelTime"),
         )
 
 
 @dataclass(frozen=True)
-class Afsluiting:
+class Closure:
     id: str
-    versie: str
-    punten: tuple[Punt, ...]
-    hele_weg: bool  # roadClosed: beide richtingen, ook bij gescheiden rijbanen
+    version: str
+    points: tuple[Point, ...]
+    whole_road: bool  # roadClosed: both directions, also on dual carriageways
 
     @property
-    def sleutel(self) -> str:
-        return f"{self.id}@{self.versie}"
+    def key(self) -> str:
+        return f"{self.id}@{self.version}"
 
 
-def _tijd(tekst: str | None) -> datetime | None:
-    if not tekst:
+def _time(text: str | None) -> datetime | None:
+    if not text:
         return None
-    # NDW levert nanoseconden; fromisoformat kan er hooguit zes aan.
-    hoofd, _, rest = tekst.partition(".")
+    # NDW delivers nanoseconds; fromisoformat handles at most six digits.
+    head, _, rest = text.partition(".")
     if rest:
-        cijfers = "".join(teken for teken in rest if teken.isdigit())
-        zone = rest[len(cijfers) :]
-        tekst = f"{hoofd}.{cijfers[:6]}{zone}"
-    tijd = datetime.fromisoformat(tekst.replace("Z", "+00:00"))
-    return tijd if tijd.tzinfo else tijd.replace(tzinfo=UTC)
+        digits = "".join(char for char in rest if char.isdigit())
+        zone = rest[len(digits) :]
+        text = f"{head}.{digits[:6]}{zone}"
+    time = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    return time if time.tzinfo else time.replace(tzinfo=UTC)
 
 
-def _geldig(record: Element, nu: datetime) -> bool:
-    specificatie = _eerste(record, "validityTimeSpecification")
-    if specificatie is None:
+def _valid(record: Element, now: datetime) -> bool:
+    specification = _first(record, "validityTimeSpecification")
+    if specification is None:
         return True
-    begin = _tijd(getattr(_eerste(specificatie, "overallStartTime"), "text", None))
-    eind = _tijd(getattr(_eerste(specificatie, "overallEndTime"), "text", None))
-    if begin and nu < begin or eind and nu > eind:
+    start = _time(getattr(_first(specification, "overallStartTime"), "text", None))
+    end = _time(getattr(_first(specification, "overallEndTime"), "text", None))
+    if start and now < start or end and now > end:
         return False
-    # Met validPeriod's geldt de maatregel alleen binnen een van die vensters
-    # (nachtafsluitingen). Herhalende dagdelen komen in de feed niet voor.
-    perioden = list(_vind(specificatie, "validPeriod"))
-    if not perioden:
+    # With validPeriods the measure only applies within one of those windows
+    # (night closures). Recurring parts of the day do not occur in the feed.
+    periods = list(_find(specification, "validPeriod"))
+    if not periods:
         return True
-    for periode in perioden:
-        start = _tijd(getattr(_eerste(periode, "startOfPeriod"), "text", None))
-        stop = _tijd(getattr(_eerste(periode, "endOfPeriod"), "text", None))
-        if (start is None or start <= nu) and (stop is None or nu <= stop):
+    for period in periods:
+        period_start = _time(getattr(_first(period, "startOfPeriod"), "text", None))
+        period_end = _time(getattr(_first(period, "endOfPeriod"), "text", None))
+        if (period_start is None or period_start <= now) and (
+            period_end is None or now <= period_end
+        ):
             return True
     return False
 
 
 @dataclass(frozen=True)
-class Maatregel:
-    """Een geldige maatregel op de weg, zoals de kaart hem toont. Een afsluiting
-    voor de routeplanner is er een bijzonder geval van (zie `als_afsluiting`)."""
+class Measure:
+    """A valid traffic measure on the road, as the map shows it. A closure for the
+    route planner is a special case of it (see `as_closure`)."""
 
     id: str
-    versie: str
-    soort: str  # roadOrCarriagewayOrLaneManagementType
-    lijnen: tuple[tuple[Punt, ...], ...]  # één per posList, in volgorde
-    alleen_vracht: bool
-    rijbaan: str | None  # mainCarriageway, exitSlipRoad, ...
-    oorzaak: str | None  # causeType
-    eind: datetime | None
-    stroken_open: int | None
+    version: str
+    management_type: str  # roadOrCarriagewayOrLaneManagementType
+    lines: tuple[tuple[Point, ...], ...]  # one per posList, in order
+    trucks_only: bool
+    carriageway: str | None  # mainCarriageway, exitSlipRoad, ...
+    cause: str | None  # causeType
+    end: datetime | None
+    lanes_open: int | None
 
     @property
-    def sleutel(self) -> str:
-        return f"{self.id}@{self.versie}"
+    def key(self) -> str:
+        return f"{self.id}@{self.version}"
 
     @property
-    def sluit_af(self) -> bool:
-        return self.soort in AFSLUITTYPES and not self.alleen_vracht
+    def closes(self) -> bool:
+        return self.management_type in CLOSURE_TYPES and not self.trucks_only
 
-    def als_afsluiting(self) -> Afsluiting:
-        return Afsluiting(
+    def as_closure(self) -> Closure:
+        return Closure(
             self.id,
-            self.versie,
-            tuple(punt for lijn in self.lijnen for punt in lijn),
-            self.soort == "roadClosed",
+            self.version,
+            tuple(point for line in self.lines for point in line),
+            self.management_type == "roadClosed",
         )
 
 
-def _tekst(element: Element, naam: str) -> str | None:
-    """De eerste `naam` met tekst: DATEX nest soms gelijknamige elementen
-    (`carriageway` in `carriageway`)."""
-    for kind in _vind(element, naam):
-        if kind.text and kind.text.strip():
-            return kind.text.strip()
+def _text(element: Element, name: str) -> str | None:
+    """The first `name` with text: DATEX sometimes nests elements with the same
+    name (`carriageway` in `carriageway`)."""
+    for child in _find(element, name):
+        if child.text and child.text.strip():
+            return child.text.strip()
     return None
 
 
-def lees_maatregelen(stroom: BinaryIO, nu: datetime | None = None) -> Iterator[Maatregel]:
-    nu = nu or datetime.now(UTC)
-    for record in _records(stroom, "situationRecord"):
-        soort = _tekst(record, "roadOrCarriagewayOrLaneManagementType")
-        if soort is None or not _geldig(record, nu):
+def read_measures(stream: BinaryIO, now: datetime | None = None) -> Iterator[Measure]:
+    now = now or datetime.now(UTC)
+    for record in _records(stream, "situationRecord"):
+        management_type = _text(record, "roadOrCarriagewayOrLaneManagementType")
+        if management_type is None or not _valid(record, now):
             continue
-        lijnen = tuple(
-            tuple(punten)
-            for lijn in _vind(record, "posList")
-            if len(punten := _punten(lijn.text or "")) >= 2
+        lines = tuple(
+            tuple(points)
+            for line in _find(record, "posList")
+            if len(points := _points(line.text or "")) >= 2
         )
-        if not lijnen:
+        if not lines:
             continue
-        specificatie = _eerste(record, "validityTimeSpecification")
-        stroken = _tekst(record, "numberOfOperationalLanes")
-        yield Maatregel(
+        specification = _first(record, "validityTimeSpecification")
+        lanes = _text(record, "numberOfOperationalLanes")
+        yield Measure(
             record.attrib["id"],
             record.attrib.get("version", ""),
-            soort,
-            lijnen,
-            # Een afsluiting voor alleen vrachtverkeer is er voor de auto niet.
-            _eerste(record, "vehicleType") is not None,
-            _tekst(record, "carriageway"),
-            _tekst(record, "causeType"),
-            _tijd(_tekst(specificatie, "overallEndTime")) if specificatie is not None else None,
-            int(stroken) if stroken and stroken.isdigit() else None,
+            management_type,
+            lines,
+            # A closure for trucks only does not exist for a car.
+            _first(record, "vehicleType") is not None,
+            _text(record, "carriageway"),
+            _text(record, "causeType"),
+            _time(_text(specification, "overallEndTime")) if specification is not None else None,
+            int(lanes) if lanes and lanes.isdigit() else None,
         )
 
 
-def lees_afsluitingen(stroom: BinaryIO, nu: datetime | None = None) -> Iterator[Afsluiting]:
-    for maatregel in lees_maatregelen(stroom, nu):
-        if maatregel.sluit_af:
-            yield maatregel.als_afsluiting()
+def read_closures(stream: BinaryIO, now: datetime | None = None) -> Iterator[Closure]:
+    for measure in read_measures(stream, now):
+        if measure.closes:
+            yield measure.as_closure()
 
 
-# Van het xsi:type van een SRTI-melding naar wat de app toont.
-MELDINGSOORTEN = {
-    "Accident": "ongeval",
-    "VehicleObstruction": "pech",
-    "GeneralObstruction": "obstakel",
+# From the xsi:type of an SRTI incident to what the app shows.
+INCIDENT_KINDS = {
+    "Accident": "accident",
+    "VehicleObstruction": "breakdown",
+    "GeneralObstruction": "obstacle",
 }
 
 
-# Een melding zonder eind blijft staan tot de bron hem intrekt. Pijlwagens en
-# botsabsorbers van wegwerkbedrijven (ook als VehicleObstruction) worden dat
-# lang niet altijd: ze staan er dan dagen, soms weken. Wat zo lang niet is
-# bijgewerkt, is niet meer te vertrouwen. Pech en ongevallen van NDW zelf zijn
-# er meestal binnen een paar uur weer af.
-MELDING_VERLOOPT = timedelta(hours=12)
+# An incident without an end stays until the source withdraws it. Arrow trailers
+# and crash attenuators of road works companies (also as VehicleObstruction) are
+# not always withdrawn: they then stay for days, sometimes weeks. Whatever has
+# not been updated for that long can no longer be trusted. Breakdowns and
+# accidents from NDW itself are usually gone within a few hours.
+INCIDENT_EXPIRES = timedelta(hours=12)
 
-# NDW geeft bij zijn eigen meldingen aan hoe zeker ze zijn
-# (persistenceEvidenceLevel: 40, 80 of 100). Op 40 staat vrijwel alles wat
-# automatisch is gezien en nog niet bevestigd: het land door meer dan honderd
-# "pechgevallen". Pas vanaf hier telt een melding mee; zonder niveau altijd.
-MELDING_ZEKER = 80
+# NDW states for its own incidents how certain they are
+# (persistenceEvidenceLevel: 40, 80 or 100). Level 40 holds nearly everything
+# that was detected automatically and not yet confirmed: more than a hundred
+# "breakdowns" across the country. Only from here on does an incident count;
+# without a level always.
+INCIDENT_MIN_CONFIDENCE = 80
 
 
 @dataclass(frozen=True)
-class Melding:
-    """Een veiligheidsmelding (SRTI): ongeval, pechgeval of iets op de weg, op
-    één punt."""
+class Incident:
+    """A safety-related message (SRTI): accident, breakdown or something on the
+    road, at a single point."""
 
     id: str
-    soort: str
-    punt: Punt
-    koers: float | None
-    sinds: datetime | None
+    kind: str
+    point: Point
+    bearing: float | None
+    since: datetime | None
 
 
-def lees_meldingen(stroom: BinaryIO, nu: datetime | None = None) -> Iterator[Melding]:
-    nu = nu or datetime.now(UTC)
-    for record in _records(stroom, "situationRecord"):
-        soort = MELDINGSOORTEN.get(record.attrib.get(XSI_TYPE, "").rsplit(":", 1)[-1])
-        if soort is None or not _geldig(record, nu):
+def read_incidents(stream: BinaryIO, now: datetime | None = None) -> Iterator[Incident]:
+    now = now or datetime.now(UTC)
+    for record in _records(stream, "situationRecord"):
+        kind = INCIDENT_KINDS.get(record.attrib.get(XSI_TYPE, "").rsplit(":", 1)[-1])
+        if kind is None or not _valid(record, now):
             continue
-        lat, lon = _tekst(record, "latitude"), _tekst(record, "longitude")
+        lat, lon = _text(record, "latitude"), _text(record, "longitude")
         if lat is None or lon is None:
             continue
-        koers = _tekst(record, "bearing")
-        specificatie = _eerste(record, "validityTimeSpecification")
-        sinds = (
-            _tijd(_tekst(specificatie, "overallStartTime")) if specificatie is not None else None
+        bearing = _text(record, "bearing")
+        specification = _first(record, "validityTimeSpecification")
+        since = (
+            _time(_text(specification, "overallStartTime")) if specification is not None else None
         )
-        bijgewerkt = _tijd(_tekst(record, "situationRecordVersionTime")) or sinds
-        if bijgewerkt and nu - bijgewerkt > MELDING_VERLOOPT:
+        updated = _time(_text(record, "situationRecordVersionTime")) or since
+        if updated and now - updated > INCIDENT_EXPIRES:
             continue
-        zeker = _tekst(record, "persistenceEvidenceLevel")
-        if zeker and float(zeker) < MELDING_ZEKER:
+        confidence = _text(record, "persistenceEvidenceLevel")
+        if confidence and float(confidence) < INCIDENT_MIN_CONFIDENCE:
             continue
-        yield Melding(
+        yield Incident(
             record.attrib["id"],
-            soort,
+            kind,
             (float(lat), float(lon)),
-            float(koers) if koers else None,
-            sinds,
+            float(bearing) if bearing else None,
+            since,
         )
 
 
 @dataclass(frozen=True)
-class GeplandeAfsluiting:
-    """Een afsluiting uit de planningsfeed, met de vensters waarin hij geldt."""
+class PlannedClosure:
+    """A closure from the planning feed, with the windows in which it applies."""
 
     id: str
-    lijnen: tuple[tuple[Punt, ...], ...]
-    hele_weg: bool
-    rijbaan: str | None
-    vensters: tuple[tuple[datetime, datetime | None], ...]  # (begin, eind)
+    lines: tuple[tuple[Point, ...], ...]
+    whole_road: bool
+    carriageway: str | None
+    windows: tuple[tuple[datetime, datetime | None], ...]  # (start, end)
 
 
-def _vensters(
-    record: Element, van: datetime, tot: datetime
+def _windows(
+    record: Element, start: datetime, end: datetime
 ) -> list[tuple[datetime, datetime | None]]:
-    """De geldigheidsvensters die [van, tot] raken. Zonder validPeriods is het
-    één venster van begin tot eind."""
-    specificatie = _eerste(record, "validityTimeSpecification")
-    if specificatie is None:
+    """The validity windows that touch [start, end]. Without validPeriods it is
+    one window from beginning to end."""
+    specification = _first(record, "validityTimeSpecification")
+    if specification is None:
         return []
-    begin = _tijd(_tekst(specificatie, "overallStartTime"))
-    eind = _tijd(_tekst(specificatie, "overallEndTime"))
-    perioden = [
-        (_tijd(_tekst(p, "startOfPeriod")), _tijd(_tekst(p, "endOfPeriod")))
-        for p in _vind(specificatie, "validPeriod")
-    ] or [(begin, eind)]
-    uit = []
-    for start, stop in perioden:
-        start = start or begin
-        stop = stop or eind
-        if start is None or start > tot or (stop is not None and stop < van):
+    overall_start = _time(_text(specification, "overallStartTime"))
+    overall_end = _time(_text(specification, "overallEndTime"))
+    periods = [
+        (_time(_text(p, "startOfPeriod")), _time(_text(p, "endOfPeriod")))
+        for p in _find(specification, "validPeriod")
+    ] or [(overall_start, overall_end)]
+    out = []
+    for period_start, period_end in periods:
+        period_start = period_start or overall_start
+        period_end = period_end or overall_end
+        if (
+            period_start is None
+            or period_start > end
+            or (period_end is not None and period_end < start)
+        ):
             continue
-        uit.append((start, stop))
-    return uit
+        out.append((period_start, period_end))
+    return out
 
 
-def lees_geplande_afsluitingen(
-    stroom: BinaryIO, van: datetime, tot: datetime
-) -> Iterator[GeplandeAfsluiting]:
-    """Afsluitingen (voor auto's) die ergens tussen [van] en [tot] gelden."""
-    for record in _records(stroom, "situationRecord"):
-        soort = _tekst(record, "roadOrCarriagewayOrLaneManagementType")
-        if soort not in AFSLUITTYPES or _eerste(record, "vehicleType") is not None:
+def read_planned_closures(
+    stream: BinaryIO, start: datetime, end: datetime
+) -> Iterator[PlannedClosure]:
+    """Closures (for cars) that apply somewhere between [start] and [end]."""
+    for record in _records(stream, "situationRecord"):
+        management_type = _text(record, "roadOrCarriagewayOrLaneManagementType")
+        if management_type not in CLOSURE_TYPES or _first(record, "vehicleType") is not None:
             continue
-        vensters = _vensters(record, van, tot)
-        if not vensters:
+        windows = _windows(record, start, end)
+        if not windows:
             continue
-        lijnen = tuple(
-            tuple(punten)
-            for lijn in _vind(record, "posList")
-            if len(punten := _punten(lijn.text or "")) >= 2
+        lines = tuple(
+            tuple(points)
+            for line in _find(record, "posList")
+            if len(points := _points(line.text or "")) >= 2
         )
-        if lijnen:
-            yield GeplandeAfsluiting(
+        if lines:
+            yield PlannedClosure(
                 record.attrib["id"],
-                lijnen,
-                soort == "roadClosed",
-                _tekst(record, "carriageway"),
-                tuple(vensters),
+                lines,
+                management_type == "roadClosed",
+                _text(record, "carriageway"),
+                tuple(windows),
             )
 
 
 @dataclass(frozen=True)
-class TijdelijkeSnelheid:
-    """Een tijdelijke maximumsnelheid (bij werk of een evenement), met de
-    vensters waarin hij geldt."""
+class TemporarySpeedLimit:
+    """A temporary maximum speed (for road works or an event), with the windows
+    in which it applies."""
 
     id: str
-    versie: str
-    kmu: int
-    lijnen: tuple[tuple[Punt, ...], ...]
-    oorzaak: str | None
-    vensters: tuple[tuple[datetime, datetime | None], ...]  # (begin, eind)
+    version: str
+    kph: int
+    lines: tuple[tuple[Point, ...], ...]
+    cause: str | None
+    windows: tuple[tuple[datetime, datetime | None], ...]  # (start, end)
 
     @property
-    def sleutel(self) -> str:
-        return f"{self.id}@{self.versie}"
+    def key(self) -> str:
+        return f"{self.id}@{self.version}"
 
     @property
-    def punten(self) -> tuple[Punt, ...]:
-        return tuple(punt for lijn in self.lijnen for punt in lijn)
+    def points(self) -> tuple[Point, ...]:
+        return tuple(point for line in self.lines for point in line)
 
-    def geldt(self, nu: datetime) -> bool:
-        return any(begin <= nu and (eind is None or nu <= eind) for begin, eind in self.vensters)
+    def applies(self, now: datetime) -> bool:
+        return any(start <= now and (end is None or now <= end) for start, end in self.windows)
 
 
-def lees_snelheden(stroom: BinaryIO, van: datetime, tot: datetime) -> Iterator[TijdelijkeSnelheid]:
-    """Tijdelijke maximumsnelheden die ergens tussen [van] en [tot] gelden, uit
-    de feed met maximumsnelheden of de planningsfeed (dezelfde records). Wat
-    alleen voor sommige voertuigen geldt, of alleen een advies is, valt af."""
-    for record in _records(stroom, "situationRecord"):
+def read_speed_limits(
+    stream: BinaryIO, start: datetime, end: datetime
+) -> Iterator[TemporarySpeedLimit]:
+    """Temporary maximum speeds that apply somewhere between [start] and [end],
+    from the maximum speeds feed or the planning feed (the same records).
+    Whatever applies only to some vehicles, or is only advisory, is dropped."""
+    for record in _records(stream, "situationRecord"):
         if not record.attrib.get(XSI_TYPE, "").endswith("SpeedManagement"):
             continue
-        limiet = _tekst(record, "temporarySpeedLimit")
-        naleving = _tekst(record, "complianceOption")
+        limit = _text(record, "temporarySpeedLimit")
+        compliance = _text(record, "complianceOption")
         if (
-            limiet is None
-            or _eerste(record, "vehicleType") is not None
-            or (naleving is not None and naleving != "mandatory")
+            limit is None
+            or _first(record, "vehicleType") is not None
+            or (compliance is not None and compliance != "mandatory")
         ):
             continue
         try:
-            kmu = round(float(limiet))
+            kph = round(float(limit))
         except ValueError:
             continue
-        if kmu <= 0:
+        if kph <= 0:
             continue
-        vensters = _vensters(record, van, tot)
-        if not vensters:
+        windows = _windows(record, start, end)
+        if not windows:
             continue
-        lijnen = tuple(
-            tuple(punten)
-            for lijn in _vind(record, "posList")
-            if len(punten := _punten(lijn.text or "")) >= 2
+        lines = tuple(
+            tuple(points)
+            for line in _find(record, "posList")
+            if len(points := _points(line.text or "")) >= 2
         )
-        if lijnen:
-            yield TijdelijkeSnelheid(
+        if lines:
+            yield TemporarySpeedLimit(
                 record.attrib["id"],
                 record.attrib.get("version", ""),
-                kmu,
-                lijnen,
-                _tekst(record, "causeType"),
-                tuple(vensters),
+                kph,
+                lines,
+                _text(record, "causeType"),
+                tuple(windows),
             )
 
 
-BRUG_BEZIG = {"beingImplemented", "implemented", "beingTerminated"}
+BRIDGE_IN_PROGRESS = {"beingImplemented", "implemented", "beingTerminated"}
 
 
 @dataclass(frozen=True)
-class Brug:
-    """Een brug die nu open staat (voor de scheepvaart): dicht voor het verkeer."""
+class Bridge:
+    """A bridge that is open right now (for shipping): closed to traffic."""
 
     id: str
-    punt: Punt
+    point: Point
 
 
-def lees_bruggen(stroom: BinaryIO, nu: datetime | None = None) -> Iterator[Brug]:
-    """Uit `actueel_beeld`: bruggen die nu open zijn. Een geplande opening
-    (`approved`) telt pas als hij bezig is: opengaan, open, of weer dichtgaan --
-    in alle drie staat het verkeer stil."""
-    nu = nu or datetime.now(UTC)
-    for record in _records(stroom, "situationRecord"):
-        soort = _tekst(record, "generalNetworkManagementType") or ""
+def read_bridges(stream: BinaryIO, now: datetime | None = None) -> Iterator[Bridge]:
+    """From `actueel_beeld`: bridges that are open right now. A planned opening
+    (`approved`) only counts once it is in progress: opening, open, or closing
+    again -- in all three traffic is at a standstill."""
+    now = now or datetime.now(UTC)
+    for record in _records(stream, "situationRecord"):
+        management_type = _text(record, "generalNetworkManagementType") or ""
         if (
-            not soort.startswith("bridge")
-            or _tekst(record, "operatorActionStatus") not in BRUG_BEZIG
-            or not _geldig(record, nu)
+            not management_type.startswith("bridge")
+            or _text(record, "operatorActionStatus") not in BRIDGE_IN_PROGRESS
+            or not _valid(record, now)
         ):
             continue
-        lat, lon = _tekst(record, "latitude"), _tekst(record, "longitude")
+        lat, lon = _text(record, "latitude"), _text(record, "longitude")
         if lat is not None and lon is not None:
-            yield Brug(record.attrib["id"], (float(lat), float(lon)))
+            yield Bridge(record.attrib["id"], (float(lat), float(lon)))

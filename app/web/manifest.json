@@ -5,7 +5,7 @@
     "display": "standalone",
     "background_color": "#1565C0",
     "theme_color": "#1565C0",
-    "description": "Eigen kaart- en routeplanner op zelfgehoste tiles, Valhalla en Photon",
+    "description": "Personal map and route planner on self-hosted tiles, Valhalla and Photon",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

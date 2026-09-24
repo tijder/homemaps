@@ -1,5 +1,5 @@
 name: homemaps
-description: "Eigen kaart- en routeplanner op zelfgehoste tiles, Valhalla en Photon"
+description: "Personal map and route planner on self-hosted tiles, Valhalla and Photon"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -20,7 +20,7 @@ version: 1.0.0+87
 
 environment:
   sdk: ^3.13.4
-  # Exact gepind zodat subosito/flutter-action hem met flutter-version-file kan lezen.
+  # Pinned exactly so subosito/flutter-action can read it with flutter-version-file.
   flutter: 3.47.5
 
 # Dependencies specify other packages that your package needs in order to work.
@@ -83,7 +83,7 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # Voor de pagina "Over".
+  # For the "About" page.
   assets:
     - assets/icon/icon.png
 
@@ -118,7 +118,7 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
-# Het icoon komt uit tool/maak_icoon.py; daarna `dart run flutter_launcher_icons`.
+# The icon comes from tool/make_icon.py; then `dart run flutter_launcher_icons`.
 flutter_launcher_icons:
   android: true
   ios: true
@@ -126,8 +126,8 @@ flutter_launcher_icons:
   image_path_ios: assets/icon/icon-ios.png
   remove_alpha_ios: true
   min_sdk_android: 21
-  adaptive_icon_background: assets/icon/icon-achtergrond.png
-  adaptive_icon_foreground: assets/icon/icon-voorgrond.png
+  adaptive_icon_background: assets/icon/icon-background.png
+  adaptive_icon_foreground: assets/icon/icon-foreground.png
   web:
     generate: true
     image_path: assets/icon/icon.png

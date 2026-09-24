@@ -6,8 +6,8 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 void main() {
   final photon = PhotonService(Dio(), 'https://maps.test/geocode');
 
-  test('vrij zoeken stuurt alleen parameters die Photon kent', () {
-    final uri = photon.zoekUri(' Domplein ', nabij: const LatLng(52.09, 5.12));
+  test('free search only sends parameters Photon knows', () {
+    final uri = photon.searchUri(' Domplein ', near: const LatLng(52.09, 5.12));
     expect(uri.path, '/geocode');
     expect(uri.queryParameters['q'], 'Domplein');
     expect(uri.queryParametersAll['osm_tag'], hasLength(4));
@@ -22,16 +22,16 @@ void main() {
     });
   });
 
-  test('postcode met huisnummer gaat naar structured', () {
-    final uri = photon.zoekUri('1273cv 20');
+  test('postcode with house number goes to structured', () {
+    final uri = photon.searchUri('1273cv 20');
     expect(uri.path, '/geocode/structured');
     expect(uri.queryParameters['postcode'], '1273 CV');
     expect(uri.queryParameters['housenumber'], '20');
     expect(uri.queryParameters.containsKey('q'), isFalse);
   });
 
-  test('een adres zonder name krijgt straat en huisnummer als naam', () {
-    final plaatsen = PhotonService.leesAntwoord({
+  test('an address without name gets street and house number as its name', () {
+    final places = PhotonService.parseResponse({
       'features': [
         {
           'geometry': {
@@ -57,15 +57,15 @@ void main() {
         },
       ],
     });
-    expect(plaatsen[0].naam, 'De Haar 20');
-    expect(plaatsen[0].omschrijving, '1273 CV, Huizen, Nederland');
-    expect(plaatsen[0].punt, const LatLng(52.3, 5.2));
-    expect(plaatsen[1].naam, 'Utrecht');
-    expect(plaatsen[1].omschrijving, 'Nederland');
+    expect(places[0].label, 'De Haar 20');
+    expect(places[0].description, '1273 CV, Huizen, Nederland');
+    expect(places[0].point, const LatLng(52.3, 5.2));
+    expect(places[1].label, 'Utrecht');
+    expect(places[1].description, 'Nederland');
   });
 
-  test('coördinaten worden niet opgezocht', () async {
-    final gevonden = await photon.zoek('52.09, 5.12');
-    expect(gevonden.single.punt, const LatLng(52.09, 5.12));
+  test('coordinates are not looked up', () async {
+    final found = await photon.search('52.09, 5.12');
+    expect(found.single.point, const LatLng(52.09, 5.12));
   });
 }

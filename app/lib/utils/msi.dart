@@ -2,126 +2,120 @@ import 'dart:math';
 
 import 'package:maplibre_gl/maplibre_gl.dart';
 
-import '../navigatie/volger.dart';
+import '../navigation/route_tracker.dart';
 
-/// Een portaal met matrixborden op de route: hoe ver langs de route, en per
-/// strook (van links naar rechts) wat erop staat. Codes zoals de importer ze
-/// geeft: "70" (advies), "70r" (verplicht, rode ring), "x" (rijstrook dicht),
-/// "<" / ">" (invoegen naar links/rechts), "open", "einde" of "" (leeg).
-typedef Portaal = ({double langs, List<String> stroken});
+/// A gantry with MSI signs on the route: how far along the route, and per lane
+/// (left to right) what it shows. Codes as the importer provides them: "70"
+/// (advisory), "70r" (mandatory, red ring), "x" (lane closed), "<" / ">"
+/// (merge left/right), "open", "end" or "" (blank).
+typedef Gantry = ({double along, List<String> perLane});
 
-/// De portalen uit [laag] (`soort: msi`) die boven jouw rijbaan hangen: binnen
-/// [maxAfstand] van de route, en in dezelfde richting (de overkant van de
-/// snelweg ligt er ook vlakbij). Hangen er twee op dezelfde plek langs de
-/// route (hoofdbaan en parallelbaan), dan telt het dichtstbij. Op volgorde
-/// langs de route.
+/// The gantries from [layer] (`kind: msi`) above your carriageway: within
+/// [maxDistance] of the route, and in the same direction (the other side of the
+/// motorway is close by too). If two hang at the same place along the route
+/// (main and parallel carriageway), the nearest counts. In order along the
+/// route.
 ///
-/// Het punt van een portaal ligt meestal op de lijn van de rijbaan (0-2 m),
-/// soms tot ~25 m ernaast.
-List<Portaal> portalenOpRoute(
-  RouteVolger volger,
-  Map<String, dynamic>? laag, {
-  double maxAfstand = 35,
-  double maxHoek = 45,
+/// A gantry's point is usually on the carriageway's line (0-2 m), sometimes up
+/// to ~25 m off it.
+List<Gantry> gantriesOnRoute(
+  RouteTracker tracker,
+  Map<String, dynamic>? layer, {
+  double maxDistance = 35,
+  double maxAngle = 45,
 }) {
-  final route = volger.route.punten;
-  if (laag == null || route.length < 2) return const [];
-  var zuid = 90.0, noord = -90.0, west = 180.0, oost = -180.0;
+  final route = tracker.route.points;
+  if (layer == null || route.length < 2) return const [];
+  var south = 90.0, north = -90.0, west = 180.0, east = -180.0;
   for (final p in route) {
-    zuid = min(zuid, p.latitude);
-    noord = max(noord, p.latitude);
+    south = min(south, p.latitude);
+    north = max(north, p.latitude);
     west = min(west, p.longitude);
-    oost = max(oost, p.longitude);
+    east = max(east, p.longitude);
   }
-  const marge = 0.001; // ~100 m
-  final gevonden = <({Portaal portaal, double afstand})>[];
-  for (final feature in (laag['features'] as List? ?? const [])) {
+  const margin = 0.001; // ~100 m
+  final found = <({Gantry gantry, double distance})>[];
+  for (final feature in (layer['features'] as List? ?? const [])) {
     if (feature is! Map) continue;
-    final eigen = feature['properties'];
-    final geometrie = feature['geometry'];
-    if (eigen is! Map ||
-        eigen['soort'] != 'msi' ||
-        geometrie is! Map ||
-        geometrie['type'] != 'Point') {
+    final props = feature['properties'];
+    final geometry = feature['geometry'];
+    if (props is! Map ||
+        props['kind'] != 'msi' ||
+        geometry is! Map ||
+        geometry['type'] != 'Point') {
       continue;
     }
-    final c = (geometrie['coordinates'] as List).cast<num>();
-    final punt = LatLng(c[1].toDouble(), c[0].toDouble());
-    if (punt.latitude < zuid - marge ||
-        punt.latitude > noord + marge ||
-        punt.longitude < west - marge ||
-        punt.longitude > oost + marge) {
+    final c = (geometry['coordinates'] as List).cast<num>();
+    final point = LatLng(c[1].toDouble(), c[0].toDouble());
+    if (point.latitude < south - margin ||
+        point.latitude > north + margin ||
+        point.longitude < west - margin ||
+        point.longitude > east + margin) {
       continue;
     }
-    final plek = volger.plaatsOp(punt);
-    final koers = eigen['koers'];
-    if (plek.afstand > maxAfstand ||
-        koers is! num ||
-        hoekVerschil(koers.toDouble(), plek.koers) > maxHoek) {
+    final position = tracker.locate(point);
+    final heading = props['bearing'];
+    if (position.distance > maxDistance ||
+        heading is! num ||
+        angleDiff(heading.toDouble(), position.heading) > maxAngle) {
       continue;
     }
-    gevonden.add((
-      portaal: (
-        langs: plek.langs,
-        stroken: [
-          for (final s in (eigen['stroken'] as List? ?? const [])) '$s',
-        ],
+    found.add((
+      gantry: (
+        along: position.along,
+        perLane: [for (final s in (props['lanes'] as List? ?? const [])) '$s'],
       ),
-      afstand: plek.afstand,
+      distance: position.distance,
     ));
   }
-  gevonden.sort((a, b) => a.portaal.langs.compareTo(b.portaal.langs));
-  final uit = <({Portaal portaal, double afstand})>[];
-  for (final g in gevonden) {
-    if (uit.isNotEmpty && g.portaal.langs - uit.last.portaal.langs < 60) {
-      if (g.afstand < uit.last.afstand) uit[uit.length - 1] = g;
+  found.sort((a, b) => a.gantry.along.compareTo(b.gantry.along));
+  final out = <({Gantry gantry, double distance})>[];
+  for (final g in found) {
+    if (out.isNotEmpty && g.gantry.along - out.last.gantry.along < 60) {
+      if (g.distance < out.last.distance) out[out.length - 1] = g;
       continue;
     }
-    uit.add(g);
+    out.add(g);
   }
-  return [for (final g in uit) g.portaal];
+  return [for (final g in out) g.gantry];
 }
 
-/// De verplichte snelheid (rode ring) van de matrixborden waar je nu onder
-/// rijdt: die van het laatst gepasseerde portaal, tot [geldigTot] meter erna.
-/// Een snelheid boven de weg geldt tot het volgende portaal; staat daar niets
-/// (of "einde"), dan houdt hij op. Verschilt hij per strook, dan de laagste.
-/// Null als er geen geldt. Een advies (zonder rode ring) is geen limiet.
-int? msiLimiet(
-  List<Portaal> portalen,
-  double langs, {
-  double geldigTot = 3000,
-}) {
-  Portaal? laatste;
-  for (final portaal in portalen) {
-    if (portaal.langs > langs + 5) break;
-    laatste = portaal;
+/// The mandatory speed (red ring) of the MSI signs you're driving under now:
+/// that of the last gantry passed, up to [validUntil] meters after it. A speed
+/// above the road applies until the next gantry; if that shows nothing (or
+/// "end"), it stops. If it differs per lane, the lowest. Null if none applies.
+/// An advisory (without a red ring) isn't a limit.
+int? msiLimit(List<Gantry> gantries, double along, {double validUntil = 3000}) {
+  Gantry? latest;
+  for (final gantry in gantries) {
+    if (gantry.along > along + 5) break;
+    latest = gantry;
   }
-  if (laatste == null || langs - laatste.langs > geldigTot) return null;
-  int? laagste;
-  for (final strook in laatste.stroken) {
-    if (!strook.endsWith('r')) continue;
-    final kmu = int.tryParse(strook.substring(0, strook.length - 1));
-    if (kmu != null && (laagste == null || kmu < laagste)) laagste = kmu;
+  if (latest == null || along - latest.along > validUntil) return null;
+  int? lowest;
+  for (final lane in latest.perLane) {
+    if (!lane.endsWith('r')) continue;
+    final kmh = int.tryParse(lane.substring(0, lane.length - 1));
+    if (kmh != null && (lowest == null || kmh < lowest)) lowest = kmh;
   }
-  return laagste;
+  return lowest;
 }
 
-/// Het eerstvolgende portaal binnen [vooruit] meter waar iets op staat, en hoe
-/// ver het nog is.
-({double over, List<String> stroken})? volgendPortaal(
-  List<Portaal> portalen,
-  double langs, {
-  double vooruit = 1500,
+/// The next gantry within [ahead] meters that shows something, and how far
+/// away it is.
+({double ahead, List<String> perLane})? nextGantry(
+  List<Gantry> gantries,
+  double along, {
+  double ahead = 1500,
 }) {
-  for (final portaal in portalen) {
-    if (portaal.langs <= langs + 5) continue;
-    if (portaal.langs - langs > vooruit) return null;
-    if (portaal.stroken.any((s) => s.isNotEmpty)) {
-      return (over: portaal.langs - langs, stroken: portaal.stroken);
+  for (final gantry in gantries) {
+    if (gantry.along <= along + 5) continue;
+    if (gantry.along - along > ahead) return null;
+    if (gantry.perLane.any((s) => s.isNotEmpty)) {
+      return (ahead: gantry.along - along, perLane: gantry.perLane);
     }
-    // Een leeg portaal: de beperkingen houden daar op; wat erna komt telt
-    // pas als je er langs bent.
+    // A blank gantry: the restrictions end there; what comes after only counts
+    // once you've passed it.
     return null;
   }
   return null;

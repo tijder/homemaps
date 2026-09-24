@@ -7,22 +7,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:homemaps/l10n/app_localizations.dart';
 import 'package:homemaps/models/dawarich.dart';
-import 'package:homemaps/models/locatie_delen.dart';
+import 'package:homemaps/models/location_sharing.dart';
 import 'package:homemaps/providers/dawarich.dart';
-import 'package:homemaps/providers/diensten.dart';
-import 'package:homemaps/providers/locatie_delen.dart';
-import 'package:homemaps/screens/instellingen/dawarich.dart';
-import 'package:homemaps/screens/instellingen/dawarich_website.dart';
-import 'package:homemaps/screens/instellingen/instellingen_screen.dart';
+import 'package:homemaps/providers/services.dart';
+import 'package:homemaps/providers/location_sharing.dart';
+import 'package:homemaps/screens/settings/dawarich.dart';
+import 'package:homemaps/screens/settings/dawarich_website.dart';
+import 'package:homemaps/screens/settings/settings_screen.dart';
 import 'package:homemaps/services/dawarich_service.dart';
-import 'package:homemaps/utils/opmaak.dart';
+import 'package:homemaps/utils/formatting.dart';
 
 const server = 'https://dawarich.test';
 
-/// Speelt Dawarich: per "METHODE pad" een status en een antwoord.
-class NepDawarich implements HttpClientAdapter {
-  final antwoorden = <String, (int, Object?)>{};
-  final verzoeken = <RequestOptions>[];
+/// Plays Dawarich: per "METHOD path" a status and a response.
+class FakeDawarich implements HttpClientAdapter {
+  final responses = <String, (int, Object?)>{};
+  final requests = <RequestOptions>[];
 
   @override
   Future<ResponseBody> fetch(
@@ -30,9 +30,9 @@ class NepDawarich implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
-    verzoeken.add(options);
+    requests.add(options);
     final (status, body) =
-        antwoorden['${options.method} ${options.uri.path}'] ?? (404, null);
+        responses['${options.method} ${options.uri.path}'] ?? (404, null);
     return ResponseBody.fromString(
       body is String ? body : jsonEncode(body ?? {}),
       status,
@@ -49,15 +49,15 @@ class NepDawarich implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
-const ingelogd = {
+const signedIn = {
   'user_id': 1,
-  'email': 'ik@thuis.nl',
-  'api_key': 'geheim123',
+  'email': 'me@home.nl',
+  'api_key': 'secret123',
   'status': 'active',
 };
 
-const mij = {
-  'user': {'email': 'ik@thuis.nl'},
+const meJson = {
+  'user': {'email': 'me@home.nl'},
   'features': {'family': true, 'reverse_geocoding': false},
 };
 
@@ -74,24 +74,24 @@ const mine = {
     },
   },
   'members': [
-    {'user_id': 1, 'email': 'ik@thuis.nl'},
-    {'user_id': 2, 'email': 'partner@thuis.nl'},
+    {'user_id': 1, 'email': 'me@home.nl'},
+    {'user_id': 2, 'email': 'partner@home.nl'},
   ],
 };
 
-const locaties = {
+const locations = {
   'locations': [
     {
       'user_id': 1,
-      'email': 'ik@thuis.nl',
-      'email_initial': 'I',
+      'email': 'me@home.nl',
+      'email_initial': 'M',
       'latitude': 52.1,
       'longitude': 5.1,
       'timestamp': 1790000000,
     },
     {
       'user_id': 2,
-      'email': 'partner@thuis.nl',
+      'email': 'partner@home.nl',
       'email_initial': 'P',
       'latitude': '52.3',
       'longitude': '5.2',
@@ -104,308 +104,313 @@ const locaties = {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late NepDawarich nep;
-  late DawarichService dienst;
+  late FakeDawarich fake;
+  late DawarichService service;
 
   setUp(() {
-    nep = NepDawarich();
-    dienst = DawarichService(Dio()..httpClientAdapter = nep);
+    fake = FakeDawarich();
+    service = DawarichService(Dio()..httpClientAdapter = fake);
   });
 
-  group('de dienst', () {
-    test('een adres wordt een basis zonder / aan het eind', () {
+  group('the service', () {
+    test('an address becomes a base without a trailing /', () {
       expect(
-        DawarichService.normaliseer(' dawarich.test/ '),
+        DawarichService.normalize(' dawarich.test/ '),
         'https://dawarich.test',
       );
       expect(
-        DawarichService.normaliseer('http://10.0.0.2:3000'),
+        DawarichService.normalize('http://10.0.0.2:3000'),
         'http://10.0.0.2:3000',
       );
-      expect(DawarichService.normaliseer(''), isNull);
-      expect(DawarichService.normaliseer('ftp://x'), isNull);
+      expect(DawarichService.normalize(''), isNull);
+      expect(DawarichService.normalize('ftp://x'), isNull);
     });
 
-    test('inloggen geeft de API-sleutel', () async {
-      nep.antwoorden['POST /api/v1/auth/login'] = (200, ingelogd);
-      final uitslag = await dienst.login(server, 'ik@thuis.nl', 'ww');
-      expect(uitslag, isA<DawarichIngelogd>());
-      uitslag as DawarichIngelogd;
-      expect(uitslag.sleutel, 'geheim123');
-      expect(uitslag.account.userId, 1);
-      expect(nep.verzoeken.single.data, {
-        'email': 'ik@thuis.nl',
-        'password': 'ww',
+    test('signing in returns the API key', () async {
+      fake.responses['POST /api/v1/auth/login'] = (200, signedIn);
+      final outcome = await service.login(server, 'me@home.nl', 'pw');
+      expect(outcome, isA<DawarichSignedIn>());
+      outcome as DawarichSignedIn;
+      expect(outcome.key, 'secret123');
+      expect(outcome.account.userId, 1);
+      expect(fake.requests.single.data, {
+        'email': 'me@home.nl',
+        'password': 'pw',
       });
     });
 
-    test('met tweestapsverificatie eerst de code', () async {
-      nep.antwoorden['POST /api/v1/auth/login'] = (
+    test('with two-factor authentication the code first', () async {
+      fake.responses['POST /api/v1/auth/login'] = (
         202,
-        {'two_factor_required': true, 'challenge_token': 'uitdaging'},
+        {'two_factor_required': true, 'challenge_token': 'challenge'},
       );
-      nep.antwoorden['POST /api/v1/auth/otp_challenge'] = (200, ingelogd);
-      final uitslag = await dienst.login(server, 'ik@thuis.nl', 'ww');
-      expect((uitslag as DawarichTweeStap).token, 'uitdaging');
-      final klaar = await dienst.otp(server, 'uitdaging', ' 123456 ');
-      expect(klaar.sleutel, 'geheim123');
-      expect(nep.verzoeken.last.data, {
-        'challenge_token': 'uitdaging',
+      fake.responses['POST /api/v1/auth/otp_challenge'] = (200, signedIn);
+      final outcome = await service.login(server, 'me@home.nl', 'pw');
+      expect((outcome as DawarichTwoFactor).token, 'challenge');
+      final done = await service.otp(server, 'challenge', ' 123456 ');
+      expect(done.key, 'secret123');
+      expect(fake.requests.last.data, {
+        'challenge_token': 'challenge',
         'otp_code': '123456',
       });
     });
 
-    test('fouten krijgen een soort', () async {
-      Future<DawarichFoutSoort?> soort(Future<void> Function() doe) async {
+    test('errors get a kind', () async {
+      Future<DawarichErrorKind?> kind(Future<void> Function() run) async {
         try {
-          await doe();
-        } on DawarichFout catch (fout) {
-          return fout.soort;
+          await run();
+        } on DawarichError catch (error) {
+          return error.kind;
         }
         return null;
       }
 
-      nep.antwoorden['POST /api/v1/auth/login'] = (
+      fake.responses['POST /api/v1/auth/login'] = (
         401,
         {'error': 'auth_failed'},
       );
       expect(
-        await soort(() => dienst.login(server, 'a', 'b')),
-        DawarichFoutSoort.inlog,
+        await kind(() => service.login(server, 'a', 'b')),
+        DawarichErrorKind.auth,
       );
-      nep.antwoorden['POST /api/v1/auth/login'] = (
+      fake.responses['POST /api/v1/auth/login'] = (
         403,
         {'error': 'auth_failed'},
       );
       expect(
-        await soort(() => dienst.login(server, 'a', 'b')),
-        DawarichFoutSoort.wachtwoordUit,
+        await kind(() => service.login(server, 'a', 'b')),
+        DawarichErrorKind.passwordDisabled,
       );
       expect(
-        await soort(() => dienst.familie(server, 'k')),
-        DawarichFoutSoort.geenFamilie,
+        await kind(() => service.family(server, 'k')),
+        DawarichErrorKind.noFamily,
       );
-      nep.antwoorden['GET /api/v1/families/mine'] = (
+      fake.responses['GET /api/v1/families/mine'] = (
         403,
         {'error': 'family_plan_required'},
       );
       expect(
-        await soort(() => dienst.familie(server, 'k')),
-        DawarichFoutSoort.geenAbonnement,
+        await kind(() => service.family(server, 'k')),
+        DawarichErrorKind.noSubscription,
       );
-      // Een webpagina in plaats van JSON: geen Dawarich op dit adres.
-      nep.antwoorden['GET /api/v1/users/me'] = (200, '<html></html>');
+      // A web page instead of JSON: no Dawarich at this address.
+      fake.responses['GET /api/v1/users/me'] = (200, '<html></html>');
       expect(
-        await soort(() => dienst.controleerSleutel(server, 'k')),
-        DawarichFoutSoort.geenDawarich,
+        await kind(() => service.checkKey(server, 'k')),
+        DawarichErrorKind.notDawarich,
       );
     });
 
-    test('verbinden: health en de versie, zonder in te loggen', () async {
-      nep.antwoorden['GET /api/v1/health'] = (200, {'status': 'ok'});
-      expect((await dienst.verbind(server)).versie, '1.15.2');
-      expect(nep.verzoeken.last.headers['Authorization'], isNull);
+    test('connecting: health and the version, without signing in', () async {
+      fake.responses['GET /api/v1/health'] = (200, {'status': 'ok'});
+      expect((await service.connect(server)).version, '1.15.2');
+      expect(fake.requests.last.headers['Authorization'], isNull);
 
-      // Een inlogproxy geeft zijn eigen pagina.
-      nep.antwoorden['GET /api/v1/health'] = (200, '<html>Authelia</html>');
+      // A login proxy returns its own page.
+      fake.responses['GET /api/v1/health'] = (200, '<html>Authelia</html>');
       await expectLater(
-        dienst.verbind(server),
+        service.connect(server),
         throwsA(
-          isA<DawarichFout>().having(
-            (f) => f.soort,
-            'soort',
-            DawarichFoutSoort.geenDawarich,
+          isA<DawarichError>().having(
+            (f) => f.kind,
+            'kind',
+            DawarichErrorKind.notDawarich,
           ),
         ),
       );
-      // Niets op dit adres.
-      nep.antwoorden.remove('GET /api/v1/health');
-      await expectLater(dienst.verbind(server), throwsA(isA<DawarichFout>()));
+      // Nothing at this address.
+      fake.responses.remove('GET /api/v1/health');
+      await expectLater(service.connect(server), throwsA(isA<DawarichError>()));
     });
 
-    test('familie en locaties, met de sleutel als Bearer', () async {
-      nep.antwoorden['GET /api/v1/families/mine'] = (200, mine);
-      nep.antwoorden['GET /api/v1/families/locations'] = (200, locaties);
-      final status = await dienst.familie(server, 'geheim123');
-      expect(status.naam, 'Droog');
-      expect(status.delenAan, isTrue);
-      expect(status.duur, DeelDuur.uur6);
-      expect(status.verlooptOm, DateTime.utc(2026, 9, 24, 18).toLocal());
-      expect(status.leden, ['partner@thuis.nl']);
+    test('family and locations, with the key as Bearer', () async {
+      fake.responses['GET /api/v1/families/mine'] = (200, mine);
+      fake.responses['GET /api/v1/families/locations'] = (200, locations);
+      final status = await service.family(server, 'secret123');
+      expect(status.label, 'Droog');
+      expect(status.sharingEnabled, isTrue);
+      expect(status.duration, ShareDuration.hour6);
+      expect(status.expiresAt, DateTime.utc(2026, 9, 24, 18).toLocal());
+      expect(status.members, ['partner@home.nl']);
 
-      final lijst = await dienst.locaties(server, 'geheim123');
-      expect(lijst, hasLength(2));
-      expect(lijst[1].initiaal, 'P');
-      expect(lijst[1].punt.latitude, 52.3);
-      expect(lijst[1].batterij, 81);
-      expect(nep.verzoeken.last.headers['Authorization'], 'Bearer geheim123');
+      final list = await service.locations(server, 'secret123');
+      expect(list, hasLength(2));
+      expect(list[1].initial, 'P');
+      expect(list[1].point.latitude, 52.3);
+      expect(list[1].battery, 81);
+      expect(fake.requests.last.headers['Authorization'], 'Bearer secret123');
     });
 
-    test('de sleutel uit de doorverwijzing na de website', () {
-      String jwt(Object inhoud) => [
+    test('the key from the redirect after the website', () {
+      String jwt(Object content) => [
         'eyJhbGciOiJIUzI1NiJ9',
-        base64Url.encode(utf8.encode(jsonEncode(inhoud))).replaceAll('=', ''),
-        'handtekening',
+        base64Url.encode(utf8.encode(jsonEncode(content))).replaceAll('=', ''),
+        'signature',
       ].join('.');
-      final goed = Uri.parse(
+      final correct = Uri.parse(
         '$server/auth/ios/success?token=${jwt({'api_key': 'k3y', 'exp': 1})}',
       );
-      expect(DawarichService.isHandoff(goed), isTrue);
-      expect(DawarichService.sleutelUitHandoff(goed), 'k3y');
+      expect(DawarichService.isHandoff(correct), isTrue);
+      expect(DawarichService.keyFromHandoff(correct), 'k3y');
 
       expect(
         DawarichService.isHandoff(Uri.parse('$server/users/sign_in')),
         isFalse,
       );
       expect(
-        DawarichService.sleutelUitHandoff(
+        DawarichService.keyFromHandoff(
           Uri.parse('$server/auth/ios/success?token=${jwt({'exp': 1})}'),
         ),
         isNull,
       );
       expect(
-        DawarichService.sleutelUitHandoff(
-          Uri.parse('$server/auth/ios/success?token=geen.jwt'),
+        DawarichService.keyFromHandoff(
+          Uri.parse('$server/auth/ios/success?token=not.a.jwt'),
         ),
         isNull,
       );
     });
 
-    test('delen met een duur', () async {
-      nep.antwoorden['PATCH /api/v1/families/sharing'] = (
+    test('sharing with a duration', () async {
+      fake.responses['PATCH /api/v1/families/sharing'] = (
         200,
         {'success': true},
       );
-      await dienst.zetDelen(server, 'k', aan: true, duur: DeelDuur.uur1);
-      expect(nep.verzoeken.last.data, {'enabled': true, 'duration': '1h'});
-      await dienst.zetDelen(server, 'k', aan: false);
-      expect(nep.verzoeken.last.data, {'enabled': false});
+      await service.setSharing(
+        server,
+        'k',
+        enabled: true,
+        duration: ShareDuration.hour1,
+      );
+      expect(fake.requests.last.data, {'enabled': true, 'duration': '1h'});
+      await service.setSharing(server, 'k', enabled: false);
+      expect(fake.requests.last.data, {'enabled': false});
     });
   });
 
-  group('het account', () {
+  group('the account', () {
     late ProviderContainer c;
-    late GeheugenGeheimOpslag sleutels;
+    late MemorySecretStore keys;
 
     setUp(() {
-      sleutels = GeheugenGeheimOpslag();
-      nep.antwoorden['POST /api/v1/auth/login'] = (200, ingelogd);
-      nep.antwoorden['GET /api/v1/users/me'] = (200, mij);
-      nep.antwoorden['GET /api/v1/families/mine'] = (200, mine);
-      nep.antwoorden['GET /api/v1/families/locations'] = (200, locaties);
+      keys = MemorySecretStore();
+      fake.responses['POST /api/v1/auth/login'] = (200, signedIn);
+      fake.responses['GET /api/v1/users/me'] = (200, meJson);
+      fake.responses['GET /api/v1/families/mine'] = (200, mine);
+      fake.responses['GET /api/v1/families/locations'] = (200, locations);
       c = ProviderContainer(
         overrides: [
-          dioProvider.overrideWithValue(Dio()..httpClientAdapter = nep),
-          dawarichGeheimProvider.overrideWithValue(sleutels),
-          geheimOpslagProvider.overrideWithValue(GeheugenGeheimOpslag()),
+          dioProvider.overrideWithValue(Dio()..httpClientAdapter = fake),
+          dawarichSecretProvider.overrideWithValue(keys),
+          secretStoreProvider.overrideWithValue(MemorySecretStore()),
         ],
       );
     });
 
     tearDown(() => c.dispose());
 
-    test('inloggen bewaart de sleutel veilig', () async {
+    test('signing in stores the key securely', () async {
       await c
           .read(dawarichProvider.notifier)
-          .inloggen(server, ' ik@thuis.nl ', 'ww');
-      expect(c.read(dawarichProvider)?.email, 'ik@thuis.nl');
-      expect(c.read(dawarichProvider)?.familie, isTrue);
-      expect(sleutels.geheim, 'geheim123');
-      expect(c.read(dawarichProvider.notifier).sleutel, 'geheim123');
+          .signIn(server, ' me@home.nl ', 'pw');
+      expect(c.read(dawarichProvider)?.email, 'me@home.nl');
+      expect(c.read(dawarichProvider)?.family, isTrue);
+      expect(keys.secret, 'secret123');
+      expect(c.read(dawarichProvider.notifier).key, 'secret123');
     });
 
     test(
-      'delen onderweg vult de deel-instellingen; uitloggen zet ze uit',
+      'sharing en route fills the share settings; signing out turns them off',
       () async {
         final notifier = c.read(dawarichProvider.notifier);
-        await notifier.inloggen(server, 'ik@thuis.nl', 'ww');
-        await notifier.zetDelenOnderweg(true);
-        final deel = c.read(deelInstellingenProvider);
-        expect(deel.aan, isTrue);
-        expect(deel.sjabloon, DeelSjabloon.dawarich);
-        expect(deel.url, '$server/api/v1/points');
-        expect(deel.inlog, DeelInlog.bearer);
-        expect(deel.geheim, 'geheim123');
-        expect(deeltViaDawarich(deel, c.read(dawarichProvider)), isTrue);
+        await notifier.signIn(server, 'me@home.nl', 'pw');
+        await notifier.setShareEnRoute(true);
+        final share = c.read(shareSettingsProvider);
+        expect(share.enabled, isTrue);
+        expect(share.template, ShareTemplate.dawarich);
+        expect(share.url, '$server/api/v1/points');
+        expect(share.auth, ShareAuth.bearer);
+        expect(share.secret, 'secret123');
+        expect(sharesViaDawarich(share, c.read(dawarichProvider)), isTrue);
 
-        await notifier.uitloggen();
+        await notifier.signOut();
         expect(c.read(dawarichProvider), isNull);
-        expect(c.read(deelInstellingenProvider).aan, isFalse);
-        expect(c.read(deelInstellingenProvider).geheim, isEmpty);
-        expect(sleutels.geheim, isEmpty);
+        expect(c.read(shareSettingsProvider).enabled, isFalse);
+        expect(c.read(shareSettingsProvider).secret, isEmpty);
+        expect(keys.secret, isEmpty);
       },
     );
 
-    test('op de kaart alleen de anderen', () async {
+    test('only the others on the map', () async {
       final notifier = c.read(dawarichProvider.notifier);
-      await notifier.inloggen(server, 'ik@thuis.nl', 'ww');
-      c.listen(familieLocatiesProvider, (_, _) {});
-      expect(c.read(familieLocatiesProvider), isEmpty);
-      await notifier.zetToonFamilie(true);
-      await c.read(familieLocatiesProvider.notifier).haal();
-      final familie = c.read(familieLocatiesProvider);
-      expect(familie.single.email, 'partner@thuis.nl');
+      await notifier.signIn(server, 'me@home.nl', 'pw');
+      c.listen(familyLocationsProvider, (_, _) {});
+      expect(c.read(familyLocationsProvider), isEmpty);
+      await notifier.setShowFamily(true);
+      await c.read(familyLocationsProvider.notifier).fetch();
+      final family = c.read(familyLocationsProvider);
+      expect(family.single.email, 'partner@home.nl');
 
-      await notifier.zetToonFamilie(false);
-      expect(c.read(familieLocatiesProvider), isEmpty);
+      await notifier.setShowFamily(false);
+      expect(c.read(familyLocationsProvider), isEmpty);
     });
 
-    test('volgen haalt meteen en daarna elke 5 seconden', () async {
+    test('following fetches immediately and then every 5 seconds', () async {
       final notifier = c.read(dawarichProvider.notifier);
-      await notifier.inloggen(server, 'ik@thuis.nl', 'ww');
-      await notifier.zetToonFamilie(true);
-      c.listen(familieLocatiesProvider, (_, _) {});
-      await c.read(familieLocatiesProvider.notifier).haal();
-      int opgehaald() => nep.verzoeken
+      await notifier.signIn(server, 'me@home.nl', 'pw');
+      await notifier.setShowFamily(true);
+      c.listen(familyLocationsProvider, (_, _) {});
+      await c.read(familyLocationsProvider.notifier).fetch();
+      int fetched() => fake.requests
           .where((v) => v.uri.path == '/api/v1/families/locations')
           .length;
-      final voor = opgehaald();
-      c.read(gevolgdLidProvider.notifier).volg(2);
+      final before = fetched();
+      c.read(followedMemberProvider.notifier).follow(2);
       await Future<void>.delayed(const Duration(milliseconds: 20));
-      expect(opgehaald(), voor + 1);
-      expect(c.read(familieLocatiesProvider).single.userId, 2);
-      c.read(gevolgdLidProvider.notifier).stop();
-      expect(c.read(gevolgdLidProvider), isNull);
+      expect(fetched(), before + 1);
+      expect(c.read(familyLocationsProvider).single.userId, 2);
+      c.read(followedMemberProvider.notifier).stop();
+      expect(c.read(followedMemberProvider), isNull);
     });
 
-    test('familie delen zet het en haalt de status opnieuw', () async {
-      nep.antwoorden['PATCH /api/v1/families/sharing'] = (
+    test('family sharing sets it and fetches the status again', () async {
+      fake.responses['PATCH /api/v1/families/sharing'] = (
         200,
         {'success': true},
       );
       await c
           .read(dawarichProvider.notifier)
-          .inloggen(server, 'ik@thuis.nl', 'ww');
-      expect((await c.read(familieProvider.future))?.delenAan, isTrue);
-      await c.read(familieProvider.notifier).zetDelen(false);
-      expect(nep.verzoeken.where((v) => v.method == 'PATCH'), hasLength(1));
+          .signIn(server, 'me@home.nl', 'pw');
+      expect((await c.read(familyProvider.future))?.sharingEnabled, isTrue);
+      await c.read(familyProvider.notifier).setSharing(false);
+      expect(fake.requests.where((v) => v.method == 'PATCH'), hasLength(1));
     });
   });
 
-  test('geleden in minuten, uren of dagen', () async {
+  test('ago in minutes, hours or days', () async {
     final l = await AppLocalizations.delegate.load(const Locale('nl'));
-    expect(geleden(l, const Duration(seconds: 20)), 'zojuist');
-    expect(geleden(l, const Duration(minutes: 1)), '1 minuut geleden');
-    expect(geleden(l, const Duration(minutes: 59)), '59 minuten geleden');
-    expect(geleden(l, const Duration(minutes: 60)), '1 uur geleden');
-    expect(geleden(l, const Duration(hours: 5, minutes: 50)), '5 uur geleden');
-    expect(geleden(l, const Duration(hours: 24)), '1 dag geleden');
-    expect(geleden(l, const Duration(days: 3)), '3 dagen geleden');
-    // Een klok die iets voorloopt: niet "-1 minuten".
-    expect(geleden(l, const Duration(seconds: -30)), 'zojuist');
+    expect(timeAgo(l, const Duration(seconds: 20)), 'zojuist');
+    expect(timeAgo(l, const Duration(minutes: 1)), '1 minuut geleden');
+    expect(timeAgo(l, const Duration(minutes: 59)), '59 minuten geleden');
+    expect(timeAgo(l, const Duration(minutes: 60)), '1 uur geleden');
+    expect(timeAgo(l, const Duration(hours: 5, minutes: 50)), '5 uur geleden');
+    expect(timeAgo(l, const Duration(hours: 24)), '1 dag geleden');
+    expect(timeAgo(l, const Duration(days: 3)), '3 dagen geleden');
+    // A clock that runs slightly fast: not "-1 minutes".
+    expect(timeAgo(l, const Duration(seconds: -30)), 'zojuist');
   });
 
-  group('het scherm', () {
-    Future<ProviderContainer> toon(WidgetTester tester) async {
-      nep.antwoorden['GET /api/v1/health'] = (200, {'status': 'ok'});
-      nep.antwoorden['POST /api/v1/auth/login'] = (200, ingelogd);
-      nep.antwoorden['GET /api/v1/users/me'] = (200, mij);
-      nep.antwoorden['GET /api/v1/families/mine'] = (200, mine);
+  group('the screen', () {
+    Future<ProviderContainer> showScreen(WidgetTester tester) async {
+      fake.responses['GET /api/v1/health'] = (200, {'status': 'ok'});
+      fake.responses['POST /api/v1/auth/login'] = (200, signedIn);
+      fake.responses['GET /api/v1/users/me'] = (200, meJson);
+      fake.responses['GET /api/v1/families/mine'] = (200, mine);
       final c = ProviderContainer(
         overrides: [
-          dioProvider.overrideWithValue(Dio()..httpClientAdapter = nep),
-          dawarichGeheimProvider.overrideWithValue(GeheugenGeheimOpslag()),
-          geheimOpslagProvider.overrideWithValue(GeheugenGeheimOpslag()),
+          dioProvider.overrideWithValue(Dio()..httpClientAdapter = fake),
+          dawarichSecretProvider.overrideWithValue(MemorySecretStore()),
+          secretStoreProvider.overrideWithValue(MemorySecretStore()),
         ],
       );
       addTearDown(c.dispose);
@@ -419,17 +424,17 @@ void main() {
             locale: const Locale('nl'),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: const InstellingenScreen(categorie: 'dawarich'),
+            home: const SettingsScreen(category: 'dawarich'),
           ),
         ),
       );
       return c;
     }
 
-    /// Tikken, en de nep-server even laten antwoorden.
-    Future<void> tik(WidgetTester tester, Finder wat) async {
+    /// Tap, and give the fake server a moment to respond.
+    Future<void> tick(WidgetTester tester, Finder what) async {
       await tester.runAsync(() async {
-        await tester.tap(wat);
+        await tester.tap(what);
         await Future<void>.delayed(const Duration(milliseconds: 50));
       });
       await tester.pumpAndSettle();
@@ -439,37 +444,37 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    Future<void> verbind(WidgetTester tester) async {
+    Future<void> connect(WidgetTester tester) async {
       await tester.enterText(
         find.widgetWithText(TextField, 'Server'),
         'dawarich.test',
       );
-      await tik(tester, find.text('Verbinden'));
+      await tick(tester, find.text('Verbinden'));
     }
 
-    testWidgets('eerst de server, dan inloggen, dan pas de instellingen', (
+    testWidgets('first the server, then sign in, only then the settings', (
       tester,
     ) async {
-      await toon(tester);
-      // Stap 1: alleen de server.
+      await showScreen(tester);
+      // Step 1: only the server.
       expect(find.widgetWithText(TextField, 'E-mail'), findsNothing);
       expect(find.text('Locatie delen met familie'), findsNothing);
-      await verbind(tester);
+      await connect(tester);
 
-      // Stap 2: verbonden, nu inloggen.
+      // Step 2: connected, now sign in.
       expect(find.text('dawarich.test'), findsOneWidget);
       expect(find.text('Verbonden · Dawarich 1.15.2'), findsOneWidget);
       await tester.enterText(
         find.widgetWithText(TextField, 'E-mail'),
-        'ik@thuis.nl',
+        'me@home.nl',
       );
       await tester.enterText(
         find.widgetWithText(TextField, 'Wachtwoord'),
-        'ww',
+        'pw',
       );
-      await tik(tester, find.widgetWithText(FilledButton, 'Inloggen'));
+      await tick(tester, find.widgetWithText(FilledButton, 'Inloggen'));
 
-      expect(find.text('ik@thuis.nl'), findsOneWidget);
+      expect(find.text('me@home.nl'), findsOneWidget);
       expect(
         find.text('dawarich.test · Verbonden · Dawarich 1.15.2'),
         findsOneWidget,
@@ -479,75 +484,75 @@ void main() {
       expect(find.text('Locatie delen tijdens navigeren'), findsOneWidget);
     });
 
-    testWidgets('geen Dawarich op het adres: een melding, geen stap 2', (
+    testWidgets('no Dawarich at the address: a message, no step 2', (
       tester,
     ) async {
-      await toon(tester);
-      nep.antwoorden['GET /api/v1/health'] = (200, '<html>Authelia</html>');
-      await verbind(tester);
+      await showScreen(tester);
+      fake.responses['GET /api/v1/health'] = (200, '<html>Authelia</html>');
+      await connect(tester);
       expect(find.textContaining('antwoordt geen Dawarich'), findsOneWidget);
       expect(find.widgetWithText(TextField, 'E-mail'), findsNothing);
     });
 
-    testWidgets('via de website: de sleutel uit de WebView', (tester) async {
-      String? geopend;
-      DawarichInstellingen.openWebsite = (_, server) async {
-        geopend = server;
-        return 'geheim123';
+    testWidgets('via the website: the key from the WebView', (tester) async {
+      String? opened;
+      DawarichSettings.openWebsite = (_, server) async {
+        opened = server;
+        return 'secret123';
       };
       addTearDown(
-        () => DawarichInstellingen.openWebsite = DawarichWebsiteLogin.open,
+        () => DawarichSettings.openWebsite = DawarichWebsiteLogin.open,
       );
-      final c = await toon(tester);
-      await verbind(tester);
-      await tik(tester, find.text('Via de Dawarich-website'));
-      expect(geopend, server);
-      expect(c.read(dawarichProvider.notifier).sleutel, 'geheim123');
+      final c = await showScreen(tester);
+      await connect(tester);
+      await tick(tester, find.text('Via de Dawarich-website'));
+      expect(opened, server);
+      expect(c.read(dawarichProvider.notifier).key, 'secret123');
       expect(find.text('Locatie delen met familie'), findsOneWidget);
     });
 
-    testWidgets('met een sleutel, en een fout', (tester) async {
-      await toon(tester);
-      await verbind(tester);
-      nep.antwoorden['GET /api/v1/users/me'] = (401, {'error': 'x'});
+    testWidgets('with a key, and an error', (tester) async {
+      await showScreen(tester);
+      await connect(tester);
+      fake.responses['GET /api/v1/users/me'] = (401, {'error': 'x'});
       await tester.tap(find.text('Met een API-sleutel'));
       await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(TextField, 'API-sleutel'),
-        'fout',
+        'wrong',
       );
-      await tik(tester, find.widgetWithText(FilledButton, 'Inloggen').last);
+      await tick(tester, find.widgetWithText(FilledButton, 'Inloggen').last);
       expect(find.text('Onjuiste gegevens.'), findsOneWidget);
     });
 
-    testWidgets('sleutel verlopen: alleen opnieuw inloggen, server ingevuld', (
+    testWidgets('key expired: only sign in again, server filled in', (
       tester,
     ) async {
-      final c = await toon(tester);
+      final c = await showScreen(tester);
       await tester.runAsync(
         () => c
             .read(dawarichProvider.notifier)
-            .inloggen(server, 'ik@thuis.nl', 'ww'),
+            .signIn(server, 'me@home.nl', 'pw'),
       );
-      nep.antwoorden['GET /api/v1/users/me'] = (401, {'error': 'x'});
-      c.invalidate(dawarichVerbindingProvider);
-      await tik(tester, find.byType(Scaffold).first);
+      fake.responses['GET /api/v1/users/me'] = (401, {'error': 'x'});
+      c.invalidate(dawarichConnectionProvider);
+      await tick(tester, find.byType(Scaffold).first);
       expect(find.textContaining('Sessie verlopen'), findsOneWidget);
       expect(find.text('Locatie delen met familie'), findsNothing);
 
-      await tik(tester, find.text('Opnieuw inloggen'));
+      await tick(tester, find.text('Opnieuw inloggen'));
       expect(c.read(dawarichProvider), isNull);
       expect(find.text(server), findsOneWidget);
     });
 
-    testWidgets('uitloggen vraagt eerst', (tester) async {
-      final c = await toon(tester);
+    testWidgets('signing out asks first', (tester) async {
+      final c = await showScreen(tester);
       await tester.runAsync(
         () => c
             .read(dawarichProvider.notifier)
-            .inloggen(server, 'ik@thuis.nl', 'ww'),
+            .signIn(server, 'me@home.nl', 'pw'),
       );
-      await tik(tester, find.byType(Scaffold).first);
+      await tick(tester, find.byType(Scaffold).first);
       await tester.tap(find.text('Uitloggen'));
       await tester.pumpAndSettle();
       expect(find.text('Uitloggen bij Dawarich?'), findsOneWidget);
@@ -557,7 +562,7 @@ void main() {
 
       await tester.tap(find.text('Uitloggen'));
       await tester.pumpAndSettle();
-      await tik(tester, find.widgetWithText(FilledButton, 'Uitloggen'));
+      await tick(tester, find.widgetWithText(FilledButton, 'Uitloggen'));
       expect(c.read(dawarichProvider), isNull);
     });
   });

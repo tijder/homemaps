@@ -1,7 +1,7 @@
-# Het kleinste gebied waar alle drie de bronnen een extract van hebben: PBF 3,5 MB,
-# Photon-index 1,8 MB. Gebruikt door ci/up.sh (lokaal en in de workflow).
-gebied:
-  naam: andorra
+# The smallest region all three sources have an extract of: PBF 3.5 MB,
+# Photon index 1.8 MB. Used by ci/up.sh (locally and in the workflow).
+region:
+  name: andorra
   pbfUrl: https://download.geofabrik.de/europe/andorra-latest.osm.pbf
   bbox: "1.41,42.43,1.79,42.66"
 
@@ -19,9 +19,9 @@ tiles:
     resources:
       requests: { cpu: 100m, memory: 512Mi }
       limits: { memory: 3Gi }
-    # De wereld-run rekent de kustlijnen van de hele planeet door; dat hoort niet
-    # in een smoke-test.
-    wereld: { enabled: false }
+    # The world run processes the coastlines of the whole planet; that doesn't
+    # belong in a smoke test.
+    world: { enabled: false }
   resources:
     requests: { cpu: 50m, memory: 256Mi }
     limits: { memory: 1Gi }
@@ -35,13 +35,13 @@ valhalla:
     resources:
       requests: { cpu: 100m, memory: 256Mi }
       limits: { memory: 2Gi }
-  verkeer:
+  traffic:
     image: { repository: homemaps-traffic, tag: ci, pullPolicy: Never }
-    # NDW kent Andorra niet; ci/nep-ndw levert dezelfde feeds met een file, een
-    # afsluiting, een ongeval en een tijdelijke maximumsnelheid op wegen die daar
-    # wel liggen.
-    ndwUrl: http://nep-ndw:8080
-    intervalSeconden: 60
+    # NDW doesn't know Andorra; ci/fake-ndw serves the same feeds with a jam, a
+    # closure, an accident and a temporary speed limit on roads that do exist
+    # there.
+    ndwUrl: http://fake-ndw:8080
+    intervalSeconds: 60
     resources:
       requests: { cpu: 20m, memory: 64Mi }
       limits: { memory: 256Mi }
@@ -50,7 +50,7 @@ photon:
   dbUrl: https://download1.graphhopper.com/public/europe/andorra/photon-db-andorra-1.0-latest.tar.bz2
   size: 1Gi
   heap: 384m
-  # kind is IPv4-only; daar bestaat de keuze niet.
+  # kind is IPv4-only; the choice doesn't exist there.
   ipFamilies: []
   resources:
     requests: { cpu: 50m, memory: 256Mi }

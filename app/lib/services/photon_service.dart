@@ -1,81 +1,81 @@
 import 'package:dio/dio.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
-import '../models/plaats.dart';
-import '../utils/zoekterm.dart';
+import '../models/place.dart';
+import '../utils/search_term.dart';
 
 class PhotonService {
-  PhotonService(this._dio, this.basis);
+  PhotonService(this._dio, this.baseUrl);
 
   final Dio _dio;
 
-  /// Bijvoorbeeld `https://maps.example.org/geocode`.
-  final String basis;
+  /// For example `https://maps.example.org/geocode`.
+  final String baseUrl;
 
-  /// De URI van een zoekopdracht. Los van [zoek] zodat hij te testen is: Photon
-  /// weigert elke parameter die hij niet kent met een 400.
-  Uri zoekUri(String tekst, {LatLng? nabij}) {
-    final adres = leesPostcodeHuisnummer(tekst);
+  /// The URI of a search. Separate from [search] so it can be tested: Photon
+  /// rejects every parameter it doesn't know with a 400.
+  Uri searchUri(String text, {LatLng? near}) {
+    final address = parsePostcodeHouseNumber(text);
     final parameters = <String, dynamic>{
-      if (adres != null) ...{
-        'postcode': adres.postcode,
-        'housenumber': adres.huisnummer,
+      if (address != null) ...{
+        'postcode': address.postcode,
+        'housenumber': address.houseNumber,
       } else
-        'q': tekst.trim(),
+        'q': text.trim(),
       'limit': '10',
-      // De kant-en-klare landindexen kennen alleen default, de, en en fr;
-      // `default` is de lokale naam.
+      // The ready-made country indexes only know default, de, en and fr;
+      // `default` is the local name.
       'lang': 'default',
-      // Tussen gebieden routeren heeft geen zin, en toeristische bordjes zijn
-      // geen bestemming.
+      // Routing between regions makes no sense, and tourist signs aren't a
+      // destination.
       'osm_tag': ['!place:county', '!boundary', '!historic', '!information'],
-      if (nabij != null) ...{
-        'lat': nabij.latitude.toString(),
-        'lon': nabij.longitude.toString(),
+      if (near != null) ...{
+        'lat': near.latitude.toString(),
+        'lon': near.longitude.toString(),
       },
     };
-    final uri = Uri.parse(adres != null ? '$basis/structured' : basis);
+    final uri = Uri.parse(address != null ? '$baseUrl/structured' : baseUrl);
     return uri.replace(queryParameters: parameters);
   }
 
-  Future<List<Plaats>> zoek(
-    String tekst, {
-    LatLng? nabij,
-    CancelToken? annuleer,
+  Future<List<Place>> search(
+    String text, {
+    LatLng? near,
+    CancelToken? cancel,
   }) async {
-    if (tekst.trim().length < 2) return const [];
-    final punt = leesCoordinaat(tekst);
-    if (punt != null) return [Plaats.vanPunt(punt)];
-    final antwoord = await _dio.getUri<Map<String, dynamic>>(
-      zoekUri(tekst, nabij: nabij),
-      cancelToken: annuleer,
+    if (text.trim().length < 2) return const [];
+    final point = parseCoordinate(text);
+    if (point != null) return [Place.fromPoint(point)];
+    final response = await _dio.getUri<Map<String, dynamic>>(
+      searchUri(text, near: near),
+      cancelToken: cancel,
     );
-    return leesAntwoord(antwoord.data ?? const {});
+    return parseResponse(response.data ?? const {});
   }
 
-  /// Het adres bij een punt, of null als Photon er geen kent.
-  Future<Plaats?> omgekeerd(LatLng punt) async {
-    final antwoord = await _dio.getUri<Map<String, dynamic>>(
-      Uri.parse('$basis/reverse').replace(
+  /// The address at a point, or null if Photon doesn't know one.
+  Future<Place?> reverseGeocode(LatLng point) async {
+    final response = await _dio.getUri<Map<String, dynamic>>(
+      Uri.parse('$baseUrl/reverse').replace(
         queryParameters: {
-          'lat': punt.latitude.toString(),
-          'lon': punt.longitude.toString(),
+          'lat': point.latitude.toString(),
+          'lon': point.longitude.toString(),
           'lang': 'default',
         },
       ),
     );
-    final gevonden = leesAntwoord(antwoord.data ?? const {});
-    if (gevonden.isEmpty) return null;
-    // Het punt blijft waar de gebruiker tikte; alleen de naam komt van Photon.
-    return Plaats(
-      naam: gevonden.first.naam,
-      omschrijving: gevonden.first.omschrijving,
-      punt: punt,
+    final found = parseResponse(response.data ?? const {});
+    if (found.isEmpty) return null;
+    // The point stays where the user tapped; only the name comes from Photon.
+    return Place(
+      label: found.first.label,
+      description: found.first.description,
+      point: point,
     );
   }
 
-  static List<Plaats> leesAntwoord(Map<String, dynamic> json) => [
+  static List<Place> parseResponse(Map<String, dynamic> json) => [
     for (final feature in (json['features'] as List? ?? const []))
-      Plaats.vanPhoton((feature as Map).cast<String, dynamic>()),
+      Place.fromPhoton((feature as Map).cast<String, dynamic>()),
   ];
 }

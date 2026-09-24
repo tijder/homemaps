@@ -1,20 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:homemaps/models/plaats.dart';
-import 'package:homemaps/providers/locatie.dart';
+import 'package:homemaps/models/place.dart';
+import 'package:homemaps/providers/location.dart';
 import 'package:homemaps/providers/planner.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
-import 'hulp/nep_bron.dart';
+import 'helpers/fake_source.dart';
 
-Plaats plaats(String naam, double lat) =>
-    Plaats(naam: naam, punt: LatLng(lat, 5));
+Place place(String label, double lat) =>
+    Place(label: label, point: LatLng(lat, 5));
 
 void main() {
   late ProviderContainer container;
   late PlannerNotifier planner;
   PlannerState state() => container.read(plannerProvider);
-  List<String?> namen() => [for (final p in state().punten) p.plaats?.naam];
+  List<String?> names() => [for (final p in state().points) p.place?.label];
 
   setUp(() {
     container = ProviderContainer();
@@ -22,124 +22,124 @@ void main() {
     planner = container.read(plannerProvider.notifier);
   });
 
-  test('een bewegende plaats vervangen brengt hem niet opnieuw in beeld', () {
-    planner.toonPlaats(plaats('Partner', 52.09));
-    planner.vervangPlaats(plaats('Partner', 52.10));
-    expect(state().gevonden?.punt, const LatLng(52.10, 5));
-    expect(state().beeldVersie, 1);
+  test('replacing a moving place does not bring it back into view', () {
+    planner.showPlace(place('Partner', 52.09));
+    planner.replacePlace(place('Partner', 52.10));
+    expect(state().found?.point, const LatLng(52.10, 5));
+    expect(state().viewVersion, 1);
   });
 
-  test('zoeken eerst: een plaats kiezen opent nog geen route', () {
-    planner.toonPlaats(plaats('Dom', 52.09));
-    expect(state().routeModus, isFalse);
-    expect(state().gevonden?.naam, 'Dom');
-    expect(state().beeldVersie, 1);
+  test('search first: choosing a place does not open a route yet', () {
+    planner.showPlace(place('Dom', 52.09));
+    expect(state().routeMode, isFalse);
+    expect(state().found?.label, 'Dom');
+    expect(state().viewVersion, 1);
 
     planner.startRoute();
-    expect(state().routeModus, isTrue);
-    expect(namen(), [null, 'Dom']);
+    expect(state().routeMode, isTrue);
+    expect(names(), [null, 'Dom']);
 
-    planner.naarZoeken();
-    expect(state().routeModus, isFalse);
-    expect(state().gevonden?.naam, 'Dom');
-    expect(namen(), [null, null]);
+    planner.toSearch();
+    expect(state().routeMode, isFalse);
+    expect(state().found?.label, 'Dom');
+    expect(names(), [null, null]);
   });
 
-  test('leeg gaat terug naar een leeg zoekscherm', () {
-    planner.toonPlaats(plaats('Dom', 52.09));
+  test('clearing goes back to an empty search screen', () {
+    planner.showPlace(place('Dom', 52.09));
     planner.startRoute();
-    planner.zetVan(plaats('A', 52.1));
+    planner.setFrom(place('A', 52.1));
 
-    planner.leeg();
-    expect(state().routeModus, isFalse);
-    expect(state().gevonden, isNull);
-    expect(namen(), [null, null]);
+    planner.clear();
+    expect(state().routeMode, isFalse);
+    expect(state().found, isNull);
+    expect(names(), [null, null]);
     expect(state().routes.value, isEmpty);
   });
 
-  test('een route kiezen in de lijst brengt hem weer in beeld', () {
-    planner.zetVan(plaats('A', 52.1), volgBeeld: false);
-    final voor = state().beeldVersie;
-    planner.kies(1, volgBeeld: true);
-    expect(state().gekozen, 1);
-    expect(state().beeldVersie, voor + 1);
-    // Op de kaart aangetikt: het beeld blijft.
-    planner.kies(0);
-    expect(state().gekozen, 0);
-    expect(state().beeldVersie, voor + 1);
+  test('choosing a route in the list brings it back into view', () {
+    planner.setFrom(place('A', 52.1), moveView: false);
+    final before = state().viewVersion;
+    planner.choose(1, moveView: true);
+    expect(state().chosen, 1);
+    expect(state().viewVersion, before + 1);
+    // Tapped on the map: the view stays.
+    planner.choose(0);
+    expect(state().chosen, 0);
+    expect(state().viewVersion, before + 1);
   });
 
-  test('rechtermuisknop gaat direct naar het routescherm', () {
-    planner.zetVan(plaats('A', 52.1), volgBeeld: false);
-    expect(state().routeModus, isTrue);
-    expect(state().beeldVersie, 0);
-    planner.zetNaar(plaats('B', 52.2));
-    expect(namen(), ['A', 'B']);
+  test('right mouse button goes straight to the route screen', () {
+    planner.setFrom(place('A', 52.1), moveView: false);
+    expect(state().routeMode, isTrue);
+    expect(state().viewVersion, 0);
+    planner.setTo(place('B', 52.2));
+    expect(names(), ['A', 'B']);
   });
 
-  test('verplaatsen houdt het id bij de plaats', () {
-    planner.zetVan(plaats('A', 52.1));
-    planner.voegViaToe(plaats('B', 52.2));
-    planner.zetNaar(plaats('C', 52.3));
-    final idVanC = state().punten.last.id;
+  test('reordering keeps the id with the place', () {
+    planner.setFrom(place('A', 52.1));
+    planner.addVia(place('B', 52.2));
+    planner.setTo(place('C', 52.3));
+    final idOfC = state().points.last.id;
 
-    planner.verplaats(2, 0); // C naar voren
-    expect(namen(), ['C', 'A', 'B']);
-    expect(state().punten.first.id, idVanC);
+    planner.reorder(2, 0); // C to the front
+    expect(names(), ['C', 'A', 'B']);
+    expect(state().points.first.id, idOfC);
 
-    planner.verplaats(0, 1); // C een plek omlaag
-    expect(namen(), ['A', 'C', 'B']);
+    planner.reorder(0, 1); // C one place down
+    expect(names(), ['A', 'C', 'B']);
 
-    planner.draaiOm();
-    expect(namen(), ['B', 'C', 'A']);
+    planner.swap();
+    expect(names(), ['B', 'C', 'A']);
   });
 
-  test('verwijderen: een via verdwijnt, van en naar worden leeg', () {
-    planner.zetVan(plaats('A', 52.1));
-    planner.voegViaToe(plaats('B', 52.2));
-    planner.verwijder(1);
-    expect(namen(), ['A', null]);
-    planner.verwijder(0);
-    expect(namen(), [null, null]);
+  test('removing: a via disappears, from and to become empty', () {
+    planner.setFrom(place('A', 52.1));
+    planner.addVia(place('B', 52.2));
+    planner.remove(1);
+    expect(names(), ['A', null]);
+    planner.remove(0);
+    expect(names(), [null, null]);
   });
 
-  test('hernoemen verandert de naam, niet de volgorde of de ids', () {
-    planner.zetVan(Plaats.vanPunt(const LatLng(52.1, 5)));
-    final id = state().punten.first.id;
-    planner.hernoem(0, plaats('Domplein 1', 52.1));
-    expect(namen(), ['Domplein 1', null]);
-    expect(state().punten.first.id, id);
+  test('renaming changes the name, not the order or the ids', () {
+    planner.setFrom(Place.fromPoint(const LatLng(52.1, 5)));
+    final id = state().points.first.id;
+    planner.rename(0, place('Domplein 1', 52.1));
+    expect(names(), ['Domplein 1', null]);
+    expect(state().points.first.id, id);
   });
 
   test(
-    'met je locatie aan vertrekt een nieuwe route vanaf "Mijn locatie"',
+    'with your location on a new route departs from "My location"',
     () async {
       TestWidgetsFlutterBinding.ensureInitialized();
-      final bron = NepBron(Toestemming.ja);
-      final metLocatie = ProviderContainer(
-        overrides: [locatieBronProvider.overrideWithValue(bron)],
+      final source = FakeSource(PermissionAnswer.yes);
+      final withLocation = ProviderContainer(
+        overrides: [locationSourceProvider.overrideWithValue(source)],
       );
-      addTearDown(metLocatie.dispose);
-      final wacht = metLocatie.read(locatieProvider.notifier).zetAan();
+      addTearDown(withLocation.dispose);
+      final wait = withLocation.read(locationProvider.notifier).turnOn();
       await Future<void>.delayed(Duration.zero);
-      bron.fixes.add(
-        LocatieFix(punt: const LatLng(52.19, 5.7), tijd: DateTime(2026)),
+      source.fixes.add(
+        LocationFix(point: const LatLng(52.19, 5.7), time: DateTime(2026)),
       );
-      await wacht;
+      await wait;
 
-      final p = metLocatie.read(plannerProvider.notifier);
-      p.toonPlaats(plaats('Dom', 52.09));
+      final p = withLocation.read(plannerProvider.notifier);
+      p.showPlace(place('Dom', 52.09));
       p.startRoute();
-      final punten = metLocatie.read(plannerProvider).punten;
-      expect(punten.first.plaats?.mijnLocatie, isTrue);
-      expect(punten.first.plaats?.punt, const LatLng(52.19, 5.7));
-      expect(punten.last.plaats?.naam, 'Dom');
+      final points = withLocation.read(plannerProvider).points;
+      expect(points.first.place?.myLocation, isTrue);
+      expect(points.first.place?.point, const LatLng(52.19, 5.7));
+      expect(points.last.place?.label, 'Dom');
 
-      // Zocht je "Mijn locatie" zelf, dan is dat de bestemming en blijft van leeg.
-      p.naarZoeken();
-      p.toonPlaats(Plaats.hier(const LatLng(52.19, 5.7)));
+      // If you searched "My location" itself, that is the destination and from stays empty.
+      p.toSearch();
+      p.showPlace(Place.here(const LatLng(52.19, 5.7)));
       p.startRoute();
-      expect(metLocatie.read(plannerProvider).punten.first.plaats, isNull);
+      expect(withLocation.read(plannerProvider).points.first.place, isNull);
     },
   );
 }

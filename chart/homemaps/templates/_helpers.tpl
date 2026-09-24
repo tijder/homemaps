@@ -12,9 +12,9 @@
 {{- end }}
 {{- end }}
 
-{{/* Naam van één onderdeel: (dict "root" . "naam" "valhalla") */}}
-{{- define "homemaps.onderdeel" -}}
-{{- printf "%s-%s" (include "homemaps.fullname" .root) .naam | trunc 63 | trimSuffix "-" }}
+{{/* Name of one component: (dict "root" . "name" "valhalla") */}}
+{{- define "homemaps.component" -}}
+{{- printf "%s-%s" (include "homemaps.fullname" .root) .name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{- define "homemaps.labels" -}}
@@ -30,10 +30,10 @@ app.kubernetes.io/version: {{ .root.Chart.AppVersion | quote }}
 {{- define "homemaps.selector" -}}
 app.kubernetes.io/name: {{ include "homemaps.name" .root }}
 app.kubernetes.io/instance: {{ .root.Release.Name }}
-app.kubernetes.io/component: {{ .naam }}
+app.kubernetes.io/component: {{ .name }}
 {{- end }}
 
-{{/* Pod-niveau: non-root met een vaste gebruiker. (dict "root" . "uid" 9011) overschrijft die. */}}
+{{/* Pod level: non-root with a fixed user. (dict "root" . "uid" 9011) overrides it. */}}
 {{- define "homemaps.podSecurity" -}}
 {{- $uid := default .root.Values.securityContext.runAsUser .uid }}
 runAsUser: {{ $uid }}
@@ -55,10 +55,10 @@ capabilities:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "homemaps.onderdeel" . }}
+  name: {{ include "homemaps.component" . }}
   labels: {{- include "homemaps.labels" . | nindent 4 }}
   annotations:
-    # Een `helm uninstall` mag geen uren bouwwerk weggooien.
+    # A `helm uninstall` must not throw away hours of build work.
     helm.sh/resource-policy: keep
 spec:
   accessModes: [{{ .root.Values.storage.accessMode }}]
@@ -70,7 +70,7 @@ spec:
       storage: {{ .size }}
 {{- end }}
 
-{{/* De hostnamen waaronder de installatie bereikbaar is, voor tileserver-gl. */}}
+{{/* The hostnames the installation is reachable under, for tileserver-gl. */}}
 {{- define "homemaps.allowedHosts" -}}
 {{- $hosts := concat (.Values.httpRoute.enabled | ternary .Values.httpRoute.hostnames list) (.Values.ingress.enabled | ternary .Values.ingress.hosts list) .Values.tiles.extraAllowedHosts }}
 {{- if $hosts }}{{ join "," ($hosts | uniq) }}{{ else }}*{{ end }}

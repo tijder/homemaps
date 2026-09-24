@@ -1,6 +1,6 @@
 apiVersion: v2
 name: homemaps
-description: Eigen kaart- en routeplanner - tiles (planetiler + tileserver-gl), routing (Valhalla) met live NDW-verkeer, zoeken (Photon) en de web-app
+description: Self-hosted maps and route planner - tiles (planetiler + tileserver-gl), routing (Valhalla) with live NDW traffic, search (Photon) and the web app
 type: application
 version: 1.0.0
 appVersion: "1.0.0"

@@ -7,9 +7,9 @@ from homemaps_traffic import traffictile as tt
 from homemaps_traffic.tarindex import TrafficTar
 
 
-def test_bitlayout_komt_overeen_met_de_cpp_struct():
+def test_bit_layout_matches_the_cpp_struct():
     # overall 7 | s1 7 | s2 7 | s3 7 | bp1 8 | bp2 8 | c1 6 | c2 6 | c3 6 | inc 1 | spare 1
-    waarde = tt._pak_in(
+    value = tt._pack(
         overall=1,
         speed1=2,
         speed2=3,
@@ -21,83 +21,83 @@ def test_bitlayout_komt_overeen_met_de_cpp_struct():
         congestion3=9,
         has_incidents=1,
     )
-    verwacht = (
+    expected = (
         1 | 2 << 7 | 3 << 14 | 4 << 21 | 5 << 28 | 6 << 36 | 7 << 44 | 8 << 50 | 9 << 56 | 1 << 62
     )
-    assert waarde == verwacht
-    assert tt.pak_uit(waarde)["congestion3"] == 9
+    assert value == expected
+    assert tt.unpack(value)["congestion3"] == 9
 
 
-def test_snelheid_is_geldig_en_nooit_nul():
-    assert tt.pak_uit(tt.snelheid(100))["overall"] == 50
-    assert tt.pak_uit(tt.snelheid(100))["breakpoint1"] == 255
-    assert tt.is_geldig(tt.snelheid(100))
-    # 0,4 km/u is file, geen afsluiting
-    assert not tt.is_afgesloten(tt.snelheid(0.4))
-    assert tt.pak_uit(tt.snelheid(400))["overall"] == 126
+def test_speed_is_valid_and_never_zero():
+    assert tt.unpack(tt.speed(100))["overall"] == 50
+    assert tt.unpack(tt.speed(100))["breakpoint1"] == 255
+    assert tt.is_valid(tt.speed(100))
+    # 0.4 km/h is a jam, not a closure
+    assert not tt.is_closed(tt.speed(0.4))
+    assert tt.unpack(tt.speed(400))["overall"] == 126
 
 
-def test_congestie_blijft_onder_de_afsluitwaarde():
-    assert tt.pak_uit(tt.snelheid(100, 100))["congestion1"] == 1
-    assert tt.pak_uit(tt.snelheid(0.1, 100))["congestion1"] == 62
-    assert tt.pak_uit(tt.snelheid(50))["congestion1"] == 0
+def test_congestion_stays_below_the_closure_value():
+    assert tt.unpack(tt.speed(100, 100))["congestion1"] == 1
+    assert tt.unpack(tt.speed(0.1, 100))["congestion1"] == 62
+    assert tt.unpack(tt.speed(50))["congestion1"] == 0
 
 
-def test_afgesloten_en_onbekend():
-    assert tt.is_afgesloten(tt.afgesloten())
-    assert not tt.is_geldig(tt.ONBEKEND)
-    assert not tt.is_afgesloten(tt.ONBEKEND)
+def test_closed_and_unknown():
+    assert tt.is_closed(tt.closed())
+    assert not tt.is_valid(tt.UNKNOWN)
+    assert not tt.is_closed(tt.UNKNOWN)
 
 
-def test_veld_buiten_bereik():
+def test_field_out_of_range():
     with pytest.raises(ValueError):
-        tt._pak_in(overall=128)
+        tt._pack(overall=128)
 
 
 def test_graphid():
     graphid = 2 | (763140 << 3) | (1234 << 25)
-    assert tt.graphid_delen(graphid) == (2, 763140, 1234)
-    assert tt.tegel_van(graphid) == 2 | (763140 << 3)
-    assert tt.index_van(graphid) == 1234
+    assert tt.graphid_parts(graphid) == (2, 763140, 1234)
+    assert tt.tile_of(graphid) == 2 | (763140 << 3)
+    assert tt.index_of(graphid) == 1234
 
 
-def _skelet(pad, tegels):
-    with tarfile.open(pad, "w") as tar:
-        # Net als het echte skelet: een index.bin vooraan, die geen tegel is.
+def _skeleton(path, tiles):
+    with tarfile.open(path, "w") as tar:
+        # Just like the real skeleton: an index.bin up front, which is not a tile.
         index = tarfile.TarInfo("index.bin")
         index.size = 112
         tar.addfile(index, io.BytesIO(bytes(range(112))))
-        for tile_id, aantal in tegels.items():
-            data = tt.HEADER.pack(tile_id, 0, aantal, tt.TILE_VERSION, 0, 0) + bytes(8 * aantal)
+        for tile_id, count in tiles.items():
+            data = tt.HEADER.pack(tile_id, 0, count, tt.TILE_VERSION, 0, 0) + bytes(8 * count)
             info = tarfile.TarInfo(f"2/000/{tile_id}.gph")
             info.size = len(data)
             tar.addfile(info, io.BytesIO(data))
 
 
-def test_tar_bijwerken_en_wissen(tmp_path):
-    pad = tmp_path / "traffic.tar"
-    tegel_a, tegel_b = 2 | (10 << 3), 2 | (11 << 3)
-    _skelet(pad, {tegel_a: 5, tegel_b: 3})
-    grootte = pad.stat().st_size
+def test_tar_update_and_clear(tmp_path):
+    path = tmp_path / "traffic.tar"
+    tile_a, tile_b = 2 | (10 << 3), 2 | (11 << 3)
+    _skeleton(path, {tile_a: 5, tile_b: 3})
+    size = path.stat().st_size
 
-    edge1, edge2 = tegel_a | (4 << 25), tegel_b | (0 << 25)
-    buiten = tegel_a | (5 << 25)
-    met_tar = TrafficTar(pad)
-    assert met_tar.aantal_edges == 8
-    ronde = {edge1: tt.snelheid(80), edge2: tt.afgesloten(), buiten: 1}
-    assert met_tar.werk_bij(ronde, set()) == (2, 0, 1)
-    met_tar.sluit()
+    edge1, edge2 = tile_a | (4 << 25), tile_b | (0 << 25)
+    outside = tile_a | (5 << 25)
+    traffic_tar = TrafficTar(path)
+    assert traffic_tar.edge_count == 8
+    cycle = {edge1: tt.speed(80), edge2: tt.closed(), outside: 1}
+    assert traffic_tar.update(cycle, set()) == (2, 0, 1)
+    traffic_tar.close()
 
-    # Opnieuw openen: het staat echt in het bestand, en de tar is nog heel.
-    assert pad.stat().st_size == grootte
-    with TrafficTar(pad) as tar:
-        assert tt.pak_uit(tar.lees(edge1))["overall"] == 40
-        assert tt.is_afgesloten(tar.lees(edge2))
-        assert tar.lees(tegel_a | (3 << 25)) == tt.ONBEKEND
-        # Volgende ronde zonder edge2: die moet terug naar onbekend.
-        assert tar.werk_bij({edge1: tt.snelheid(60)}, {edge1, edge2}) == (1, 1, 0)
-        assert tar.lees(edge2) == tt.ONBEKEND
-        tar.wis_alles()
-        assert tar.lees(edge1) == tt.ONBEKEND
-    with tarfile.open(pad) as tar:
+    # Reopen: it really is in the file, and the tar is still intact.
+    assert path.stat().st_size == size
+    with TrafficTar(path) as tar:
+        assert tt.unpack(tar.read(edge1))["overall"] == 40
+        assert tt.is_closed(tar.read(edge2))
+        assert tar.read(tile_a | (3 << 25)) == tt.UNKNOWN
+        # Next cycle without edge2: it has to go back to unknown.
+        assert tar.update({edge1: tt.speed(60)}, {edge1, edge2}) == (1, 1, 0)
+        assert tar.read(edge2) == tt.UNKNOWN
+        tar.clear_all()
+        assert tar.read(edge1) == tt.UNKNOWN
+    with tarfile.open(path) as tar:
         assert len(tar.getmembers()) == 3
