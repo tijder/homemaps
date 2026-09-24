@@ -54,6 +54,17 @@ android {
     }
 }
 
+dependencies {
+    // Android Auto (see src/main/kotlin/nl/g4d/homemaps/car/).
+    implementation("androidx.car.app:app:1.7.0")
+    implementation("androidx.car.app:app-projected:1.7.0")
+    // The map on the car's screen: the same SDK and version as maplibre_gl
+    // brings for the phone (its android/build.gradle), so there is one copy.
+    implementation("org.maplibre.gl:android-sdk-opengl:13.5.0")
+    // The generated car contract (CarApi.g.kt) talks to Dart with coroutines.
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+}
+
 kotlin {
     compilerOptions {
         jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
