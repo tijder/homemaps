@@ -76,6 +76,38 @@ what would happen.
 `geo:` links from other apps don't open HomeMaps on iOS: iOS doesn't support them
 system-wide.
 
+## Android Auto and CarPlay
+
+The same navigation on the car's screen. Dart stays in charge (planning,
+guidance, the voice); `app/lib/car/car_bridge.dart` mirrors it to the car
+over the Pigeon contract in `app/pigeons/car.dart` (regenerate with
+`dart run pigeon --input pigeons/car.dart`; the output is checked in). Native
+draws the map with MapLibre, the same SDK maplibre_gl brings for the phone,
+and fills the car's templates: home, work and recent places, search, a route
+preview, and turn-by-turn with the next maneuver, lanes, speed limit and ETA.
+
+**Android Auto** (`app/android/.../car/`): a `CarAppService` in the
+navigation category; the map is a `Presentation` on a virtual display on the
+car's surface. Test without a car with the Desktop Head Unit: install it in
+the SDK Manager ("Android Auto Desktop Head Unit Emulator"), on the phone turn
+on developer settings in the Android Auto app and "Start head unit server",
+then `adb forward tcp:5277 tcp:5277` and start `desktop-head-unit`. Real head
+units only accept apps installed from Play (internal testing is enough), or
+"Unknown sources" in the Android Auto developer settings. The test drive Play
+requires: `adb shell dumpsys activity service nl.g4d.homemaps/.car.HomemapsCarAppService AUTO_DRIVE`
+(a fake GPS then drives the route). In Play Console the app needs the Android
+Auto declaration, category Navigation.
+
+**CarPlay** (`app/ios/Runner/CarPlay/`): a `CPTemplateApplicationScene` with
+`CPMapTemplate` and a `CPNavigationSession`; the map is an `MLNMapView` in the
+CarPlay window. It needs Apple's `com.apple.developer.carplay-maps`
+entitlement (request it at developer.apple.com/carplay, category Navigation;
+weeks to months). Once granted, add the CarPlay Navigation capability to the
+App ID and `<key>com.apple.developer.carplay-maps</key><true/>` to
+`app/ios/Runner/Runner.entitlements`; the release workflow signs with it. Until
+then it only runs in the iOS Simulator (I/O > External Displays > CarPlay), on
+an iOS 18 simulator: the 26.4+ simulator crashes on `CPMapTemplate`.
+
 ## What has been proven, and how
 
 | | test |
@@ -90,6 +122,9 @@ system-wide.
 
 ## Still open
 
+- Android Auto and CarPlay have been built and unit-tested (the bridge), but not
+  yet driven on a head unit or in the CarPlay Simulator; CarPlay waits for the
+  entitlement.
 - **The APK has only been built, not run on a device.** Releases are
   signed with one fixed key (secrets `ANDROID_KEYSTORE` and
   `ANDROID_KEYSTORE_WACHTWOORD`); if you lose it, a new version can no longer

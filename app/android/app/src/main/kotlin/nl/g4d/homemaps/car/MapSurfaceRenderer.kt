@@ -6,7 +6,12 @@ import android.graphics.Rect
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.util.Log
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
+import android.view.Gravity
+import android.view.View
 import android.widget.FrameLayout
+import android.widget.TextView
 import androidx.car.app.AppManager
 import androidx.car.app.CarContext
 import androidx.car.app.SurfaceCallback
@@ -49,6 +54,7 @@ class MapSurfaceRenderer(private val carContext: CarContext, private val name: S
     private var map: MapLibreMap? = null
     private var style: Style? = null
     private var visibleArea: Rect? = null
+    private var speedLimit: TextView? = null
     private var width = 0
     private var height = 0
     private var dpi = 0
@@ -115,6 +121,7 @@ class MapSurfaceRenderer(private val carContext: CarContext, private val name: S
             mapView = view
             val root = FrameLayout(presentation.context)
             root.addView(view, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+            if (name == "main") root.addView(speedLimitView(presentation.context))
             presentation.setContentView(root)
             this.presentation = presentation
             view.onCreate(null)
@@ -136,6 +143,7 @@ class MapSurfaceRenderer(private val carContext: CarContext, private val name: S
     override fun onVisibleAreaChanged(visibleArea: Rect) {
         this.visibleArea = visibleArea
         applyPadding()
+        updateSpeedLimit()
     }
 
     override fun onStableAreaChanged(stableArea: Rect) {}
@@ -167,7 +175,52 @@ class MapSurfaceRenderer(private val carContext: CarContext, private val name: S
         CarHost.userMovedMap()
     }
 
+    /** The speed limit as a round sign, bottom left inside the visible area. */
+    private fun speedLimitView(context: android.content.Context): View {
+        val size = (56 * dpi / 160f).toInt()
+        val view = TextView(context)
+        view.gravity = Gravity.CENTER
+        view.setTextColor(Color.BLACK)
+        view.textSize = 20f
+        view.setTypeface(null, android.graphics.Typeface.BOLD)
+        view.background = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(Color.WHITE)
+            setStroke((5 * dpi / 160f).toInt(), Color.RED)
+        }
+        view.visibility = View.GONE
+        view.layoutParams = FrameLayout.LayoutParams(size, size, Gravity.BOTTOM or Gravity.START)
+        speedLimit = view
+        updateSpeedLimit()
+        return view
+    }
+
+    private fun updateSpeedLimit() {
+        val view = speedLimit ?: return
+        val limit = CarHost.speed?.limitKmh
+        if (CarHost.screen != CarHost.Screen.NAVIGATING || limit == null) {
+            view.visibility = View.GONE
+            return
+        }
+        view.visibility = View.VISIBLE
+        view.text = limit.toString()
+        (view.background as? GradientDrawable)?.setStroke(
+            ((if (CarHost.speed?.limitSource == "msi") 7 else 5) * dpi / 160f).toInt(),
+            Color.RED,
+        )
+        val area = visibleArea
+        val margin = (12 * dpi / 160f).toInt()
+        (view.layoutParams as FrameLayout.LayoutParams).setMargins(
+            (area?.left ?: 0) + margin,
+            0,
+            0,
+            (height - (area?.bottom ?: height)) + margin,
+        )
+        view.requestLayout()
+    }
+
     private fun release() {
+        speedLimit = null
         style = null
         map = null
         mapView?.let {
@@ -320,4 +373,6 @@ class MapSurfaceRenderer(private val carContext: CarContext, private val name: S
     }
 
     override fun onFollowing() = applyPadding()
+
+    override fun onScreen() = updateSpeedLimit()
 }
