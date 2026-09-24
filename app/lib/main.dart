@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
+import 'car/car_bridge.dart';
 import 'l10n/app_localizations.dart';
 import 'navigation/simulation.dart';
 import 'providers/services.dart';
@@ -14,6 +15,16 @@ import 'providers/location_sharing.dart';
 import 'router/app_router.dart';
 
 Future<void> main() async {
+  final container = await bootstrap();
+  runApp(
+    UncontrolledProviderScope(container: container, child: const HomeMapsApp()),
+  );
+}
+
+/// Everything before the first frame: the settings, the web config and the
+/// providers that have to be there from the start. Also without a screen: in
+/// the car the engine may start before the phone's window exists.
+Future<ProviderContainer> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
   var webConfig = const <String, dynamic>{};
   if (kIsWeb) {
@@ -39,15 +50,19 @@ Future<void> main() async {
       shareQueueBoxProvider.overrideWithValue(queue),
       webConfigProvider.overrideWithValue(webConfig),
       if (simulation != null)
-        locationSourceProvider.overrideWithValue(simulation),
+        locationSourceProvider.overrideWithBuild((_, _) => simulation),
     ],
   );
   // Location sharing listens to navigation itself; it has to be there from the
   // start, also to send a queue left over from last time.
   container.read(locationSharerProvider);
-  runApp(
-    UncontrolledProviderScope(container: container, child: const HomeMapsApp()),
-  );
+  // The car (Android Auto, CarPlay) talks to Dart from the start too.
+  if (!kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS)) {
+    container.read(carBridgeProvider);
+  }
+  return container;
 }
 
 /// `/config.json` is optional: the chart mounts it, a bare web server doesn't.

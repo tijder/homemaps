@@ -187,9 +187,20 @@ class GeolocatorSource implements LocationFixSource {
   }
 }
 
-final locationSourceProvider = Provider<LocationFixSource>(
-  (ref) => const GeolocatorSource(),
-);
+/// Where the fixes come from: the device, or a simulation (see
+/// `SimulationSource`) for testing navigation without driving. Tests override
+/// it; the car's test drive switches it while the app runs.
+class LocationSourceNotifier extends Notifier<LocationFixSource> {
+  @override
+  LocationFixSource build() => const GeolocatorSource();
+
+  void use(LocationFixSource source) => state = source;
+}
+
+final locationSourceProvider =
+    NotifierProvider<LocationSourceNotifier, LocationFixSource>(
+      LocationSourceNotifier.new,
+    );
 
 /// Your own location. Only on after a tap by the user, never by itself at
 /// startup -- unless you had it on last time and the permission is still
@@ -211,6 +222,13 @@ class LocationNotifier extends Notifier<LocationState> {
       _stream?.cancel();
       _lifecycle?.dispose();
       _report(null);
+    });
+    // Another source (the car's test drive): the stream comes from there now.
+    ref.listen(locationSourceProvider, (_, _) {
+      if (_stream != null) {
+        _stop();
+        _start();
+      }
     });
     if (ref.read(settingsProvider).locationEnabled) {
       Future.microtask(_resume);

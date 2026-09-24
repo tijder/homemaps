@@ -70,6 +70,7 @@ dev_dependencies:
   auto_route_generator: ^10.6.0
   build_runner: ^2.16.1
   flutter_launcher_icons: ^0.14.4
+  pigeon: ^29.0.2
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

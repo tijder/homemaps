@@ -120,7 +120,7 @@ void main() {
     valhalla = FakeValhalla(route);
     c = ProviderContainer(
       overrides: [
-        locationSourceProvider.overrideWithValue(source),
+        locationSourceProvider.overrideWithBuild((_, _) => source),
         voiceProvider.overrideWithValue(voice),
         valhallaProvider.overrideWithValue(valhalla),
       ],
@@ -307,7 +307,7 @@ void main() {
     c.dispose();
     c = ProviderContainer(
       overrides: [
-        locationSourceProvider.overrideWithValue(source),
+        locationSourceProvider.overrideWithBuild((_, _) => source),
         voiceProvider.overrideWithValue(voice),
         valhallaProvider.overrideWithValue(valhalla),
         trafficLayerProvider.overrideWithValue(
@@ -358,7 +358,7 @@ void main() {
     c.dispose();
     c = ProviderContainer(
       overrides: [
-        locationSourceProvider.overrideWithValue(source),
+        locationSourceProvider.overrideWithBuild((_, _) => source),
         voiceProvider.overrideWithValue(voice),
         valhallaProvider.overrideWithValue(valhalla),
         trafficLayerProvider.overrideWithValue(
@@ -493,7 +493,7 @@ void main() {
     c.dispose();
     c = ProviderContainer(
       overrides: [
-        locationSourceProvider.overrideWithValue(source),
+        locationSourceProvider.overrideWithBuild((_, _) => source),
         voiceProvider.overrideWithValue(voice),
         valhallaProvider.overrideWithValue(valhalla),
         trafficLayerProvider.overrideWithValue(

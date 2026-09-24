@@ -1019,4 +1019,16 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get dawarichSignInAgain => 'Opnieuw inloggen';
+
+  @override
+  String get carWhereTo => 'Waarheen?';
+
+  @override
+  String get carOpenApp => 'Open HomeMaps op je telefoon en zet locatie aan.';
+
+  @override
+  String get carNoResults => 'Niets gevonden.';
+
+  @override
+  String get carRoutes => 'Routes';
 }

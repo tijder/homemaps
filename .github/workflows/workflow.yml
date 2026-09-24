@@ -66,14 +66,15 @@ jobs:
 
       - run: flutter pub get
 
-      # The generated files (l10n, auto_route) are checked in; this catches a
-      # forgotten `build_runner` or `gen-l10n`.
+      # The generated files (l10n, auto_route, the car contract) are checked
+      # in; this catches a forgotten `build_runner`, `gen-l10n` or `pigeon`.
       - name: Generated code is up to date
         run: |
           flutter gen-l10n
           dart run build_runner build --delete-conflicting-outputs
+          dart run pigeon --input pigeons/car.dart
           dart format lib test
-          git diff --exit-code -- lib
+          git diff --exit-code -- lib android/app/src/main/kotlin ios/Runner/CarPlay
 
       - run: flutter analyze
       - run: flutter test

@@ -8,6 +8,9 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import '../models/dawarich.dart';
 import '../models/place.dart';
 import '../models/route.dart';
+import '../map/map_images.dart';
+import '../map/route_geojson.dart';
+import '../navigation/route_geometry.dart';
 import '../navigation/turn_arrow.dart';
 import '../providers/location.dart';
 import '../utils/distance.dart';
@@ -266,7 +269,7 @@ class _MapWidgetState extends State<MapWidget> {
       enableInteraction: false,
     );
     try {
-      await c.addImage(_arrowHeadImage, await _arrowHead());
+      await c.addImage(_arrowHeadImage, await arrowHeadPng());
       await c.addSymbolLayer(
         _arrowSource,
         'arrow-head',
@@ -328,87 +331,21 @@ class _MapWidgetState extends State<MapWidget> {
   Future<void> _drawDriven() async {
     final c = _controller;
     if (c == null || !_styleReady) return;
-    final line = widget.driven;
-    await c.setGeoJsonSource(_drivenSource, {
-      'type': 'FeatureCollection',
-      'features': [
-        if (line != null && line.length > 1)
-          {
-            'type': 'Feature',
-            'properties': <String, dynamic>{},
-            'geometry': {
-              'type': 'LineString',
-              'coordinates': [
-                for (final p in line) [p.longitude, p.latitude],
-              ],
-            },
-          },
-      ],
-    });
+    await c.setGeoJsonSource(
+      _drivenSource,
+      lineFeatureCollection(widget.driven),
+    );
   }
 
   static const _arrowHeadImage = 'arrow-head';
 
-  /// The head of the arrow: a white triangle with a dark border, pointing up
-  /// (north); the layer rotates it with the bearing.
-  static Future<Uint8List> _arrowHead() async {
-    const size = 48.0;
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-    final path = Path()
-      ..moveTo(size / 2, 5)
-      ..lineTo(size - 5, size - 3)
-      ..lineTo(5, size - 3)
-      ..close();
-    canvas
-      ..drawPath(
-        path,
-        Paint()
-          ..color = const Color(0xFF0D47A1)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 6
-          ..strokeJoin = StrokeJoin.round,
-      )
-      ..drawPath(path, Paint()..color = Colors.white);
-    final image = await recorder.endRecording().toImage(
-      size.toInt(),
-      size.toInt(),
-    );
-    final png = await image.toByteData(format: ui.ImageByteFormat.png);
-    return png!.buffer.asUint8List();
-  }
-
   Future<void> _drawArrow() async {
     final c = _controller;
     if (c == null || !_styleReady) return;
-    final line = widget.arrow;
-    await c.setGeoJsonSource(_arrowSource, {
-      'type': 'FeatureCollection',
-      'features': [
-        if (line != null && line.length > 1) ...[
-          {
-            'type': 'Feature',
-            'properties': <String, dynamic>{},
-            'geometry': {
-              'type': 'LineString',
-              'coordinates': [
-                for (final p in line) [p.longitude, p.latitude],
-              ],
-            },
-          },
-          {
-            'type': 'Feature',
-            'properties': {
-              'bearing': headingBetween(line[line.length - 2], line.last),
-            },
-            'geometry': {
-              'type': 'Point',
-              'coordinates': [line.last.longitude, line.last.latitude],
-            },
-          },
-        ],
-      ],
-    });
+    await c.setGeoJsonSource(
+      _arrowSource,
+      arrowFeatureCollection(widget.arrow),
+    );
   }
 
   /// A family member: a colored circle with a white border and the first
@@ -510,14 +447,14 @@ class _MapWidgetState extends State<MapWidget> {
     final follow = widget.follow, c = _controller;
     if (follow == null || c == null) return;
     // Slow: close by; on the motorway look further ahead.
-    final zoom = (17.5 - follow.speed * 0.1).clamp(14.5, 17.0);
+    final zoom = followZoom(follow.speed);
     await c.easeCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
           target: follow.point,
           zoom: zoom,
           bearing: follow.heading,
-          tilt: 50,
+          tilt: followTilt,
         ),
       ),
       // About the time until the next fix, and linear: that way the map glides
@@ -750,7 +687,7 @@ class _MapWidgetState extends State<MapWidget> {
     });
   }
 
-  static const _empty = {'type': 'FeatureCollection', 'features': <dynamic>[]};
+  static const _empty = emptyFeatureCollection;
 
   Future<void> _draw() async {
     final c = _controller;
@@ -758,23 +695,10 @@ class _MapWidgetState extends State<MapWidget> {
     // Two updates shortly after each other: only the last may place circles,
     // otherwise they show up twice.
     final sequence = ++_drawSequence;
-    await c.setGeoJsonSource(_routeSource, {
-      'type': 'FeatureCollection',
-      'features': [
-        for (final (i, route) in widget.routes.indexed)
-          {
-            'type': 'Feature',
-            'id': i,
-            'properties': {'chosen': i == widget.chosen, 'index': i},
-            'geometry': {
-              'type': 'LineString',
-              'coordinates': [
-                for (final p in route.points) [p.longitude, p.latitude],
-              ],
-            },
-          },
-      ],
-    });
+    await c.setGeoJsonSource(
+      _routeSource,
+      routesFeatureCollection(widget.routes, widget.chosen),
+    );
     final route = widget.routes.isEmpty
         ? null
         : widget.routes[widget.chosen.clamp(0, widget.routes.length - 1)];

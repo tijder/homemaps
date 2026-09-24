@@ -117,7 +117,7 @@ void main() {
       TestWidgetsFlutterBinding.ensureInitialized();
       final source = FakeSource(PermissionAnswer.yes);
       final withLocation = ProviderContainer(
-        overrides: [locationSourceProvider.overrideWithValue(source)],
+        overrides: [locationSourceProvider.overrideWithBuild((_, _) => source)],
       );
       addTearDown(withLocation.dispose);
       final wait = withLocation.read(locationProvider.notifier).turnOn();

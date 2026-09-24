@@ -246,7 +246,7 @@ void main() {
     ProviderContainer make({ShareQueue? queue}) {
       final container = ProviderContainer(
         overrides: [
-          locationSourceProvider.overrideWithValue(source),
+          locationSourceProvider.overrideWithBuild((_, _) => source),
           shareSenderProvider.overrideWithValue(sender),
           secretStoreProvider.overrideWithValue(MemorySecretStore()),
           batterySourceProvider.overrideWithValue(FakeBattery()),
