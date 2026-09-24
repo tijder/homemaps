@@ -48,8 +48,7 @@ enum ManeuverBuilder {
     case .keepLeft, .mergeLeft: return .keepLeft
     case .roundabout: return .enterRoundabout
     case .roundaboutExit: return .exitRoundabout
-    case .ferryEnter: return .enterFerry
-    case .ferryExit: return .exitFerry
+    case .ferryEnter, .ferryExit: return .followRoad
     }
   }
 
@@ -67,7 +66,7 @@ enum ManeuverBuilder {
     }
   }
 
-  @available(iOS 17.4, *)
+  @available(iOS 18.0, *)
   static func laneGuidance(_ lanes: [CarLane], instruction: String) -> CPLaneGuidance {
     let guidance = CPLaneGuidance()
     guidance.instructionVariants = [instruction]

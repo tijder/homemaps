@@ -237,7 +237,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
   func hostImageAdded(_ key: String) {
     mapVC?.imageAdded(key)
     // A maneuver that was waiting for its icon.
-    if key == host.maneuver?.iconKey || key == host.maneuver?.then?.iconKey { shownManeuverKey = nil; hostManeuverChanged() }
+    if key == host.maneuver?.iconKey || key == host.maneuver?.then.first?.iconKey { shownManeuverKey = nil; hostManeuverChanged() }
   }
   func hostRoutesChanged() { mapVC?.routesChanged() }
   func hostDrivenChanged() { mapVC?.drivenChanged() }
@@ -300,12 +300,12 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         ManeuverBuilder.estimates(meters: carTrip.remainingMeters, seconds: carTrip.remainingSeconds), for: trip,
         with: .default)
     }
-    let key = "\(next.iconKey)|\(next.instruction)|\(next.then?.instruction ?? "")|\(next.lanesIconKey ?? "")"
+    let key = "\(next.iconKey)|\(next.instruction)|\(next.then.first?.instruction ?? "")|\(next.lanesIconKey ?? "")"
     if key != shownManeuverKey {
       shownManeuverKey = key
       var maneuvers = [ManeuverBuilder.maneuver(next)]
-      if let then = next.then { maneuvers.append(ManeuverBuilder.maneuver(then)) }
-      if #available(iOS 17.4, *), let lanes = next.lanes, !lanes.isEmpty {
+      if let then = next.then.first { maneuvers.append(ManeuverBuilder.maneuver(then)) }
+      if #available(iOS 18.0, *), let lanes = next.lanes, !lanes.isEmpty {
         let guidance = ManeuverBuilder.laneGuidance(lanes, instruction: next.shortAction ?? next.instruction)
         session.add([guidance])
         maneuvers[0].linkedLaneGuidance = guidance

@@ -64,7 +64,7 @@ CarManeuver carManeuver(
   AppLocalizations l, {
   required String iconKey,
   required double metersToNext,
-  CarManeuver? then,
+  List<CarManeuver> then = const [],
   List<Lane>? lanes,
   String? lanesIconKey,
   double? lanesAhead,

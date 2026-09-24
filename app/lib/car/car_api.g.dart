@@ -427,7 +427,7 @@ class CarManeuver {
     this.sign,
     required this.iconKey,
     required this.metersToNext,
-    this.then,
+    required this.then,
     this.lanes,
     this.lanesIconKey,
     this.lanesAhead,
@@ -457,8 +457,9 @@ class CarManeuver {
   double metersToNext;
 
   /// The maneuver right after this one, if it follows within a few hundred
-  /// meters.
-  CarManeuver? then;
+  /// meters: at most one. (A list, not a nullable field: Swift structs can't
+  /// contain themselves.)
+  List<CarManeuver> then;
 
   List<CarLane>? lanes;
 
@@ -502,7 +503,7 @@ class CarManeuver {
       sign: result[6] as CarRoadSign?,
       iconKey: result[7]! as String,
       metersToNext: result[8]! as double,
-      then: result[9] as CarManeuver?,
+      then: (result[9]! as List<Object?>).cast<CarManeuver>(),
       lanes: (result[10] as List<Object?>?)?.cast<CarLane>(),
       lanesIconKey: result[11] as String?,
       lanesAhead: result[12] as double?,

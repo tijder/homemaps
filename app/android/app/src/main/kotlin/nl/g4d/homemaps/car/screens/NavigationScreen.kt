@@ -207,7 +207,7 @@ class NavigationScreen(carContext: CarContext, private val cluster: Boolean = fa
             next != null -> {
                 val info = RoutingInfo.Builder()
                     .setCurrentStep(step(next), Distance.car(next.metersToNext))
-                next.then?.let { info.setNextStep(step(it)) }
+                next.then.firstOrNull()?.let { info.setNextStep(step(it)) }
                 builder.setNavigationInfo(info.build())
             }
             else -> builder.setNavigationInfo(RoutingInfo.Builder().setLoading(true).build())

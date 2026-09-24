@@ -475,8 +475,9 @@ struct CarManeuver: Hashable, CustomStringConvertible {
   /// Already rounded so it doesn't change every meter.
   var metersToNext: Double
   /// The maneuver right after this one, if it follows within a few hundred
-  /// meters.
-  var then: CarManeuver? = nil
+  /// meters: at most one. (A list, not a nullable field: Swift structs can't
+  /// contain themselves.)
+  var then: [CarManeuver]
   var lanes: [CarLane]? = nil
   /// The lane bar as an image, registered earlier.
   var lanesIconKey: String? = nil
@@ -495,7 +496,7 @@ struct CarManeuver: Hashable, CustomStringConvertible {
     let sign: CarRoadSign? = nilOrValue(pigeonVar_list[6])
     let iconKey = pigeonVar_list[7] as! String
     let metersToNext = pigeonVar_list[8] as! Double
-    let then: CarManeuver? = nilOrValue(pigeonVar_list[9])
+    let then = pigeonVar_list[9] as! [CarManeuver]
     let lanes: [CarLane]? = nilOrValue(pigeonVar_list[10])
     let lanesIconKey: String? = nilOrValue(pigeonVar_list[11])
     let lanesAhead: Double? = nilOrValue(pigeonVar_list[12])
