@@ -16,6 +16,7 @@ import 'providers/settings.dart';
 import 'providers/location.dart';
 import 'providers/location_sharing.dart';
 import 'router/app_router.dart';
+import 'screens/onboarding.dart';
 import 'services/app_log.dart';
 
 Future<void> main() async {
@@ -94,9 +95,12 @@ class HomeMapsApp extends ConsumerStatefulWidget {
 class _HomeMapsAppState extends ConsumerState<HomeMapsApp> {
   final _router = AppRouter();
 
-  /// The first start goes to the welcome, whatever address it opened on.
+  /// The first start goes to the welcome, whatever address it opened on --
+  /// except a shared route or a simulation on the web, which would be lost.
   late final _config = _router.config(
-    deepLinkBuilder: (link) => ref.read(settingsProvider).setupDone
+    deepLinkBuilder: (link) =>
+        ref.read(settingsProvider).setupDone ||
+            (kIsWeb && OnboardingScreen.skippedFor(Uri.base))
         ? link
         : DeepLink.single(const OnboardingRoute()),
   );

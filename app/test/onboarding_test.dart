@@ -54,6 +54,14 @@ void main() {
     expect(setupDone(), isFalse);
   });
 
+  test('a shared route or a simulation skips the welcome', () {
+    bool skipped(String url) => OnboardingScreen.skippedFor(Uri.parse(url));
+    expect(skipped('https://maps.home.nl/?to=52.1,5.1'), isTrue);
+    expect(skipped('https://maps.home.nl/?simulate=52,5&speed=15'), isTrue);
+    expect(skipped('https://maps.home.nl/'), isFalse);
+    expect(skipped('https://maps.home.nl/settings/about'), isFalse);
+  });
+
   testWidgets('welcome, server, then Dawarich and sharing can be skipped', (
     tester,
   ) async {

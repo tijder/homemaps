@@ -23,6 +23,13 @@ enum _Step { welcome, server, dawarich, locationSharing }
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
+  /// A web address that is about the map itself: a shared route (`?to=`) or
+  /// a simulated drive (`?simulate=`, the browser tests). Those go straight
+  /// to the map; the welcome comes on a later plain visit.
+  static bool skippedFor(Uri address) =>
+      address.queryParameters.containsKey('to') ||
+      address.queryParameters.containsKey('simulate');
+
   /// Off to the map; replaceable in tests, where the map can't be built.
   @visibleForTesting
   static void Function(BuildContext context) leave = (context) =>
