@@ -159,7 +159,7 @@ jobs:
         working-directory: importer
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
       - run: pip install -e '.[dev]'
@@ -211,7 +211,7 @@ jobs:
         with:
           install_only: true
       # For the test of the app in a real browser (ci/e2e/app_browser.py).
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
       - name: Install Playwright

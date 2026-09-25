@@ -6,7 +6,9 @@ plugins {
 
 android {
     namespace = "nl.g4d.homemaps"
-    compileSdk = flutter.compileSdkVersion
+    // permission_handler 13 compiles against 37, above Flutter's default; only
+    // the APIs the app can see change, targetSdk stays Flutter's.
+    compileSdk = maxOf(flutter.compileSdkVersion, 37)
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
