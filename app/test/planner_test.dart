@@ -142,4 +142,65 @@ void main() {
       expect(withLocation.read(plannerProvider).points.first.place, isNull);
     },
   );
+
+  group('an empty from becomes "My location"', () {
+    late FakeSource source;
+    late ProviderContainer c;
+    late PlannerNotifier p;
+    List<Waypoint> points() => c.read(plannerProvider).points;
+
+    setUp(() {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      source = FakeSource(PermissionAnswer.yes);
+      c = ProviderContainer(
+        overrides: [locationSourceProvider.overrideWithBuild((_, _) => source)],
+      );
+      addTearDown(c.dispose);
+      p = c.read(plannerProvider.notifier);
+    });
+
+    Future<void> locate() async {
+      final wait = c.read(locationProvider.notifier).turnOn();
+      await Future<void>.delayed(Duration.zero);
+      source.fixes.add(
+        LocationFix(point: const LatLng(52.19, 5.7), time: DateTime(2026)),
+      );
+      await wait;
+      await Future<void>.delayed(Duration.zero);
+    }
+
+    test('when only the destination is chosen', () async {
+      await locate();
+      p.setTo(place('Dom', 52.09), moveView: false);
+      expect(points().first.place?.myLocation, isTrue);
+      expect(points().last.place?.label, 'Dom');
+    });
+
+    test('not over a from you chose, nor for a via', () async {
+      await locate();
+      p.setFrom(place('A', 52.1));
+      p.setTo(place('Dom', 52.09));
+      expect(points().first.place?.label, 'A');
+
+      p.remove(0);
+      p.addVia(place('V', 52.15));
+      expect(points().first.place, isNull);
+    });
+
+    test('once the first fix arrives after the route started', () async {
+      p.showPlace(place('Dom', 52.09));
+      p.startRoute();
+      expect(points().first.place, isNull);
+      await locate();
+      expect(points().first.place?.myLocation, isTrue);
+      expect(points().first.place?.point, const LatLng(52.19, 5.7));
+    });
+
+    test('not without a destination', () async {
+      p.setFrom(place('A', 52.1));
+      p.remove(0);
+      await locate();
+      expect(points().first.place, isNull);
+    });
+  });
 }

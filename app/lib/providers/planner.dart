@@ -99,6 +99,18 @@ class PlannerNotifier extends Notifier<PlannerState> {
       ),
       (_, _) => _calculate(moveView: false),
     );
+    // A route started before the first fix still departs from here once
+    // there is one.
+    ref.listen(locationProvider.select((l) => l.fix != null), (had, has) {
+      if ((had ?? true) || !has || !state.routeMode) return;
+      final points = _fromHere(state.points);
+      if (identical(points, state.points)) return;
+      state = state.copyWith(
+        points: points,
+        viewVersion: state.viewVersion + 1,
+      );
+      _calculate(moveView: true);
+    });
     ref.onDispose(() => _inFlight?.cancel());
     return const PlannerState();
   }
@@ -120,17 +132,36 @@ class PlannerNotifier extends Notifier<PlannerState> {
   /// is on, you leave from there.
   void startRoute() {
     final target = state.found;
-    final here = ref.read(locationProvider).fix;
-    final from = here == null || (target?.myLocation ?? false)
-        ? null
-        : Place.here(here.point);
+    final points = _fromHere([
+      Waypoint(_nextId++),
+      Waypoint(_nextId++, target),
+    ]);
+    final complete = points.first.place != null;
     state = PlannerState(
       routeMode: true,
       found: target,
-      points: [Waypoint(_nextId++, from), Waypoint(_nextId++, target)],
-      viewVersion: state.viewVersion + (from == null ? 0 : 1),
+      points: points,
+      viewVersion: state.viewVersion + (complete ? 1 : 0),
     );
-    if (from != null) _calculate(moveView: true);
+    if (complete) _calculate(moveView: true);
+  }
+
+  /// [points] with "My location" as from, if from is still empty, there is a
+  /// destination and a location, and the destination isn't your location
+  /// itself. Otherwise [points] itself.
+  List<Waypoint> _fromHere(List<Waypoint> points) {
+    final here = ref.read(locationProvider).fix;
+    final to = points.last.place;
+    if (here == null ||
+        points.first.place != null ||
+        to == null ||
+        to.myLocation) {
+      return points;
+    }
+    return [
+      Waypoint(points.first.id, Place.here(here.point)),
+      ...points.skip(1),
+    ];
   }
 
   /// Back to the search screen; the route is gone, the found place stays.
@@ -151,8 +182,10 @@ class PlannerNotifier extends Notifier<PlannerState> {
   /// [moveView]: bring the result into view. Not when dragging on the map --
   /// then the map jumps away from under your hand.
   void setPoint(int index, Place? place, {bool moveView = true}) {
-    final points = [...state.points];
+    var points = [...state.points];
     points[index] = Waypoint(points[index].id, place);
+    // Choosing where to go is enough when your location is known.
+    if (index == points.length - 1) points = _fromHere(points);
     state = state.copyWith(
       routeMode: true,
       points: points,
