@@ -61,6 +61,7 @@ final class CarHost: CarHostApi {
   func surfaceAvailable(_ surface: CarSurface) {
     let first = connectedSurface == nil
     connectedSurface = surface
+    NSLog("CarHost: surface %dx%d, dart %@", Int(surface.width), Int(surface.height), dartReady ? "ready" : "not ready yet")
     guard dartReady else { return }
     if first {
       call("connected") { try await $0.connected(surface: surface) }
@@ -105,6 +106,7 @@ final class CarHost: CarHostApi {
 
   func ready() throws {
     dartReady = true
+    NSLog("CarHost: dart ready, surface %@", connectedSurface == nil ? "none" : "connected")
     if let surface = connectedSurface {
       call("connected") { try await $0.connected(surface: surface) }
     }

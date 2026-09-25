@@ -19,7 +19,84 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
   private var shownScreen: CarHost.Screen?
   private var shownManeuverKey: String?
   private var searchResults: [CarPlace] = []
+  private var shownMessage: String?
   private var host: CarHost { CarHost.shared }
+
+  // MARK: - Interface operations
+  //
+  // CarPlay raises an NSException (and so kills the app) when a template
+  // operation fails and no completion handler was given: a pop while the
+  // root is still being set, a second push or present while the first one
+  // animates. Every operation therefore goes through this queue, one at a
+  // time, each with a completion that only logs a failure.
+
+  private typealias Done = (Bool, Error?) -> Void
+  private var operations: [(@escaping Done) -> Void] = []
+  private var operationRunning = false
+
+  private func enqueue(_ name: String, _ operation: @escaping (CPInterfaceController, @escaping Done) -> Void) {
+    operations.append { [weak self] done in
+      guard let controller = self?.interfaceController else { return done(false, nil) }
+      operation(controller) { ok, error in
+        if let error = error { NSLog("CarPlay: \(name) failed: \(error)") }
+        done(ok, error)
+      }
+    }
+    runNextOperation()
+  }
+
+  private func runNextOperation() {
+    guard !operationRunning, !operations.isEmpty else { return }
+    guard interfaceController != nil else { return operations.removeAll() }
+    operationRunning = true
+    let operation = operations.removeFirst()
+    operation { [weak self] _, _ in
+      DispatchQueue.main.async {
+        self?.operationRunning = false
+        self?.runNextOperation()
+      }
+    }
+  }
+
+  private func setRoot(_ template: CPTemplate) {
+    enqueue("setRootTemplate") { controller, done in
+      controller.setRootTemplate(template, animated: false, completion: done)
+    }
+  }
+
+  private func push(_ template: CPTemplate) {
+    enqueue("pushTemplate") { controller, done in
+      // Already there (a double tap), or the stack is at CarPlay's limit.
+      if let top = controller.topTemplate, type(of: top) == type(of: template) { return done(true, nil) }
+      if controller.templates.count >= 5 { return done(true, nil) }
+      controller.pushTemplate(template, animated: true, completion: done)
+    }
+  }
+
+  private func popToRoot() {
+    enqueue("popToRootTemplate") { controller, done in
+      guard controller.templates.count > 1 else { return done(true, nil) }
+      controller.popToRootTemplate(animated: true, completion: done)
+    }
+  }
+
+  private func present(_ template: CPTemplate) {
+    enqueue("presentTemplate") { controller, done in
+      let show = { controller.presentTemplate(template, animated: true, completion: done) }
+      if controller.presentedTemplate != nil {
+        controller.dismissTemplate(animated: false) { _, _ in show() }
+      } else {
+        show()
+      }
+    }
+  }
+
+  private func dismissPresented() {
+    enqueue("dismissTemplate") { controller, done in
+      guard controller.presentedTemplate != nil else { return done(true, nil) }
+      controller.dismissTemplate(animated: true, completion: done)
+    }
+  }
 
   // MARK: - Scene
 
@@ -27,6 +104,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     _ templateApplicationScene: CPTemplateApplicationScene, didConnect interfaceController: CPInterfaceController,
     to window: CPWindow
   ) {
+    NSLog("CarPlay: connected, window %@", NSCoder.string(for: window.bounds))
     self.interfaceController = interfaceController
     self.window = window
     let mapVC = CarPlayMapViewController()
@@ -38,8 +116,11 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     template.automaticallyHidesNavigationBar = true
     mapTemplate = template
     host.listener = self
-    interfaceController.setRootTemplate(template, animated: false, completion: nil)
+    operations.removeAll()
+    operationRunning = false
+    setRoot(template)
     shownScreen = nil
+    shownMessage = nil
     hostScreenChanged()
     DispatchQueue.main.async { self.reportSurface(first: true) }
   }
@@ -49,6 +130,8 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     didDisconnect interfaceController: CPInterfaceController, from window: CPWindow
   ) {
     if host.listener === self { host.listener = nil }
+    operations.removeAll()
+    operationRunning = false
     session = nil
     trip = nil
     self.interfaceController = nil
@@ -132,7 +215,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
       detailText: place.detail.isEmpty ? nil : place.detail, image: UIImage(systemName: symbol))
     item.handler = { [weak self] _, completion in
       self?.host.placeChosen(place.id)
-      self?.interfaceController?.popToRootTemplate(animated: true, completion: nil)
+      self?.popToRoot()
       completion()
     }
     return item
@@ -156,13 +239,13 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     }
     let template = CPListTemplate(title: host.text("whereTo"), sections: sections)
     template.emptyViewTitleVariants = [host.text("search")]
-    interfaceController?.pushTemplate(template, animated: true, completion: nil)
+    push(template)
   }
 
   private func pushSearch() {
     let template = CPSearchTemplate()
     template.delegate = self
-    interfaceController?.pushTemplate(template, animated: true, completion: nil)
+    push(template)
   }
 
   private func showPreview() {
@@ -197,11 +280,12 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
       titleVariants: [text.isEmpty ? title : "\(title)\n\(text)"],
       actions: [
         CPAlertAction(title: host.text("whereTo"), style: .default) { [weak self] _ in
-          self?.interfaceController?.dismissTemplate(animated: true, completion: nil)
+          self?.shownMessage = nil
+          self?.dismissPresented()
           self?.host.backToHome()
         }
       ])
-    interfaceController?.presentTemplate(alert, animated: true, completion: nil)
+    present(alert)
   }
 
   private func startSession() {
@@ -250,8 +334,16 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
   func hostScreenChanged() {
     configureMapTemplate()
     let screen = host.screen
+    // The message once; gone again when Dart clears it (a new preview, home).
     if let message = host.message, screen == .preview {
-      showMessage(message.title, message.text)
+      let key = "\(message.title)\n\(message.text)"
+      if key != shownMessage {
+        shownMessage = key
+        showMessage(message.title, message.text)
+      }
+    } else if shownMessage != nil {
+      shownMessage = nil
+      dismissPresented()
     }
     guard screen != shownScreen else {
       if screen == .preview { showPreview() }
@@ -265,13 +357,13 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
       previewTrip = nil
       shownPreviewKey = ""
       mapTemplate?.hideTripPreviews()
-      interfaceController?.popToRootTemplate(animated: true, completion: nil)
+      popToRoot()
       mapVC?.speedChanged()
     case .preview:
-      interfaceController?.popToRootTemplate(animated: true, completion: nil)
+      popToRoot()
       showPreview()
     case .navigating:
-      interfaceController?.popToRootTemplate(animated: true, completion: nil)
+      popToRoot()
       startSession()
     case .arrived:
       session?.finishTrip()
@@ -401,7 +493,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     _ searchTemplate: CPSearchTemplate, selectedResult item: CPListItem, completionHandler: @escaping () -> Void
   ) {
     if let id = item.userInfo as? String { host.placeChosen(id) }
-    interfaceController?.popToRootTemplate(animated: true, completion: nil)
+    popToRoot()
     completionHandler()
   }
 

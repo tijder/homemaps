@@ -20,6 +20,11 @@ final class CarPlayMapViewController: UIViewController, MLNMapViewDelegate {
 
   override func viewDidLoad() {
     super.viewDidLoad()
+    // Opaque: without a loaded style the map view draws nothing, and the
+    // car would show its wallpaper as if the app had no window at all.
+    view.backgroundColor = UIColor(hex: 0xe0e0e0)
+    view.isOpaque = true
+    NSLog("CarPlay map: view loaded, %d x %d", Int(view.bounds.width), Int(view.bounds.height))
     let mapView = MLNMapView(frame: view.bounds)
     mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
     mapView.delegate = self
@@ -57,16 +62,28 @@ final class CarPlayMapViewController: UIViewController, MLNMapViewDelegate {
   // MARK: - Style
 
   func loadStyle() {
-    guard let mapView = mapView, let style = CarHost.shared.style else { return }
+    guard let mapView = mapView, let style = CarHost.shared.style else {
+      NSLog("CarPlay map: no style yet (view %@)", mapView == nil ? "not loaded" : "loaded")
+      return
+    }
     styleReady = false
     if CarHost.shared.styleIsJson {
+      NSLog("CarPlay map: style json (%d bytes)", style.utf8.count)
       mapView.styleJSON = style
     } else if let url = URL(string: style) {
+      NSLog("CarPlay map: style %@", style)
       mapView.styleURL = url
+    } else {
+      NSLog("CarPlay map: style is not a url: %@", style)
     }
   }
 
+  func mapViewDidFailLoadingMap(_ mapView: MLNMapView, withError error: Error) {
+    NSLog("CarPlay map: failed to load: %@", error.localizedDescription)
+  }
+
   func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
+    NSLog("CarPlay map: style loaded, %d x %d", Int(mapView.bounds.width), Int(mapView.bounds.height))
     addLayers(style)
     for (key, image) in CarHost.shared.images { style.setImage(image, forName: key) }
     styleReady = true
