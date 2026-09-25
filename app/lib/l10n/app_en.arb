@@ -74,6 +74,29 @@
   "serverPartMap": "map",
   "serverPartSearch": "search",
   "serverPartRoutes": "routes",
+  "welcomeTitle": "Welcome to HomeMaps",
+  "welcomeText": "First connect the app to your server. After that you can link Dawarich and share your location, or skip that and do it later in the settings.",
+  "welcomeTextWeb": "You can link Dawarich and share your location, or skip that and do it later in the settings.",
+  "getStarted": "Get started",
+  "next": "Next",
+  "back": "Back",
+  "skip": "Skip",
+  "skipAndStart": "Skip and start",
+  "toTheMap": "To the map",
+  "setupStep": "Step {step} of {total}",
+  "@setupStep": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "setupServerIntro": "The address of your HomeMaps server. As soon as it works, it is saved.",
+  "setupDawarichIntro": "Optional: sign in to Dawarich to see your family on the map and keep your location history.",
+  "setupSharingIntro": "Optional: send your location to a service of your own, for example OwnTracks, GeoPulse or Reitti.",
   "save": "Save",
   "serverRequired": "Set the address of your server first.",
   "about": "About",

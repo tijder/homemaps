@@ -166,6 +166,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serverPartRoutes => 'routes';
 
   @override
+  String get welcomeTitle => 'Welcome to HomeMaps';
+
+  @override
+  String get welcomeText =>
+      'First connect the app to your server. After that you can link Dawarich and share your location, or skip that and do it later in the settings.';
+
+  @override
+  String get welcomeTextWeb =>
+      'You can link Dawarich and share your location, or skip that and do it later in the settings.';
+
+  @override
+  String get getStarted => 'Get started';
+
+  @override
+  String get next => 'Next';
+
+  @override
+  String get back => 'Back';
+
+  @override
+  String get skip => 'Skip';
+
+  @override
+  String get skipAndStart => 'Skip and start';
+
+  @override
+  String get toTheMap => 'To the map';
+
+  @override
+  String setupStep(int step, int total) {
+    return 'Step $step of $total';
+  }
+
+  @override
+  String get setupServerIntro =>
+      'The address of your HomeMaps server. As soon as it works, it is saved.';
+
+  @override
+  String get setupDawarichIntro =>
+      'Optional: sign in to Dawarich to see your family on the map and keep your location history.';
+
+  @override
+  String get setupSharingIntro =>
+      'Optional: send your location to a service of your own, for example OwnTracks, GeoPulse or Reitti.';
+
+  @override
   String get save => 'Save';
 
   @override

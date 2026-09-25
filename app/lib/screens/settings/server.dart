@@ -13,7 +13,11 @@ import 'section.dart';
 /// The address of your own HomeMaps server; not on the web, where the server
 /// is the page's own origin. While typing it says whether the server works.
 class ServerSettings extends ConsumerStatefulWidget {
-  const ServerSettings({super.key});
+  const ServerSettings({super.key, this.saveWhenWorking = false});
+
+  /// Save an address as soon as the check says it works, without the button;
+  /// for the first start.
+  final bool saveWhenWorking;
 
   @override
   ConsumerState<ServerSettings> createState() => _ServerState();
@@ -74,8 +78,13 @@ class _ServerState extends ConsumerState<ServerSettings> {
     );
     if (mounted && !cancel.isCancelled && _checking == address) {
       setState(() => _check = check);
+      if (widget.saveWhenWorking && check.works) _store(address);
     }
   }
+
+  void _store(String address) => ref
+      .read(settingsProvider.notifier)
+      .modify(ref.read(settingsProvider).copyWith(server: address));
 
   void _save() {
     final l = AppLocalizations.of(context);
@@ -87,9 +96,7 @@ class _ServerState extends ConsumerState<ServerSettings> {
     _debounce?.cancel();
     _server.text = address;
     setState(() => _error = null);
-    ref
-        .read(settingsProvider.notifier)
-        .modify(ref.read(settingsProvider).copyWith(server: address));
+    _store(address);
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(l.saved)));
     if (_checking != address) _checkNow(address);

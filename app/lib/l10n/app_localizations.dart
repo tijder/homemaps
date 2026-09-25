@@ -392,6 +392,84 @@ abstract class AppLocalizations {
   /// **'routes'**
   String get serverPartRoutes;
 
+  /// No description provided for @welcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to HomeMaps'**
+  String get welcomeTitle;
+
+  /// No description provided for @welcomeText.
+  ///
+  /// In en, this message translates to:
+  /// **'First connect the app to your server. After that you can link Dawarich and share your location, or skip that and do it later in the settings.'**
+  String get welcomeText;
+
+  /// No description provided for @welcomeTextWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'You can link Dawarich and share your location, or skip that and do it later in the settings.'**
+  String get welcomeTextWeb;
+
+  /// No description provided for @getStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Get started'**
+  String get getStarted;
+
+  /// No description provided for @next.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get next;
+
+  /// No description provided for @back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get back;
+
+  /// No description provided for @skip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get skip;
+
+  /// No description provided for @skipAndStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip and start'**
+  String get skipAndStart;
+
+  /// No description provided for @toTheMap.
+  ///
+  /// In en, this message translates to:
+  /// **'To the map'**
+  String get toTheMap;
+
+  /// No description provided for @setupStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {step} of {total}'**
+  String setupStep(int step, int total);
+
+  /// No description provided for @setupServerIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'The address of your HomeMaps server. As soon as it works, it is saved.'**
+  String get setupServerIntro;
+
+  /// No description provided for @setupDawarichIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional: sign in to Dawarich to see your family on the map and keep your location history.'**
+  String get setupDawarichIntro;
+
+  /// No description provided for @setupSharingIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional: send your location to a service of your own, for example OwnTracks, GeoPulse or Reitti.'**
+  String get setupSharingIntro;
+
   /// No description provided for @save.
   ///
   /// In en, this message translates to:

@@ -52,6 +52,7 @@ class Settings {
     this.avoidFerries = false,
     this.trafficOnMap = true,
     this.locationEnabled = false,
+    this.setupDone = true,
   });
 
   /// Only needed on Android: on the web the server is the app's own origin.
@@ -73,6 +74,9 @@ class Settings {
   /// permission is still there.
   final bool locationEnabled;
 
+  /// The first start is behind us: server set, the optional parts seen.
+  final bool setupDone;
+
   Settings copyWith({
     String? server,
     String? style,
@@ -84,6 +88,7 @@ class Settings {
     bool? avoidFerries,
     bool? trafficOnMap,
     bool? locationEnabled,
+    bool? setupDone,
   }) => Settings(
     server: server ?? this.server,
     style: style ?? this.style,
@@ -95,6 +100,7 @@ class Settings {
     avoidFerries: avoidFerries ?? this.avoidFerries,
     trafficOnMap: trafficOnMap ?? this.trafficOnMap,
     locationEnabled: locationEnabled ?? this.locationEnabled,
+    setupDone: setupDone ?? this.setupDone,
   );
 }
 
@@ -132,6 +138,9 @@ class SettingsNotifier extends Notifier<Settings> {
       avoidFerries: box.get('avoidFerries', defaultValue: false) as bool,
       trafficOnMap: box.get('trafficOnMap', defaultValue: true) as bool,
       locationEnabled: box.get('locationOn', defaultValue: false) as bool,
+      // Anything saved before means an installation from before the first
+      // start existed; that one doesn't have to start over.
+      setupDone: box.get('setupDone') as bool? ?? box.containsKey('style'),
     );
   }
 
@@ -148,6 +157,7 @@ class SettingsNotifier extends Notifier<Settings> {
       'avoidFerries': newValue.avoidFerries,
       'trafficOnMap': newValue.trafficOnMap,
       'locationOn': newValue.locationEnabled,
+      'setupDone': newValue.setupDone,
     });
   }
 }

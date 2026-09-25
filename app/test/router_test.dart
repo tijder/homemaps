@@ -16,5 +16,7 @@ void main() {
     final category = router.matcher.match('/settings/location-sharing');
     expect(category?.single.name, SettingsCategoryRoute.name);
     expect(category?.single.params.optString('category'), 'location-sharing');
+
+    expect(router.matcher.match('/welcome')?.single.name, OnboardingRoute.name);
   });
 }

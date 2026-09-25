@@ -167,6 +167,52 @@ class AppLocalizationsNl extends AppLocalizations {
   String get serverPartRoutes => 'routes';
 
   @override
+  String get welcomeTitle => 'Welkom bij HomeMaps';
+
+  @override
+  String get welcomeText =>
+      'Koppel de app eerst aan je server. Daarna kun je Dawarich koppelen en je locatie delen, of dat overslaan en later in de instellingen doen.';
+
+  @override
+  String get welcomeTextWeb =>
+      'Je kunt Dawarich koppelen en je locatie delen, of dat overslaan en later in de instellingen doen.';
+
+  @override
+  String get getStarted => 'Aan de slag';
+
+  @override
+  String get next => 'Volgende';
+
+  @override
+  String get back => 'Terug';
+
+  @override
+  String get skip => 'Overslaan';
+
+  @override
+  String get skipAndStart => 'Overslaan en beginnen';
+
+  @override
+  String get toTheMap => 'Naar de kaart';
+
+  @override
+  String setupStep(int step, int total) {
+    return 'Stap $step van $total';
+  }
+
+  @override
+  String get setupServerIntro =>
+      'Het adres van je HomeMaps-server. Zodra hij werkt, wordt hij opgeslagen.';
+
+  @override
+  String get setupDawarichIntro =>
+      'Optioneel: log in bij Dawarich om je gezin op de kaart te zien en je locatiegeschiedenis bij te houden.';
+
+  @override
+  String get setupSharingIntro =>
+      'Optioneel: stuur je locatie naar een eigen dienst, bijvoorbeeld OwnTracks, GeoPulse of Reitti.';
+
+  @override
   String get save => 'Opslaan';
 
   @override

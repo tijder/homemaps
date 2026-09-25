@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:auto_route/auto_route.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -83,20 +84,27 @@ Future<Map<String, dynamic>> _loadWebConfig() async {
   }
 }
 
-class HomeMapsApp extends StatefulWidget {
+class HomeMapsApp extends ConsumerStatefulWidget {
   const HomeMapsApp({super.key});
 
   @override
-  State<HomeMapsApp> createState() => _HomeMapsAppState();
+  ConsumerState<HomeMapsApp> createState() => _HomeMapsAppState();
 }
 
-class _HomeMapsAppState extends State<HomeMapsApp> {
+class _HomeMapsAppState extends ConsumerState<HomeMapsApp> {
   final _router = AppRouter();
+
+  /// The first start goes to the welcome, whatever address it opened on.
+  late final _config = _router.config(
+    deepLinkBuilder: (link) => ref.read(settingsProvider).setupDone
+        ? link
+        : DeepLink.single(const OnboardingRoute()),
+  );
 
   @override
   Widget build(BuildContext context) => MaterialApp.router(
     onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-    routerConfig: _router.config(),
+    routerConfig: _config,
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     theme: ThemeData(
