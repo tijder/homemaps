@@ -32,6 +32,11 @@ class PhotonService {
       if (near != null) ...{
         'lat': near.latitude.toString(),
         'lon': near.longitude.toString(),
+        // How far the bias reaches. Photon's default (16, a few km) fades out
+        // so fast that a chain like "albert heijn" falls back to the most
+        // prominent branches, in Amsterdam; at 13 the nearest ones win, while
+        // "amsterdam" or "domplein" still find the city and the square.
+        'zoom': '13',
       },
     };
     final uri = Uri.parse(address != null ? '$baseUrl/structured' : baseUrl);

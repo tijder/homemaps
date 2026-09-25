@@ -12,6 +12,7 @@ void main() {
     expect(uri.queryParameters['q'], 'Domplein');
     expect(uri.queryParametersAll['osm_tag'], hasLength(4));
     expect(uri.queryParameters['lat'], '52.09');
+    expect(uri.queryParameters['zoom'], '13');
     expect(uri.queryParameters.keys.toSet(), {
       'q',
       'limit',
@@ -19,7 +20,14 @@ void main() {
       'osm_tag',
       'lat',
       'lon',
+      'zoom',
     });
+  });
+
+  test('without a location no bias', () {
+    final uri = photon.searchUri('Domplein');
+    expect(uri.queryParameters.keys, isNot(contains('zoom')));
+    expect(uri.queryParameters.keys, isNot(contains('lat')));
   });
 
   test('postcode with house number goes to structured', () {
