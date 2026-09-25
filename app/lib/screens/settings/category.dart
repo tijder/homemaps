@@ -89,6 +89,7 @@ enum SettingsCategory {
           style.label(l),
           if (style == MapStyle.map) i.theme.label(l),
           if (i.trafficOnMap) l.trafficOnMap,
+          if (i.speedCameras) l.speedCameras,
         ].join(' · ');
       case route:
         final i = ref.watch(settingsProvider);
@@ -111,7 +112,7 @@ enum SettingsCategory {
         final account = ref.watch(dawarichProvider);
         if (account == null) return l.dawarichNotSignedIn;
         final isSharing =
-            ref.watch(familyProvider).value?.sharingEnabled ?? false;
+            ref.watch(familyProvider).value?.isSharing(DateTime.now()) ?? false;
         return [
           account.email,
           if (isSharing) l.dawarichFamilySharing,

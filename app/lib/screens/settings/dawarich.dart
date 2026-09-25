@@ -598,17 +598,18 @@ class _FamilySharing extends ConsumerWidget {
     final family = ref.watch(familyProvider);
     if (family.value case final status?) {
       final until = status.expiresAt;
+      final sharing = status.isSharing(DateTime.now());
       return SwitchListTile(
         secondary: const Icon(Icons.family_restroom),
         title: Text(l.dawarichShareWithFamily),
         subtitle: Text(
-          !status.sharingEnabled
+          !sharing
               ? l.dawarichNotSharing
               : until == null
               ? l.dawarichSharingAlways
               : l.dawarichSharingUntil(_time(l, until)),
         ),
-        value: status.sharingEnabled,
+        value: sharing,
         onChanged: family.isLoading
             ? null
             : (enabled) => _apply(context, ref, enabled),

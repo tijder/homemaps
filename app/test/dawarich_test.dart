@@ -387,6 +387,24 @@ void main() {
     });
   });
 
+  test('sharing that ran out is no longer sharing', () {
+    final status = FamilyStatus.fromJson(mine);
+    final until = DateTime.utc(2026, 9, 24, 18);
+    expect(status.sharingEnabled, isTrue);
+    expect(
+      status.isSharing(until.subtract(const Duration(minutes: 1))),
+      isTrue,
+    );
+    expect(status.isSharing(until), isFalse);
+    // "Always" doesn't run out.
+    final always = FamilyStatus.fromJson({
+      'me': {
+        'sharing': {'enabled': true, 'duration': 'permanent'},
+      },
+    });
+    expect(always.isSharing(DateTime.utc(2100)), isTrue);
+  });
+
   test('ago in minutes, hours or days', () async {
     final l = await AppLocalizations.delegate.load(const Locale('nl'));
     expect(timeAgo(l, const Duration(seconds: 20)), 'zojuist');
@@ -543,6 +561,52 @@ void main() {
       await tick(tester, find.text('Opnieuw inloggen'));
       expect(c.read(dawarichProvider), isNull);
       expect(find.text(server), findsOneWidget);
+    });
+
+    testWidgets('sharing whose time has passed shows as off', (tester) async {
+      final c = await showScreen(tester);
+      Map<String, dynamic> sharingUntil(DateTime until) => {
+        ...mine,
+        'me': {
+          'user_id': 1,
+          'sharing': {
+            'enabled': true,
+            'duration': '1h',
+            'expires_at': until.toUtc().toIso8601String(),
+          },
+        },
+      };
+      fake.responses['GET /api/v1/families/mine'] = (
+        200,
+        sharingUntil(DateTime.now().subtract(const Duration(hours: 1))),
+      );
+      await tester.runAsync(
+        () => c
+            .read(dawarichProvider.notifier)
+            .signIn(server, 'me@home.nl', 'pw'),
+      );
+      await tick(tester, find.byType(Scaffold).first);
+      expect(find.text('Je familie ziet je locatie niet'), findsOneWidget);
+      bool switchOn() => tester
+          .widget<SwitchListTile>(
+            find.widgetWithText(SwitchListTile, 'Locatie delen met familie'),
+          )
+          .value;
+      expect(switchOn(), isFalse);
+
+      fake.responses['GET /api/v1/families/mine'] = (
+        200,
+        sharingUntil(DateTime.now().add(const Duration(hours: 1))),
+      );
+      c.invalidate(familyProvider);
+      await tick(tester, find.byType(Scaffold).first);
+      expect(find.textContaining('Tot '), findsOneWidget);
+      expect(switchOn(), isTrue);
+
+      // Asking again cancels the timer for the end of this one.
+      fake.responses['GET /api/v1/families/mine'] = (200, mine);
+      c.invalidate(familyProvider);
+      await tick(tester, find.byType(Scaffold).first);
     });
 
     testWidgets('signing out asks first', (tester) async {

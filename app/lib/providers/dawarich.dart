@@ -214,7 +214,22 @@ class FamilyNotifier extends AsyncNotifier<FamilyStatus?> {
     await notifier.loaded;
     final key = notifier.key;
     if (key == null) return null;
-    return ref.read(dawarichServiceProvider).family(account.server, key);
+    final status = await ref
+        .read(dawarichServiceProvider)
+        .family(account.server, key);
+    // Sharing for a while ends by itself: then ask again, so everything that
+    // shows it says so without a restart.
+    if (status.expiresAt case final until? when status.sharingEnabled) {
+      final left = until.difference(DateTime.now());
+      if (!left.isNegative) {
+        final timer = Timer(
+          left + const Duration(seconds: 1),
+          ref.invalidateSelf,
+        );
+        ref.onDispose(timer.cancel);
+      }
+    }
+    return status;
   }
 
   /// Share your location with the family: on (for [duration]) or off.

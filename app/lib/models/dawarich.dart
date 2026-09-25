@@ -86,6 +86,9 @@ class FamilyStatus {
   });
 
   final String label;
+
+  /// As Dawarich says it; that stays true after [expiresAt] has passed. See
+  /// [isSharing].
   final bool sharingEnabled;
 
   /// Null when Dawarich gave a custom number of hours.
@@ -96,6 +99,10 @@ class FamilyStatus {
 
   /// The email addresses of the others in the family.
   final List<String> members;
+
+  /// Whether you share at [now]: on, and the time not yet past.
+  bool isSharing(DateTime now) =>
+      sharingEnabled && (expiresAt == null || now.isBefore(expiresAt!));
 
   factory FamilyStatus.fromJson(Map<String, dynamic> json) {
     final sharing = (json['me'] as Map?)?['sharing'] as Map? ?? const {};
