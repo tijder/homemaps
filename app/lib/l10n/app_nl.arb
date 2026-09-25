@@ -293,5 +293,17 @@
   "carWhereTo": "Waarheen?",
   "carOpenApp": "Open HomeMaps op je telefoon en zet locatie aan.",
   "carNoResults": "Niets gevonden.",
-  "carRoutes": "Routes"
+  "carRoutes": "Routes",
+  "speedCameras": "Flitsers",
+  "speedCamerasHelp": "Flitspalen, trajectcontroles en roodlichtcamera's uit OpenStreetMap",
+  "cameraSpeed": "Flitspaal",
+  "cameraRedLight": "Roodlichtcamera",
+  "cameraSection": "Trajectcontrole",
+  "cameraSectionStart": "Begin trajectcontrole",
+  "cameraSectionEnd": "Einde trajectcontrole",
+  "cameraChecks": "Controleert op {kmh} km/u",
+  "cameraAhead": "{camera} over {distance}",
+  "sectionAverage": "Gemiddeld {kmh} km/u",
+  "sectionAverageShort": "gem. {kmh}",
+  "sectionRemaining": "Nog {distance}"
 }

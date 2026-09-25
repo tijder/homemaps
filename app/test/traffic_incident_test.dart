@@ -50,4 +50,14 @@ void main() {
     expect(title, 'File');
     expect(lines, ['+9 min vertraging · 23 km/u']);
   });
+
+  test('speed cameras: kind in the title, the checked speed below', () {
+    final (title, lines) = text({'kind': 'speed_camera', 'maxspeed': 80});
+    expect(title, 'Flitspaal');
+    expect(lines, ['Controleert op 80 km/u']);
+    expect(text({'kind': 'red_light'}).$2, isEmpty);
+    expect(text({'kind': 'red_light'}).$1, 'Roodlichtcamera');
+    expect(text({'kind': 'section_start'}).$1, 'Begin trajectcontrole');
+    expect(text({'kind': 'section_end'}).$1, 'Einde trajectcontrole');
+  });
 }

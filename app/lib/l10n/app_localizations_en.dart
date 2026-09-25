@@ -1110,4 +1110,51 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get carRoutes => 'Routes';
+
+  @override
+  String get speedCameras => 'Speed cameras';
+
+  @override
+  String get speedCamerasHelp =>
+      'Speed cameras, average speed checks and red light cameras from OpenStreetMap';
+
+  @override
+  String get cameraSpeed => 'Speed camera';
+
+  @override
+  String get cameraRedLight => 'Red light camera';
+
+  @override
+  String get cameraSection => 'Average speed check';
+
+  @override
+  String get cameraSectionStart => 'Start of average speed check';
+
+  @override
+  String get cameraSectionEnd => 'End of average speed check';
+
+  @override
+  String cameraChecks(int kmh) {
+    return 'Checks $kmh km/h';
+  }
+
+  @override
+  String cameraAhead(String camera, String distance) {
+    return '$camera in $distance';
+  }
+
+  @override
+  String sectionAverage(int kmh) {
+    return 'Average $kmh km/h';
+  }
+
+  @override
+  String sectionAverageShort(int kmh) {
+    return 'avg $kmh';
+  }
+
+  @override
+  String sectionRemaining(String distance) {
+    return '$distance to go';
+  }
 }

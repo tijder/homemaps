@@ -621,6 +621,15 @@ struct CarSpeed: Hashable, CustomStringConvertible {
   /// `osm`, `timeOfDay`, `roadworks` or `msi` (a red ring).
   var limitSource: String
   var speedMs: Double? = nil
+  /// Above the speed limit: the next speed camera or the average speed check
+  /// you're in. The icon (see [CarHostApi.registerImage]) and its text ("400
+  /// m", "avg 97"), with a smaller line below ("2.3 km to go"); null if
+  /// there's none.
+  var cameraIconKey: String? = nil
+  var cameraText: String? = nil
+  var cameraDetail: String? = nil
+  /// Your average in the section is above its limit: the sign goes red.
+  var cameraOver: Bool
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
@@ -628,11 +637,19 @@ struct CarSpeed: Hashable, CustomStringConvertible {
     let limitKmh: Int64? = nilOrValue(pigeonVar_list[0])
     let limitSource = pigeonVar_list[1] as! String
     let speedMs: Double? = nilOrValue(pigeonVar_list[2])
+    let cameraIconKey: String? = nilOrValue(pigeonVar_list[3])
+    let cameraText: String? = nilOrValue(pigeonVar_list[4])
+    let cameraDetail: String? = nilOrValue(pigeonVar_list[5])
+    let cameraOver = pigeonVar_list[6] as! Bool
 
     return CarSpeed(
       limitKmh: limitKmh,
       limitSource: limitSource,
-      speedMs: speedMs
+      speedMs: speedMs,
+      cameraIconKey: cameraIconKey,
+      cameraText: cameraText,
+      cameraDetail: cameraDetail,
+      cameraOver: cameraOver
     )
   }
   func toList() -> [Any?] {
@@ -640,13 +657,17 @@ struct CarSpeed: Hashable, CustomStringConvertible {
       limitKmh,
       limitSource,
       speedMs,
+      cameraIconKey,
+      cameraText,
+      cameraDetail,
+      cameraOver,
     ]
   }
   static func == (lhs: CarSpeed, rhs: CarSpeed) -> Bool {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return CarApiPigeonInternal.deepEquals(lhs.limitKmh, rhs.limitKmh) && CarApiPigeonInternal.deepEquals(lhs.limitSource, rhs.limitSource) && CarApiPigeonInternal.deepEquals(lhs.speedMs, rhs.speedMs)
+    return CarApiPigeonInternal.deepEquals(lhs.limitKmh, rhs.limitKmh) && CarApiPigeonInternal.deepEquals(lhs.limitSource, rhs.limitSource) && CarApiPigeonInternal.deepEquals(lhs.speedMs, rhs.speedMs) && CarApiPigeonInternal.deepEquals(lhs.cameraIconKey, rhs.cameraIconKey) && CarApiPigeonInternal.deepEquals(lhs.cameraText, rhs.cameraText) && CarApiPigeonInternal.deepEquals(lhs.cameraDetail, rhs.cameraDetail) && CarApiPigeonInternal.deepEquals(lhs.cameraOver, rhs.cameraOver)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -654,10 +675,14 @@ struct CarSpeed: Hashable, CustomStringConvertible {
     CarApiPigeonInternal.deepHash(value: limitKmh, hasher: &hasher)
     CarApiPigeonInternal.deepHash(value: limitSource, hasher: &hasher)
     CarApiPigeonInternal.deepHash(value: speedMs, hasher: &hasher)
+    CarApiPigeonInternal.deepHash(value: cameraIconKey, hasher: &hasher)
+    CarApiPigeonInternal.deepHash(value: cameraText, hasher: &hasher)
+    CarApiPigeonInternal.deepHash(value: cameraDetail, hasher: &hasher)
+    CarApiPigeonInternal.deepHash(value: cameraOver, hasher: &hasher)
   }
 
   public var description: String {
-    return "CarSpeed(limitKmh: \(String(describing: limitKmh)), limitSource: \(String(describing: limitSource)), speedMs: \(String(describing: speedMs)))"
+    return "CarSpeed(limitKmh: \(String(describing: limitKmh)), limitSource: \(String(describing: limitSource)), speedMs: \(String(describing: speedMs)), cameraIconKey: \(String(describing: cameraIconKey)), cameraText: \(String(describing: cameraText)), cameraDetail: \(String(describing: cameraDetail)), cameraOver: \(String(describing: cameraOver)))"
   }
 }
 

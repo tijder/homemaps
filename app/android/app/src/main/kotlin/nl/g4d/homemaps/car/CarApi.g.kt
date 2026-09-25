@@ -636,7 +636,18 @@ data class CarSpeed (
   val limitKmh: Long? = null,
   /** `osm`, `timeOfDay`, `roadworks` or `msi` (a red ring). */
   val limitSource: String,
-  val speedMs: Double? = null
+  val speedMs: Double? = null,
+  /**
+   * Above the speed limit: the next speed camera or the average speed check
+   * you're in. The icon (see [CarHostApi.registerImage]) and its text ("400
+   * m", "avg 97"), with a smaller line below ("2.3 km to go"); null if
+   * there's none.
+   */
+  val cameraIconKey: String? = null,
+  val cameraText: String? = null,
+  val cameraDetail: String? = null,
+  /** Your average in the section is above its limit: the sign goes red. */
+  val cameraOver: Boolean
 )
  {
   companion object {
@@ -644,7 +655,11 @@ data class CarSpeed (
       val limitKmh = pigeonVar_list[0] as Long?
       val limitSource = pigeonVar_list[1] as String
       val speedMs = pigeonVar_list[2] as Double?
-      return CarSpeed(limitKmh, limitSource, speedMs)
+      val cameraIconKey = pigeonVar_list[3] as String?
+      val cameraText = pigeonVar_list[4] as String?
+      val cameraDetail = pigeonVar_list[5] as String?
+      val cameraOver = pigeonVar_list[6] as Boolean
+      return CarSpeed(limitKmh, limitSource, speedMs, cameraIconKey, cameraText, cameraDetail, cameraOver)
     }
   }
   fun toList(): List<Any?> {
@@ -652,6 +667,10 @@ data class CarSpeed (
       limitKmh,
       limitSource,
       speedMs,
+      cameraIconKey,
+      cameraText,
+      cameraDetail,
+      cameraOver,
     )
   }
   override fun equals(other: Any?): Boolean {
@@ -662,7 +681,7 @@ data class CarSpeed (
       return true
     }
     val other = other as CarSpeed
-    return CarApiPigeonUtils.deepEquals(this.limitKmh, other.limitKmh) && CarApiPigeonUtils.deepEquals(this.limitSource, other.limitSource) && CarApiPigeonUtils.deepEquals(this.speedMs, other.speedMs)
+    return CarApiPigeonUtils.deepEquals(this.limitKmh, other.limitKmh) && CarApiPigeonUtils.deepEquals(this.limitSource, other.limitSource) && CarApiPigeonUtils.deepEquals(this.speedMs, other.speedMs) && CarApiPigeonUtils.deepEquals(this.cameraIconKey, other.cameraIconKey) && CarApiPigeonUtils.deepEquals(this.cameraText, other.cameraText) && CarApiPigeonUtils.deepEquals(this.cameraDetail, other.cameraDetail) && CarApiPigeonUtils.deepEquals(this.cameraOver, other.cameraOver)
   }
 
   override fun hashCode(): Int {
@@ -670,10 +689,14 @@ data class CarSpeed (
     result = 31 * result + CarApiPigeonUtils.deepHash(this.limitKmh)
     result = 31 * result + CarApiPigeonUtils.deepHash(this.limitSource)
     result = 31 * result + CarApiPigeonUtils.deepHash(this.speedMs)
+    result = 31 * result + CarApiPigeonUtils.deepHash(this.cameraIconKey)
+    result = 31 * result + CarApiPigeonUtils.deepHash(this.cameraText)
+    result = 31 * result + CarApiPigeonUtils.deepHash(this.cameraDetail)
+    result = 31 * result + CarApiPigeonUtils.deepHash(this.cameraOver)
     return result
   }
   override fun toString(): String {
-    return "CarSpeed(limitKmh=$limitKmh, limitSource=$limitSource, speedMs=$speedMs)"
+    return "CarSpeed(limitKmh=$limitKmh, limitSource=$limitSource, speedMs=$speedMs, cameraIconKey=$cameraIconKey, cameraText=$cameraText, cameraDetail=$cameraDetail, cameraOver=$cameraOver)"
   }
 }
 

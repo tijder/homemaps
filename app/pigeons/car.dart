@@ -201,6 +201,10 @@ class CarSpeed {
     required this.limitKmh,
     required this.limitSource,
     required this.speedMs,
+    required this.cameraIconKey,
+    required this.cameraText,
+    required this.cameraDetail,
+    required this.cameraOver,
   });
 
   int? limitKmh;
@@ -208,6 +212,17 @@ class CarSpeed {
   /// `osm`, `timeOfDay`, `roadworks` or `msi` (a red ring).
   String limitSource;
   double? speedMs;
+
+  /// Above the speed limit: the next speed camera or the average speed check
+  /// you're in. The icon (see [CarHostApi.registerImage]) and its text ("400
+  /// m", "avg 97"), with a smaller line below ("2.3 km to go"); null if
+  /// there's none.
+  String? cameraIconKey;
+  String? cameraText;
+  String? cameraDetail;
+
+  /// Your average in the section is above its limit: the sign goes red.
+  bool cameraOver;
 }
 
 class CarPosition {

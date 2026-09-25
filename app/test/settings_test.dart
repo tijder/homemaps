@@ -39,7 +39,10 @@ void main() {
     expect(find.text('Kaart en route'), findsOneWidget);
     expect(find.text('Delen'), findsOneWidget);
     expect(find.text('App'), findsOneWidget);
-    expect(find.text('Kaart · Automatisch · Verkeer'), findsOneWidget);
+    expect(
+      find.text('Kaart · Automatisch · Verkeer · Flitsers'),
+      findsOneWidget,
+    );
     expect(find.text('Server'), findsOneWidget);
     expect(find.text('Niet ingelogd'), findsOneWidget);
     // Narrow has no sidebar: no category open.
@@ -67,6 +70,10 @@ void main() {
     await tester.tap(find.text('Verkeer'));
     await tester.pumpAndSettle();
     expect(c.read(settingsProvider).trafficOnMap, isFalse);
+
+    await tester.tap(find.text('Flitsers'));
+    await tester.pumpAndSettle();
+    expect(c.read(settingsProvider).speedCameras, isFalse);
   });
 
   testWidgets('wide: two panes, and choosing changes the right one', (

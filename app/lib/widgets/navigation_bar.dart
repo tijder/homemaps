@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../l10n/app_localizations.dart';
 import '../models/route.dart';
 import '../navigation/navigation_provider.dart';
+import '../utils/enforcement.dart';
 import '../utils/formatting.dart';
 import 'maneuver_icon.dart';
 
@@ -725,6 +726,119 @@ class SpeedLimitSign extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// What the camera sign says; the same on the phone and in the car.
+typedef CameraSignText = ({
+  CameraKind kind,
+  String text,
+  String? detail,
+  bool over,
+  String semantics,
+});
+
+/// Above the speed limit sign: the next speed camera, red light camera or
+/// average speed check on the route and how far away it is; inside an
+/// average speed check your average since its start, red above the limit.
+class CameraSign extends StatelessWidget {
+  const CameraSign({super.key, this.camera, this.section});
+
+  final CameraAhead? camera;
+  final SectionProgress? section;
+
+  static IconData icon(CameraKind kind) => switch (kind) {
+    CameraKind.speedCamera => Icons.photo_camera,
+    CameraKind.redLight => Icons.traffic,
+    CameraKind.section => Icons.timer_outlined,
+  };
+
+  static String label(AppLocalizations l, CameraKind kind) => switch (kind) {
+    CameraKind.speedCamera => l.cameraSpeed,
+    CameraKind.redLight => l.cameraRedLight,
+    CameraKind.section => l.cameraSection,
+  };
+
+  /// Null if there is nothing to show.
+  static CameraSignText? describe(
+    AppLocalizations l,
+    CameraAhead? camera,
+    SectionProgress? section,
+  ) {
+    if (section case final s?) {
+      final average = s.averageKmh;
+      final remaining = l.sectionRemaining(
+        distance(roundDistance(s.remaining), l.localeName),
+      );
+      return (
+        kind: CameraKind.section,
+        text: average == null
+            ? l.cameraSection
+            : l.sectionAverageShort(average),
+        detail: remaining,
+        over: average != null && s.maxspeed != null && average > s.maxspeed!,
+        semantics: [
+          l.cameraSection,
+          if (average != null) l.sectionAverage(average),
+          remaining,
+        ].join(', '),
+      );
+    }
+    if (camera case final c?) {
+      final text = distance(roundDistance(c.ahead), l.localeName);
+      return (
+        kind: c.kind,
+        text: text,
+        detail: null,
+        over: false,
+        semantics: l.cameraAhead(label(l, c.kind), text),
+      );
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final sign = describe(l, camera, section);
+    if (sign == null) return const SizedBox.shrink();
+    final text = Theme.of(context).textTheme;
+    return Semantics(
+      label: sign.semantics,
+      excludeSemantics: true,
+      child: Material(
+        elevation: 4,
+        color: sign.over ? const Color(0xFFD32F2F) : const Color(0xFF263238),
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon(sign.kind), color: Colors.white, size: 20),
+                  const SizedBox(width: 6),
+                  Text(
+                    sign.text,
+                    style: text.titleSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              if (sign.detail case final detail?)
+                Text(
+                  detail,
+                  style: text.labelSmall?.copyWith(color: Colors.white70),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

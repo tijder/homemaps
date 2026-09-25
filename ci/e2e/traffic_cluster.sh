@@ -48,3 +48,10 @@ $K exec "$POD" -c traffic -- python3 -c "
 import json, urllib.request
 speeds = json.load(urllib.request.urlopen('http://localhost:9100/conditional-speeds.json', timeout=5))
 print('speeds by time of day:', len(speeds['ways']), 'ways')" || { echo "conditional-speeds is missing"; exit 1; }
+
+# Speed cameras from the same file: Andorra has about ten.
+$K exec "$POD" -c traffic -- python3 -c "
+import json, urllib.request
+layer = json.load(urllib.request.urlopen('http://localhost:9100/enforcement.geojson', timeout=5))
+print('speed cameras:', len(layer['features']))
+assert layer['features'], 'no speed cameras'" || { echo "enforcement is missing"; exit 1; }

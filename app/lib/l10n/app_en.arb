@@ -673,5 +673,55 @@
   "carRoutes": "Routes",
   "@carRoutes": {
     "description": "CarPlay and Android Auto"
+  },
+  "speedCameras": "Speed cameras",
+  "speedCamerasHelp": "Speed cameras, average speed checks and red light cameras from OpenStreetMap",
+  "cameraSpeed": "Speed camera",
+  "cameraRedLight": "Red light camera",
+  "cameraSection": "Average speed check",
+  "cameraSectionStart": "Start of average speed check",
+  "cameraSectionEnd": "End of average speed check",
+  "cameraChecks": "Checks {kmh} km/h",
+  "@cameraChecks": {
+    "placeholders": {
+      "kmh": {
+        "type": "int"
+      }
+    }
+  },
+  "cameraAhead": "{camera} in {distance}",
+  "@cameraAhead": {
+    "placeholders": {
+      "camera": {
+        "type": "String"
+      },
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "sectionAverage": "Average {kmh} km/h",
+  "@sectionAverage": {
+    "placeholders": {
+      "kmh": {
+        "type": "int"
+      }
+    }
+  },
+  "sectionAverageShort": "avg {kmh}",
+  "@sectionAverageShort": {
+    "placeholders": {
+      "kmh": {
+        "type": "int"
+      }
+    }
+  },
+  "sectionRemaining": "{distance} to go",
+  "@sectionRemaining": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
   }
 }

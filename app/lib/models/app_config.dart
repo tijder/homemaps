@@ -9,6 +9,7 @@ class AppConfig {
     required this.trafficUrl,
     required this.trafficPlannedUrl,
     required this.conditionalSpeedsUrl,
+    required this.enforcementUrl,
   });
 
   final String valhallaUrl;
@@ -23,6 +24,9 @@ class AppConfig {
 
   /// Speed limits by time of day, per OSM way.
   final String conditionalSpeedsUrl;
+
+  /// Speed cameras, average speed sections and red light cameras (GeoJSON).
+  final String enforcementUrl;
 
   /// [overrides] is the content of `/config.json` (web) and may replace any of
   /// them, for example when the tiles live on their own host name.
@@ -48,6 +52,7 @@ class AppConfig {
         'conditionalSpeedsUrl',
         '/conditional-speeds',
       ),
+      enforcementUrl: choose('enforcementUrl', '/enforcement'),
     );
   }
 

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:homemaps/models/app_config.dart';
 import 'package:homemaps/models/place.dart';
 import 'package:homemaps/models/profile.dart';
 import 'package:homemaps/models/route.dart';
@@ -11,6 +12,7 @@ import 'package:homemaps/providers/services.dart';
 import 'package:homemaps/providers/settings.dart';
 import 'package:homemaps/providers/location.dart';
 import 'package:homemaps/services/valhalla_service.dart';
+import 'package:homemaps/utils/enforcement.dart';
 import 'package:homemaps/utils/distance.dart';
 import 'package:homemaps/utils/timed_speed_limits.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
@@ -520,5 +522,120 @@ void main() {
     final warnings = voice.sentences.where((z) => z.startsWith('Caution'));
     // Already within 2 km at departure: immediately, and not again after that.
     expect(warnings, ['Caution: accident in 1500 m']);
+  });
+
+  group('speed cameras', () {
+    Map<String, dynamic> camera(
+      String kind,
+      LatLng p, {
+      double? bearing,
+      String? section,
+      int? maxspeed,
+    }) => {
+      'type': 'Feature',
+      'properties': {
+        'kind': kind,
+        'bearing': ?bearing,
+        'section': ?section,
+        'maxspeed': ?maxspeed,
+      },
+      'geometry': {
+        'type': 'Point',
+        'coordinates': [p.longitude, p.latitude],
+      },
+    };
+
+    Future<void> withCameras(List<Map<String, dynamic>> features) async {
+      c.dispose();
+      c = ProviderContainer(
+        overrides: [
+          locationSourceProvider.overrideWithBuild((_, _) => source),
+          voiceProvider.overrideWithValue(voice),
+          valhallaProvider.overrideWithValue(valhalla),
+          enforcementProvider.overrideWithValue(
+            AsyncData({'type': 'FeatureCollection', 'features': features}),
+          ),
+        ],
+      );
+      addTearDown(c.dispose);
+      final wait = c.read(locationProvider.notifier).turnOn();
+      await Future<void>.delayed(Duration.zero);
+      source.fixes.add(fix(route.points.first));
+      await wait;
+    }
+
+    /// The route's heading at [i] in [points].
+    double heading(List<LatLng> points, int i) =>
+        headingBetween(points[i], points[i + 1]);
+
+    test('the next camera within 2 km, on your side of the road', () async {
+      final points = along(route.points, 20);
+      await withCameras([
+        camera('speed_camera', points[75], bearing: heading(points, 75)),
+        // The other carriageway: against the direction of travel.
+        camera('speed_camera', points[40], bearing: heading(points, 40) + 180),
+        // Too far ahead at the start.
+        camera('red_light', points[130]),
+      ]);
+      await start();
+      await driveTo(points[1]);
+      var nav = c.read(navigationProvider)!;
+      expect(nav.camera?.kind, CameraKind.speedCamera);
+      expect(nav.camera!.ahead, closeTo(74 * 20, 30));
+      // Past it: the red light camera is next, now within 2 km.
+      for (final p in points.skip(2).take(78)) {
+        await driveTo(p);
+      }
+      nav = c.read(navigationProvider)!;
+      expect(nav.camera?.kind, CameraKind.redLight);
+      expect(nav.camera!.ahead, closeTo(50 * 20, 30));
+      expect(nav.section, isNull);
+    });
+
+    test('an average speed check: ahead, then your average inside', () async {
+      final points = along(route.points, 20);
+      await withCameras([
+        camera('section_start', points[30], section: 'r1', maxspeed: 60),
+        camera('section_end', points[90], section: 'r1', maxspeed: 60),
+      ]);
+      await start();
+      await driveTo(points[1]);
+      var nav = c.read(navigationProvider)!;
+      expect(nav.camera?.kind, CameraKind.section);
+      expect(nav.camera!.maxspeed, 60);
+      // 20 m per second: 72 km/h.
+      final begin = DateTime(2026);
+      for (final (i, p) in points.indexed.skip(2).take(58)) {
+        source.fixes.add(
+          LocationFix(
+            point: p,
+            time: begin.add(Duration(seconds: i)),
+            accuracy: 5,
+            speed: 20,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+      }
+      nav = c.read(navigationProvider)!;
+      expect(nav.camera, isNull);
+      expect(nav.section?.averageKmh, closeTo(72, 3));
+      expect(nav.section?.maxspeed, 60);
+      expect(nav.section!.remaining, closeTo(31 * 20, 30));
+    });
+
+    test('off in the settings: not fetched', () async {
+      final container = ProviderContainer(
+        overrides: [
+          appConfigProvider.overrideWithValue(
+            AppConfig.fromServer('http://unreachable.invalid'),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      container
+          .read(settingsProvider.notifier)
+          .modify(const Settings(speedCameras: false));
+      expect(await container.read(enforcementProvider.future), isNull);
+    });
   });
 }

@@ -1855,6 +1855,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Routes'**
   String get carRoutes;
+
+  /// No description provided for @speedCameras.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed cameras'**
+  String get speedCameras;
+
+  /// No description provided for @speedCamerasHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed cameras, average speed checks and red light cameras from OpenStreetMap'**
+  String get speedCamerasHelp;
+
+  /// No description provided for @cameraSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed camera'**
+  String get cameraSpeed;
+
+  /// No description provided for @cameraRedLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Red light camera'**
+  String get cameraRedLight;
+
+  /// No description provided for @cameraSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Average speed check'**
+  String get cameraSection;
+
+  /// No description provided for @cameraSectionStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start of average speed check'**
+  String get cameraSectionStart;
+
+  /// No description provided for @cameraSectionEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'End of average speed check'**
+  String get cameraSectionEnd;
+
+  /// No description provided for @cameraChecks.
+  ///
+  /// In en, this message translates to:
+  /// **'Checks {kmh} km/h'**
+  String cameraChecks(int kmh);
+
+  /// No description provided for @cameraAhead.
+  ///
+  /// In en, this message translates to:
+  /// **'{camera} in {distance}'**
+  String cameraAhead(String camera, String distance);
+
+  /// No description provided for @sectionAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'Average {kmh} km/h'**
+  String sectionAverage(int kmh);
+
+  /// No description provided for @sectionAverageShort.
+  ///
+  /// In en, this message translates to:
+  /// **'avg {kmh}'**
+  String sectionAverageShort(int kmh);
+
+  /// No description provided for @sectionRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'{distance} to go'**
+  String sectionRemaining(String distance);
 }
 
 class _AppLocalizationsDelegate

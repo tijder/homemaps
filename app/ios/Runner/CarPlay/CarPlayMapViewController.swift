@@ -13,6 +13,7 @@ final class CarPlayMapViewController: UIViewController, MLNMapViewDelegate {
   private var styleReady = false
   private var pendingCamera: CarCamera?
   private let speedLimit = SpeedLimitView()
+  private let cameraSign = CameraSignView()
 
   /// Dark mode of the car's screen changed.
   var onAppearanceChanged: (() -> Void)?
@@ -30,6 +31,8 @@ final class CarPlayMapViewController: UIViewController, MLNMapViewDelegate {
     self.mapView = mapView
     speedLimit.isHidden = true
     view.addSubview(speedLimit)
+    cameraSign.isHidden = true
+    view.addSubview(cameraSign)
     loadStyle()
   }
 
@@ -39,6 +42,7 @@ final class CarPlayMapViewController: UIViewController, MLNMapViewDelegate {
     let insets = view.safeAreaInsets
     speedLimit.frame = CGRect(
       x: insets.left + 12, y: view.bounds.height - insets.bottom - 12 - 56, width: 56, height: 56)
+    speedChanged()
   }
 
   override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
@@ -201,12 +205,79 @@ final class CarPlayMapViewController: UIViewController, MLNMapViewDelegate {
 
   func speedChanged() {
     let speed = CarHost.shared.speed
-    guard CarHost.shared.screen == .navigating, let limit = speed?.limitKmh else {
+    let navigating = CarHost.shared.screen == .navigating
+    showCamera(navigating ? speed : nil)
+    guard navigating, let limit = speed?.limitKmh else {
       speedLimit.isHidden = true
       return
     }
     speedLimit.isHidden = false
     speedLimit.show(limit: Int(limit), matrix: speed?.limitSource == "msi")
+  }
+
+  /// The next speed camera or the average speed check you're in: above the
+  /// speed limit, or in its place when there is no limit.
+  private func showCamera(_ speed: CarSpeed?) {
+    guard let speed = speed, let text = speed.cameraText else {
+      cameraSign.isHidden = true
+      return
+    }
+    cameraSign.show(
+      icon: speed.cameraIconKey.flatMap { CarHost.shared.images[$0] }, text: text,
+      detail: speed.cameraDetail, over: speed.cameraOver)
+    let size = cameraSign.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
+    let insets = view.safeAreaInsets
+    let below: CGFloat = speed.limitKmh == nil ? 0 : 56 + 6
+    cameraSign.frame = CGRect(
+      x: insets.left + 12, y: view.bounds.height - insets.bottom - 12 - below - size.height,
+      width: size.width, height: size.height)
+    cameraSign.isHidden = false
+  }
+}
+
+/// The next speed camera or the average speed check you're in, as on the
+/// phone (`CameraSign` in `navigation_bar.dart`): an icon and a line of text,
+/// with a smaller line below; red when your average is above the limit.
+final class CameraSignView: UIView {
+  private let icon = UIImageView()
+  private let label = UILabel()
+  private let detail = UILabel()
+
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    layer.cornerRadius = 10
+    label.textColor = .white
+    label.font = .systemFont(ofSize: 16, weight: .bold)
+    detail.textColor = UIColor.white.withAlphaComponent(0.7)
+    detail.font = .systemFont(ofSize: 11)
+    icon.contentMode = .scaleAspectFit
+    let row = UIStackView(arrangedSubviews: [icon, label])
+    row.axis = .horizontal
+    row.spacing = 6
+    row.alignment = .center
+    let column = UIStackView(arrangedSubviews: [row, detail])
+    column.axis = .vertical
+    column.alignment = .center
+    column.translatesAutoresizingMaskIntoConstraints = false
+    addSubview(column)
+    NSLayoutConstraint.activate([
+      icon.widthAnchor.constraint(equalToConstant: 20),
+      icon.heightAnchor.constraint(equalToConstant: 20),
+      column.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
+      column.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10),
+      column.topAnchor.constraint(equalTo: topAnchor, constant: 6),
+      column.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
+    ])
+  }
+
+  required init?(coder: NSCoder) { fatalError() }
+
+  func show(icon image: UIImage?, text: String, detail line: String?, over: Bool) {
+    icon.image = image
+    label.text = text
+    detail.text = line
+    detail.isHidden = line == nil
+    backgroundColor = over ? UIColor(hex: 0xd32f2f) : UIColor(hex: 0x263238)
   }
 }
 

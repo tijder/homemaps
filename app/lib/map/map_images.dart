@@ -58,3 +58,34 @@ Future<Uint8List> locationPuckPng() {
       ..drawCircle(center, 14, Paint()..color = const Color(0xFF1565C0));
   }, size);
 }
+
+/// A speed camera, red light camera or average speed check on the map: a
+/// dark rounded square with [icon] in white. 48 px at 2x.
+Future<Uint8List> cameraPng(IconData icon) {
+  const size = 48.0;
+  return _png((canvas) {
+    final square = RRect.fromRectAndRadius(
+      const Rect.fromLTWH(3, 3, size - 6, size - 6),
+      const Radius.circular(9),
+    );
+    canvas
+      ..drawRRect(square, Paint()..color = Colors.white)
+      ..drawRRect(square.deflate(3), Paint()..color = const Color(0xFF263238));
+    final glyph = TextPainter(
+      text: TextSpan(
+        text: String.fromCharCode(icon.codePoint),
+        style: TextStyle(
+          fontFamily: icon.fontFamily,
+          package: icon.fontPackage,
+          fontSize: 28,
+          color: Colors.white,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    glyph.paint(
+      canvas,
+      Offset((size - glyph.width) / 2, (size - glyph.height) / 2),
+    );
+  }, size);
+}

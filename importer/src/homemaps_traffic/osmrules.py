@@ -65,9 +65,8 @@ def _packed(data: bytes) -> list[int]:
     return out
 
 
-def read_pbf(stream: BinaryIO, key: bytes = KEY) -> dict[int, str]:
-    """way id -> value of [key], for ways with a `highway` tag."""
-    out: dict[int, str] = {}
+def blocks(stream: BinaryIO) -> Iterator[bytes]:
+    """The data blocks of a PBF file, decompressed."""
     while head := stream.read(4):
         (length,) = struct.unpack(">I", head)
         header = dict(_fields(stream.read(length)))
@@ -75,11 +74,17 @@ def read_pbf(stream: BinaryIO, key: bytes = KEY) -> dict[int, str]:
         if header.get(1) != b"OSMData":
             continue
         if 3 in blob:
-            data = zlib.decompress(blob[3])
+            yield zlib.decompress(blob[3])
         elif 1 in blob:
-            data = blob[1]
+            yield blob[1]
         else:
             raise ValueError("only zlib or uncompressed is supported")
+
+
+def read_pbf(stream: BinaryIO, key: bytes = KEY) -> dict[int, str]:
+    """way id -> value of [key], for ways with a `highway` tag."""
+    out: dict[int, str] = {}
+    for data in blocks(stream):
         # The fast filter: if the key is not in the block, no way in it has
         # that tag.
         if key not in data:

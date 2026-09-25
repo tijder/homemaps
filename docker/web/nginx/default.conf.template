@@ -69,6 +69,13 @@ server {
         proxy_pass $traffic;
     }
 
+    # Speed cameras, average speed sections and red light cameras (OSM).
+    location = /enforcement {
+        set $traffic ${TRAFFIC_UPSTREAM};
+        rewrite ^ /enforcement.geojson break;
+        proxy_pass $traffic;
+    }
+
     # tileserver-gl builds the URLs in style.json and the TileJSON from the request:
     # Host, X-Forwarded-Proto and -- for this path -- X-Forwarded-Path. That way one
     # installation works under several hostnames (internal and public) without a

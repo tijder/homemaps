@@ -40,6 +40,7 @@ class MapWidget extends StatefulWidget {
     this.traffic,
     this.showDelay = true,
     this.onTrafficTapped,
+    this.enforcement,
     this.family = const [],
     this.onFamilyTapped,
     this.onController,
@@ -102,6 +103,11 @@ class MapWidget extends StatefulWidget {
   final void Function(Point<double> screen, Map<String, dynamic> properties)?
   onTrafficTapped;
 
+  /// Speed cameras, sections and red light cameras (GeoJSON from
+  /// `/enforcement`), or null if they are off. A tap on one goes to
+  /// [onTrafficTapped] too.
+  final Map<String, dynamic>? enforcement;
+
   /// The family members who share their location via Dawarich.
   final List<FamilyLocation> family;
   final ValueChanged<FamilyLocation>? onFamilyTapped;
@@ -115,6 +121,7 @@ class _MapWidgetState extends State<MapWidget> {
   static const _routeSource = 'routes';
   static const _connectorSource = 'connector';
   static const _trafficSource = 'traffic';
+  static const _enforcementSource = 'enforcement';
   static const _drivenSource = 'driven';
   static const _arrowSource = 'arrow';
   static const _familySource = 'family';
@@ -131,6 +138,7 @@ class _MapWidgetState extends State<MapWidget> {
 
   /// Feature id -> properties, to show what is there on a tap.
   var _trafficInfo = <String, Map<String, dynamic>>{};
+  var _enforcementInfo = <String, Map<String, dynamic>>{};
 
   /// Circle id -> index in [MapWidget.points]; the found place isn't in it.
   final _circleIndex = <String, int>{};
@@ -159,6 +167,7 @@ class _MapWidgetState extends State<MapWidget> {
     if (old.traffic != widget.traffic || old.showDelay != widget.showDelay) {
       _drawTraffic();
     }
+    if (old.enforcement != widget.enforcement) _drawEnforcement();
     if (old.routes != widget.routes ||
         old.chosen != widget.chosen ||
         // The screen rebuilds this list every time; compare by content,
@@ -180,6 +189,7 @@ class _MapWidgetState extends State<MapWidget> {
     await c.addGeoJsonSource(_routeSource, _empty);
     await c.addGeoJsonSource(_connectorSource, _empty);
     await _trafficLayers(c, belowText: await _firstTextLayer(c));
+    await _enforcementLayer(c);
     // Alternatives grey and at the bottom; the chosen route blue with a white
     // casing.
     await c.addLineLayer(
@@ -321,6 +331,7 @@ class _MapWidgetState extends State<MapWidget> {
     _circleIndex.clear();
     _fittedVersion = 0;
     await _drawTraffic();
+    await _drawEnforcement();
     await _drawDriven();
     await _drawArrow();
     await _drawFamily();
@@ -637,6 +648,70 @@ class _MapWidgetState extends State<MapWidget> {
 
   static const _incidentMinZoom = 11.0;
 
+  /// The image per kind in the enforcement layer.
+  static const _cameraImages = {
+    'speed_camera': ('camera-speed', Icons.photo_camera),
+    'red_light': ('camera-red-light', Icons.traffic),
+    'section_start': ('camera-section', Icons.timer_outlined),
+    'section_end': ('camera-section-end', Icons.timer_off_outlined),
+  };
+
+  /// Speed cameras as small signs, above the traffic, from the same zoom as
+  /// the incidents: nationwide there are hundreds.
+  Future<void> _enforcementLayer(MapLibreMapController c) async {
+    await c.addGeoJsonSource(_enforcementSource, _empty);
+    try {
+      for (final (image, icon) in _cameraImages.values) {
+        await c.addImage(image, await cameraPng(icon));
+      }
+      await c.addSymbolLayer(
+        _enforcementSource,
+        'enforcement',
+        SymbolLayerProperties(
+          iconImage: [
+            'match',
+            ['get', 'kind'],
+            for (final MapEntry(key: kind, value: (image, _))
+                in _cameraImages.entries) ...[kind, image],
+            _cameraImages['speed_camera']!.$1,
+          ],
+          iconSize: const [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            _incidentMinZoom,
+            0.35,
+            16,
+            0.55,
+          ],
+          iconAllowOverlap: true,
+        ),
+        minzoom: _incidentMinZoom,
+      );
+    } catch (_) {
+      // Without images there are no signs; the rest of the map is fine.
+    }
+  }
+
+  Future<void> _drawEnforcement() async {
+    final c = _controller;
+    if (c == null || !_styleReady) return;
+    final features = [
+      for (final feature
+          in (widget.enforcement?['features'] as List? ?? const []))
+        if (feature is Map<String, dynamic>) feature,
+    ];
+    _enforcementInfo = {
+      for (final feature in features)
+        '${feature['id']}': (feature['properties'] as Map)
+            .cast<String, dynamic>(),
+    };
+    await c.setGeoJsonSource(_enforcementSource, {
+      'type': 'FeatureCollection',
+      'features': features,
+    });
+  }
+
   /// The style's first layer with text or symbols: what goes below it doesn't
   /// run over names and road numbers. Null if there is none or if it fails;
   /// then it goes on top. Not via getStyle(): that doesn't work on the web
@@ -829,6 +904,11 @@ class _MapWidgetState extends State<MapWidget> {
           .where((f) => '${f.userId}' == id)
           .firstOrNull;
       if (member != null) widget.onFamilyTapped?.call(member);
+      return;
+    }
+    if (layer == 'enforcement') {
+      final info = _enforcementInfo[id];
+      if (info != null) widget.onTrafficTapped?.call(_logical(screen), info);
       return;
     }
     if (layer.startsWith('traffic-')) {

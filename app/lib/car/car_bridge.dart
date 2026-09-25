@@ -21,6 +21,7 @@ import '../providers/saved_places.dart';
 import '../providers/services.dart';
 import '../providers/settings.dart';
 import '../utils/formatting.dart';
+import '../widgets/navigation_bar.dart' show CameraSign;
 import 'car_api.g.dart';
 import 'car_icons.dart';
 import 'car_maneuvers.dart';
@@ -665,9 +666,12 @@ class CarBridge implements CarFlutterApi {
         ? ''
         : lanesIconKey(lanes.perLane, dark: _dark);
     final etaMinute = (status.remainingSeconds / 60).round();
+    final camera = CameraSign.describe(_l, nav.camera, nav.section);
+    final cameraKey = camera == null ? null : 'camera-${camera.kind.name}';
     final signature =
         '${identityHashCode(nav.route)}:${status.next}:$toNext:$laneKey:'
-        '${lanes?.ahead.round()}:${nav.limit}:${nav.limitSource}:$etaMinute';
+        '${lanes?.ahead.round()}:${nav.limit}:${nav.limitSource}:$etaMinute:'
+        '$cameraKey:${camera?.text}:${camera?.detail}:${camera?.over}';
     if (signature == _pushedManeuver) return;
     _pushedManeuver = signature;
 
@@ -689,6 +693,13 @@ class CarBridge implements CarFlutterApi {
     if (lanes != null) {
       await _image(laneKey, () => lanesPng(lanes.perLane, dark: dark), 3);
     }
+    if (camera != null) {
+      await _image(
+        cameraKey!,
+        () => cameraPng(CameraSign.icon(camera.kind)),
+        2,
+      );
+    }
     // Another maneuver came along while the icons were drawn.
     if (_pushedManeuver != signature || _surface == null) return;
     final fix = nav.fix;
@@ -709,6 +720,10 @@ class CarBridge implements CarFlutterApi {
           limitKmh: nav.limit,
           limitSource: nav.limitSource.name,
           speedMs: fix?.speed,
+          cameraIconKey: cameraKey,
+          cameraText: camera?.text,
+          cameraDetail: camera?.detail,
+          cameraOver: camera?.over ?? false,
         ),
       ),
     );

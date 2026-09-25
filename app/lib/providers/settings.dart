@@ -51,6 +51,7 @@ class Settings {
     this.avoidTolls = false,
     this.avoidFerries = false,
     this.trafficOnMap = true,
+    this.speedCameras = true,
     this.locationEnabled = false,
     this.setupDone = true,
   });
@@ -70,6 +71,10 @@ class Settings {
   /// Closures, roadworks and jams as a layer over the map.
   final bool trafficOnMap;
 
+  /// Speed cameras, average speed sections and red light cameras: on the map
+  /// and in the sign en route.
+  final bool speedCameras;
+
   /// The user turned their location on: again on the next start, if the
   /// permission is still there.
   final bool locationEnabled;
@@ -87,6 +92,7 @@ class Settings {
     bool? avoidTolls,
     bool? avoidFerries,
     bool? trafficOnMap,
+    bool? speedCameras,
     bool? locationEnabled,
     bool? setupDone,
   }) => Settings(
@@ -99,6 +105,7 @@ class Settings {
     avoidTolls: avoidTolls ?? this.avoidTolls,
     avoidFerries: avoidFerries ?? this.avoidFerries,
     trafficOnMap: trafficOnMap ?? this.trafficOnMap,
+    speedCameras: speedCameras ?? this.speedCameras,
     locationEnabled: locationEnabled ?? this.locationEnabled,
     setupDone: setupDone ?? this.setupDone,
   );
@@ -137,6 +144,7 @@ class SettingsNotifier extends Notifier<Settings> {
       avoidTolls: box.get('avoidTolls', defaultValue: false) as bool,
       avoidFerries: box.get('avoidFerries', defaultValue: false) as bool,
       trafficOnMap: box.get('trafficOnMap', defaultValue: true) as bool,
+      speedCameras: box.get('speedCameras', defaultValue: true) as bool,
       locationEnabled: box.get('locationOn', defaultValue: false) as bool,
       // Anything saved before means an installation from before the first
       // start existed; that one doesn't have to start over.
@@ -156,6 +164,7 @@ class SettingsNotifier extends Notifier<Settings> {
       'avoidTolls': newValue.avoidTolls,
       'avoidFerries': newValue.avoidFerries,
       'trafficOnMap': newValue.trafficOnMap,
+      'speedCameras': newValue.speedCameras,
       'locationOn': newValue.locationEnabled,
       'setupDone': newValue.setupDone,
     });

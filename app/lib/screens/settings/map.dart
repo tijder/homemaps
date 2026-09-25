@@ -64,6 +64,14 @@ class MapSettings extends ConsumerWidget {
               onChanged: (enabled) =>
                   apply(settings.copyWith(trafficOnMap: enabled)),
             ),
+            SwitchListTile(
+              secondary: const Icon(Icons.photo_camera_outlined),
+              title: Text(l.speedCameras),
+              subtitle: Text(l.speedCamerasHelp),
+              value: settings.speedCameras,
+              onChanged: (enabled) =>
+                  apply(settings.copyWith(speedCameras: enabled)),
+            ),
           ],
         ),
       ],

@@ -339,4 +339,58 @@ void main() {
     await settle();
     expect(c.read(navigationProvider)!.suggestion, isNull);
   });
+
+  test('a speed camera ahead: its sign next to the limit', () async {
+    final camera = along(route.points, 20)[40];
+    c.dispose();
+    c = ProviderContainer(
+      overrides: [
+        locationSourceProvider.overrideWithBuild((_, _) => source),
+        voiceProvider.overrideWithValue(FakeVoice()),
+        valhallaProvider.overrideWithValue(valhalla),
+        photonProvider.overrideWithValue(photon),
+        appConfigProvider.overrideWithValue(
+          AppConfig.fromServer('https://maps.example.org'),
+        ),
+        carHostProvider.overrideWithValue(host),
+        enforcementProvider.overrideWithValue(
+          AsyncData({
+            'type': 'FeatureCollection',
+            'features': [
+              {
+                'type': 'Feature',
+                'properties': {'kind': 'speed_camera'},
+                'geometry': {
+                  'type': 'Point',
+                  'coordinates': [camera.longitude, camera.latitude],
+                },
+              },
+            ],
+          }),
+        ),
+      ],
+    );
+    addTearDown(c.dispose);
+    bridge = c.read(carBridgeProvider);
+    await locate();
+    bridge.connected(surface);
+    c.read(plannerProvider.notifier).showPlace(target);
+    c.read(plannerProvider.notifier).startRoute();
+    await settle();
+    await bridge.startTrip();
+    await settle();
+    await driveTo(along(route.points, 20)[1]);
+    await waitFor(
+      () =>
+          (host.last('updateManeuver')?.args[2] as CarSpeed?)?.cameraIconKey !=
+          null,
+    );
+    final speed = host.last('updateManeuver')!.args[2] as CarSpeed;
+    expect(speed.cameraIconKey, 'camera-speedCamera');
+    expect(speed.cameraText, '800 m');
+    expect(speed.cameraOver, isFalse);
+    expect([
+      for (final call in host.named('registerImage')) call.args.first,
+    ], contains('camera-speedCamera'));
+  });
 }

@@ -1115,4 +1115,51 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get carRoutes => 'Routes';
+
+  @override
+  String get speedCameras => 'Flitsers';
+
+  @override
+  String get speedCamerasHelp =>
+      'Flitspalen, trajectcontroles en roodlichtcamera\'s uit OpenStreetMap';
+
+  @override
+  String get cameraSpeed => 'Flitspaal';
+
+  @override
+  String get cameraRedLight => 'Roodlichtcamera';
+
+  @override
+  String get cameraSection => 'Trajectcontrole';
+
+  @override
+  String get cameraSectionStart => 'Begin trajectcontrole';
+
+  @override
+  String get cameraSectionEnd => 'Einde trajectcontrole';
+
+  @override
+  String cameraChecks(int kmh) {
+    return 'Controleert op $kmh km/u';
+  }
+
+  @override
+  String cameraAhead(String camera, String distance) {
+    return '$camera over $distance';
+  }
+
+  @override
+  String sectionAverage(int kmh) {
+    return 'Gemiddeld $kmh km/u';
+  }
+
+  @override
+  String sectionAverageShort(int kmh) {
+    return 'gem. $kmh';
+  }
+
+  @override
+  String sectionRemaining(String distance) {
+    return 'Nog $distance';
+  }
 }

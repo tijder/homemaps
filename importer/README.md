@@ -21,6 +21,15 @@ rule while driving to the way Valhalla names for each piece of the route. The re
 (`osmrules.py`) only unpacks the blocks that contain the tag: for the Netherlands
 ~20 s and ~20 MB, again as soon as the file changes.
 
+From the same file, `/enforcement.geojson` (`enforcement.py`): speed cameras
+(`highway=speed_camera`) and `type=enforcement` relations, as points with `kind`
+`speed_camera`, `red_light`, `section_start` or `section_end` (an average speed
+check; both ends share `section`), and where known `maxspeed` and `bearing` (the
+direction of travel that is checked: from `from` to `to` in the relation, or the
+camera's `direction`). The app shows them on the map and in a sign above the speed
+limit while driving. A second pass looks up the untagged member nodes; nodes are
+sorted by id, so only the blocks that can contain one are unpacked.
+
 ## How it works
 
 1. **Matching** (`matcher.py`). An NDW segment is nearly always just a start and

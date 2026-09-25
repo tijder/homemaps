@@ -4,8 +4,9 @@ import 'package:intl/intl.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/formatting.dart';
 
-/// What is going on at a tapped part of the traffic layer. The properties come
-/// from the importer: codes from NDW's feed, translated here.
+/// What is going on at a tapped part of the traffic layer, or a tapped speed
+/// camera. The properties come from the importer: codes from NDW's feed or
+/// OSM, translated here.
 class TrafficIncident extends StatelessWidget {
   const TrafficIncident(this.properties, {super.key});
 
@@ -19,6 +20,24 @@ class TrafficIncident extends StatelessWidget {
   ) {
     final kind = info['kind'];
     final lines = <String>[];
+    if (kind
+        case 'speed_camera' ||
+            'red_light' ||
+            'section_start' ||
+            'section_end') {
+      if ((info['maxspeed'] as num?)?.toInt() case final kmh?) {
+        lines.add(l.cameraChecks(kmh));
+      }
+      return (
+        switch (kind) {
+          'speed_camera' => l.cameraSpeed,
+          'red_light' => l.cameraRedLight,
+          'section_start' => l.cameraSectionStart,
+          _ => l.cameraSectionEnd,
+        },
+        lines,
+      );
+    }
     if (kind case 'accident' || 'breakdown' || 'obstacle') {
       final since = DateTime.tryParse(info['since'] as String? ?? '');
       if (since != null) {

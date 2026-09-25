@@ -16,6 +16,7 @@ import '../providers/services.dart';
 import '../providers/settings.dart';
 import '../providers/location.dart';
 import '../services/valhalla_service.dart';
+import '../utils/enforcement.dart';
 import '../utils/msi.dart';
 import '../utils/timed_speed_limits.dart';
 import '../utils/temporary_speed_limits.dart';
@@ -131,6 +132,8 @@ class NavigationState {
     this.limitSource = LimitSource.osm,
     this.lanes,
     this.matrix,
+    this.camera,
+    this.section,
   });
 
   final RouteOption route;
@@ -158,6 +161,14 @@ class NavigationState {
   /// to right (see [Gantry]), and how far away it is.
   final ({double ahead, List<String> perLane})? matrix;
 
+  /// The next speed camera, red light camera or average speed check on the
+  /// route, within warning distance (car only).
+  final CameraAhead? camera;
+
+  /// Inside an average speed check: what's left of it and your average
+  /// since its start (null if you didn't drive in at the start).
+  final SectionProgress? section;
+
   NavigationState copyWith({
     RouteOption? route,
     List<Place>? destinations,
@@ -171,6 +182,8 @@ class NavigationState {
     LimitSource? limitSource,
     LaneChoice? Function()? lanes,
     ({double ahead, List<String> perLane})? Function()? matrix,
+    CameraAhead? Function()? camera,
+    SectionProgress? Function()? section,
   }) => NavigationState(
     route: route ?? this.route,
     destinations: destinations ?? this.destinations,
@@ -184,8 +197,14 @@ class NavigationState {
     limitSource: limitSource ?? this.limitSource,
     lanes: lanes != null ? lanes() : this.lanes,
     matrix: matrix != null ? matrix() : this.matrix,
+    camera: camera != null ? camera() : this.camera,
+    section: section != null ? section() : this.section,
   );
 }
+
+typedef CameraAhead = ({CameraKind kind, double ahead, int? maxspeed});
+
+typedef SectionProgress = ({double remaining, int? averageKmh, int? maxspeed});
 
 /// Where the speed limit en route comes from.
 enum LimitSource {
@@ -218,6 +237,13 @@ class NavigationNotifier extends Notifier<NavigationState?> {
   List<({String id, double along, String kind})> _incidents = const [];
   final _warned = <String>{};
   ProviderSubscription<Map<String, dynamic>?>? _layerSubscription;
+
+  /// Speed cameras and sections on the current route; see [camerasOnRoute].
+  CamerasOnRoute _cameras = CamerasOnRoute.empty;
+  ProviderSubscription<Map<String, dynamic>?>? _camerasSubscription;
+
+  /// Where and when you drove into the current section, for the average.
+  ({String id, double along, DateTime time})? _sectionEntry;
 
   /// Speed limit and OSM way per stretch of the current route (see
   /// [ValhallaService.speedLimits]); empty until they're in.
@@ -297,6 +323,14 @@ class NavigationNotifier extends Notifier<NavigationState?> {
       },
       fireImmediately: true,
     );
+    // The cameras don't change during a trip, but the setting may.
+    _camerasSubscription = ref.listen(
+      enforcementProvider.select((v) => v.value),
+      (_, layer) {
+        if (state case final now?) _readCameras(now.route, layer);
+      },
+      fireImmediately: true,
+    );
     // Speed limits by time of day: fetch once, then from memory.
     ref.read(timedSpeedLimitsProvider);
     _fixes = ref.listen(locationProvider.select((t) => t.fix), (_, fix) {
@@ -324,6 +358,8 @@ class NavigationNotifier extends Notifier<NavigationState?> {
     _fixes = null;
     _layerSubscription?.close();
     _layerSubscription = null;
+    _camerasSubscription?.close();
+    _camerasSubscription = null;
     _fasterTimer?.cancel();
     _fasterTimer = null;
     _suggestionExpiry?.cancel();
@@ -348,6 +384,8 @@ class NavigationNotifier extends Notifier<NavigationState?> {
     _lanes = const [];
     _fetchLanes(route);
     _incidents = const [];
+    _cameras = CamerasOnRoute.empty;
+    _sectionEntry = null;
     _tracker = RouteTracker(route);
     _announcer = Announcer(route, _profile, withDistance: _texts.withDistance);
     final source = ref.read(locationSourceProvider);
@@ -359,6 +397,55 @@ class NavigationNotifier extends Notifier<NavigationState?> {
       muted: state?.muted ?? false,
     );
     _readLayer(route, ref.read(trafficLayerProvider).value);
+    _readCameras(route, ref.read(enforcementProvider).value);
+  }
+
+  /// Which cameras are on the route; only for the car.
+  void _readCameras(RouteOption route, Map<String, dynamic>? layer) {
+    final tracker = _tracker;
+    if (tracker == null || !identical(tracker.route, route)) return;
+    _cameras = _profile == Profile.car && layer != null
+        ? camerasOnRoute(tracker, layer)
+        : CamerasOnRoute.empty;
+  }
+
+  /// A section you drove into less than this after its start: the average
+  /// is worth showing.
+  static const _sectionEntryMargin = 150.0;
+
+  /// The camera ahead and the section you're in, at [status].
+  ({CameraAhead? camera, SectionProgress? section}) _camerasAt(
+    NavStatus status,
+    LocationFix fix,
+  ) {
+    final section = _cameras.sectionAt(status.along);
+    if (section == null) {
+      _sectionEntry = null;
+      return (
+        camera: _cameras.next(status.along, _warnDistance),
+        section: null,
+      );
+    }
+    var entry = _sectionEntry;
+    if (entry == null || entry.id != section.id) {
+      entry = _sectionEntry = (
+        id: section.id,
+        along: status.along,
+        time: fix.time,
+      );
+    }
+    final seconds = fix.time.difference(entry.time).inMilliseconds / 1000;
+    final driven = status.along - entry.along;
+    final measured =
+        entry.along - section.start < _sectionEntryMargin && seconds >= 5;
+    return (
+      camera: null,
+      section: (
+        remaining: section.end - status.along,
+        averageKmh: measured ? (driven / seconds * 3.6).round() : null,
+        maxspeed: section.maxspeed,
+      ),
+    );
   }
 
   /// What in the traffic layer matters for the route: incidents, temporary
@@ -525,6 +612,7 @@ class NavigationNotifier extends Notifier<NavigationState?> {
       _viasPassed = passed;
     }
     final limit = _limit(status);
+    final cameras = _camerasAt(status, fix);
     state = now.copyWith(
       status: status,
       fix: fix,
@@ -533,6 +621,8 @@ class NavigationNotifier extends Notifier<NavigationState?> {
       limit: () => limit.kmh,
       limitSource: limit.source,
       matrix: () => nextGantry(_gantries, status.along),
+      camera: () => cameras.camera,
+      section: () => cameras.section,
       lanes: () => chooseLanes(
         _lanes,
         along: status.along,

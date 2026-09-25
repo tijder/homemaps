@@ -610,7 +610,15 @@ class CarTrip {
 }
 
 class CarSpeed {
-  CarSpeed({this.limitKmh, required this.limitSource, this.speedMs});
+  CarSpeed({
+    this.limitKmh,
+    required this.limitSource,
+    this.speedMs,
+    this.cameraIconKey,
+    this.cameraText,
+    this.cameraDetail,
+    required this.cameraOver,
+  });
 
   int? limitKmh;
 
@@ -619,8 +627,29 @@ class CarSpeed {
 
   double? speedMs;
 
+  /// Above the speed limit: the next speed camera or the average speed check
+  /// you're in. The icon (see [CarHostApi.registerImage]) and its text ("400
+  /// m", "avg 97"), with a smaller line below ("2.3 km to go"); null if
+  /// there's none.
+  String? cameraIconKey;
+
+  String? cameraText;
+
+  String? cameraDetail;
+
+  /// Your average in the section is above its limit: the sign goes red.
+  bool cameraOver;
+
   List<Object?> _toList() {
-    return <Object?>[limitKmh, limitSource, speedMs];
+    return <Object?>[
+      limitKmh,
+      limitSource,
+      speedMs,
+      cameraIconKey,
+      cameraText,
+      cameraDetail,
+      cameraOver,
+    ];
   }
 
   Object encode() {
@@ -633,6 +662,10 @@ class CarSpeed {
       limitKmh: result[0] as int?,
       limitSource: result[1]! as String,
       speedMs: result[2] as double?,
+      cameraIconKey: result[3] as String?,
+      cameraText: result[4] as String?,
+      cameraDetail: result[5] as String?,
+      cameraOver: result[6]! as bool,
     );
   }
 
@@ -647,7 +680,11 @@ class CarSpeed {
     }
     return _deepEquals(limitKmh, other.limitKmh) &&
         _deepEquals(limitSource, other.limitSource) &&
-        _deepEquals(speedMs, other.speedMs);
+        _deepEquals(speedMs, other.speedMs) &&
+        _deepEquals(cameraIconKey, other.cameraIconKey) &&
+        _deepEquals(cameraText, other.cameraText) &&
+        _deepEquals(cameraDetail, other.cameraDetail) &&
+        _deepEquals(cameraOver, other.cameraOver);
   }
 
   @override
@@ -656,7 +693,7 @@ class CarSpeed {
 
   @override
   String toString() {
-    return 'CarSpeed(limitKmh: $limitKmh, limitSource: $limitSource, speedMs: $speedMs)';
+    return 'CarSpeed(limitKmh: $limitKmh, limitSource: $limitSource, speedMs: $speedMs, cameraIconKey: $cameraIconKey, cameraText: $cameraText, cameraDetail: $cameraDetail, cameraOver: $cameraOver)';
   }
 }
 

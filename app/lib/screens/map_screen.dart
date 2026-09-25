@@ -58,9 +58,10 @@ class MapScreen extends ConsumerStatefulWidget {
 class _MapScreenState extends ConsumerState<MapScreen> {
   static const _panelWidth = 380.0;
 
-  /// The choices in the layers menu that turn the traffic layer and your
-  /// location on or off.
+  /// The choices in the layers menu that turn the traffic layer, the speed
+  /// cameras and your location on or off.
   static const _traffic = 'traffic';
+  static const _cameras = 'cameras';
   static const _location = 'location';
 
   /// Choices for day or night with the "Map" style: `theme:` + [MapTheme].
@@ -554,6 +555,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       onTrafficTapped: (screen, info) => setState(
         () => _incident = (position: Offset(screen.x, screen.y), info: info),
       ),
+      enforcement: ref.watch(enforcementProvider).value,
       family: ref.watch(familyLocationsProvider),
       // A family member is a place like a search result, with "Route" to it,
       // and the map follows them.
@@ -593,6 +595,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                               ? settings.copyWith(
                                   trafficOnMap: !settings.trafficOnMap,
                                 )
+                              : choice == _cameras
+                              ? settings.copyWith(
+                                  speedCameras: !settings.speedCameras,
+                                )
                               : choice.startsWith(_theme)
                               ? settings.copyWith(
                                   theme: MapTheme.values.byName(
@@ -624,6 +630,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       value: _traffic,
                       checked: settings.trafficOnMap,
                       child: PointerInterceptor(child: Text(l.trafficOnMap)),
+                    ),
+                    CheckedPopupMenuItem(
+                      value: _cameras,
+                      checked: settings.speedCameras,
+                      child: PointerInterceptor(child: Text(l.speedCameras)),
                     ),
                     CheckedPopupMenuItem(
                       value: _location,
@@ -1128,10 +1139,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   if (ref.watch(settingsProvider).profile == Profile.car &&
                       !nav.arrived)
                     PointerInterceptor(
-                      child: SpeedLimitSign(
-                        limit: nav.limit,
-                        source: nav.limitSource,
-                        speed: nav.fix?.speed,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (nav.camera != null || nav.section != null) ...[
+                            CameraSign(
+                              camera: nav.camera,
+                              section: nav.section,
+                            ),
+                            const SizedBox(height: 6),
+                          ],
+                          SpeedLimitSign(
+                            limit: nav.limit,
+                            source: nav.limitSource,
+                            speed: nav.fix?.speed,
+                          ),
+                        ],
                       ),
                     ),
                   const SizedBox(width: 8),

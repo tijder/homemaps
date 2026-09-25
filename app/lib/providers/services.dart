@@ -162,6 +162,28 @@ final timedSpeedLimitsProvider = FutureProvider<TimedSpeedLimits>((ref) async {
   }
 });
 
+/// Speed cameras, average speed sections and red light cameras (GeoJSON from
+/// `/enforcement`), or null if they are turned off. The importer reads them
+/// from OSM when the map is rebuilt; every six hours is plenty. A failed fetch
+/// is an error (`.value` keeps the previous layer) and is retried sooner.
+final enforcementProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
+  final config = ref.watch(appConfigProvider);
+  final enabled = ref.watch(settingsProvider.select((s) => s.speedCameras));
+  if (config == null || !enabled) return null;
+  var refresh = Timer(const Duration(hours: 6), ref.invalidateSelf);
+  ref.onDispose(() => refresh.cancel());
+  try {
+    final response = await ref
+        .watch(dioProvider)
+        .get<Map<String, dynamic>>(config.enforcementUrl);
+    return response.data;
+  } on DioException {
+    refresh.cancel();
+    refresh = Timer(const Duration(minutes: 5), ref.invalidateSelf);
+    rethrow;
+  }
+});
+
 /// The planned closures (GeoJSON with each closure's windows). Only fetched
 /// once someone wants to leave later; refreshed every hour, like the
 /// importer.

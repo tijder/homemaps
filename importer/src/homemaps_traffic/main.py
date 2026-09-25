@@ -14,7 +14,7 @@ Settings come from the environment (the chart sets them):
   OSM_PBF            the tileset's OSM file          (/data/source/region.osm.pbf)
   MSI_SECONDS        how often the MSI signs         (60; 0 = never)
   BRIDGES            "false" turns open bridges off  (true)
-  METRICS_PORT       /metrics and /traffic.geojson   (9100)
+  METRICS_PORT       /metrics and the layers         (9100)
 """
 
 import io
@@ -34,7 +34,7 @@ from pathlib import Path
 from socket import AF_INET6
 from xml.etree.ElementTree import ParseError
 
-from . import datex3, maplayer, msi, osmrules
+from . import datex3, enforcement, maplayer, msi, osmrules
 from . import traffictile as tt
 from .matcher import Match, MatchCache, Valhalla
 from .tarindex import TrafficTar
@@ -144,6 +144,7 @@ class State:
         self.parts: dict[str, list[dict]] = {}
         self.planned: tuple[bytes, bytes] | None = None
         self.conditional_speeds: tuple[bytes, bytes] | None = None
+        self.enforcement: tuple[bytes, bytes] | None = None
 
     def set_part(self, name: str, features: list[dict]) -> None:
         """The part [name] of the traffic layer. The layer only becomes available
@@ -158,6 +159,10 @@ class State:
     def set_conditional_speeds(self, content: tuple[bytes, bytes]) -> None:
         with self.lock:
             self.conditional_speeds = content
+
+    def set_enforcement(self, layer: tuple[bytes, bytes]) -> None:
+        with self.lock:
+            self.enforcement = layer
 
     def set_planned(self, layer: tuple[bytes, bytes]) -> None:
         with self.lock:
@@ -191,6 +196,9 @@ def start_metrics(state: State, port: int) -> None:
                 return
             if path == "/conditional-speeds.json":
                 self._layer(state.conditional_speeds, 3600, "application/json")
+                return
+            if path == "/enforcement.geojson":
+                self._layer(state.enforcement, 3600)
                 return
             self._send(200, state.text().encode(), "text/plain; version=0.0.4")
 
@@ -330,9 +338,9 @@ class Importer:
         )
         return maplayer.speed_limits(placed, now)
 
-    def _conditional_speeds(self) -> None:
-        """Maximum speeds by time of day from the tileset's OSM file: at startup,
-        and again when the build job puts down a new file."""
+    def _osm(self) -> None:
+        """Maximum speeds by time of day and speed cameras from the tileset's OSM
+        file: at startup, and again when the build job puts down a new file."""
         if self.osm_pbf is None:
             return
         try:
@@ -348,17 +356,25 @@ class Importer:
         try:
             with open(self.osm_pbf, "rb") as stream:
                 ways = osmrules.conditional_speeds(stream)
-        except (OSError, ValueError, KeyError, zlib.error) as error:
+                stream.seek(0)
+                cameras = enforcement.enforcement(stream)
+        except (OSError, ValueError, KeyError, IndexError, zlib.error) as error:
             log.warning("OSM file not read: %s", error)
             return
         self.pbf_read = modified
         self.state.set_conditional_speeds(maplayer.compress({"ways": ways}))
-        self.state.set(conditional_speed_ways=len(ways))
-        log.info("speeds by time of day: %d ways (%.1f s)", len(ways), time.time() - start)
+        self.state.set_enforcement(maplayer.geojson(cameras))
+        self.state.set(conditional_speed_ways=len(ways), enforcement_points=len(cameras))
+        log.info(
+            "speeds by time of day: %d ways, cameras: %d points (%.1f s)",
+            len(ways),
+            len(cameras),
+            time.time() - start,
+        )
 
     def cycle(self) -> None:
         start = time.time()
-        self._conditional_speeds()
+        self._osm()
         feed = datex3.open_feed(fetch(f"{self.ndw}/reistijden_meetgegevens.xml.gz"))
         travel_times = list(datex3.read_travel_times(feed))
         self._refresh_sites({travel_time.key for travel_time in travel_times})
