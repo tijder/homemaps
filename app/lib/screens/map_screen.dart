@@ -96,6 +96,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   LatLng? _center() => _map?.cameraPosition?.target;
 
+  /// A text field has focus, like the search bar: back closes that first.
+  bool _typing = false;
+
+  void _focusChanged() {
+    final typing =
+        FocusManager.instance.primaryFocus?.context
+            ?.findAncestorWidgetOfExactType<EditableText>() !=
+        null;
+    if (typing != _typing && mounted) setState(() => _typing = typing);
+  }
+
   /// The card of the followed family member; while it's open, the map follows
   /// them.
   Place? _familyPlace;
@@ -165,10 +176,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       onHide: () => setState(() => _visible = false),
       onShow: () => setState(() => _visible = true),
     );
+    FocusManager.instance.addListener(_focusChanged);
   }
 
   @override
   void dispose() {
+    FocusManager.instance.removeListener(_focusChanged);
     _stopMouse();
     _resume?.cancel();
     _lifecycle.dispose();
@@ -654,6 +667,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     // May the back button leave the app? Only if there's nothing left to close.
     final canLeave =
+        !_typing &&
         nav == null &&
         !planner.routeMode &&
         planner.found == null &&
@@ -996,7 +1010,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// the app. Not during navigation: leaving the app would stop navigation.
   void _back() {
     final planner = ref.read(plannerProvider);
-    if (_menu != null || _incident != null) {
+    if (_typing) {
+      // Done searching: the keyboard and the suggestions go, nothing else.
+      FocusManager.instance.primaryFocus?.unfocus();
+    } else if (_menu != null || _incident != null) {
       setState(() {
         _menu = null;
         _incident = null;

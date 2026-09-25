@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show FlutterView;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -50,7 +51,8 @@ class SearchField extends ConsumerStatefulWidget {
   ConsumerState<SearchField> createState() => _SearchFieldState();
 }
 
-class _SearchFieldState extends ConsumerState<SearchField> {
+class _SearchFieldState extends ConsumerState<SearchField>
+    with WidgetsBindingObserver {
   final _text = TextEditingController();
   final _focus = FocusNode();
   Timer? _debounce;
@@ -68,12 +70,17 @@ class _SearchFieldState extends ConsumerState<SearchField> {
   /// out right away.
   String _label = '';
 
+  /// The on-screen keyboard was up while the field had focus.
+  bool _keyboardUp = false;
+  FlutterView? _view;
+
   String _display(Place? place) =>
       place?.display(AppLocalizations.of(context)) ?? '';
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _focus.addListener(() {
       if (_focus.hasFocus) {
         _close?.cancel();
@@ -99,6 +106,7 @@ class _SearchFieldState extends ConsumerState<SearchField> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _view = View.of(context);
     // Here and not in initState: the name of "My location" comes from the
     // translation, and that can't be read in initState yet.
     _label = _display(widget.place);
@@ -114,8 +122,21 @@ class _SearchFieldState extends ConsumerState<SearchField> {
     }
   }
 
+  /// Back on Android first closes the keyboard, and Flutter never hears of
+  /// it; then the suggestions stayed, and the next back left the app. A
+  /// keyboard that goes away is taken as done searching.
+  @override
+  void didChangeMetrics() {
+    final view = _view;
+    if (!mounted || view == null) return;
+    final up = view.viewInsets.bottom > 0;
+    if (_keyboardUp && !up && _focus.hasFocus) _focus.unfocus();
+    _keyboardUp = up && _focus.hasFocus;
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _debounce?.cancel();
     _close?.cancel();
     _inFlight?.cancel();
