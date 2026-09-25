@@ -717,6 +717,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get licenses => 'Licenses';
 
   @override
+  String get saveLog => 'Save log';
+
+  @override
+  String get saveLogSubtitle =>
+      'Save the app log to a file for troubleshooting';
+
+  @override
+  String get logSaved => 'Log saved';
+
+  @override
+  String logSaveFailed(String error) {
+    return 'Could not save the log: $error';
+  }
+
+  @override
+  String get logEmpty => 'There is no log to save yet';
+
+  @override
   String get dawarich => 'Dawarich';
 
   @override

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +15,7 @@ import 'providers/settings.dart';
 import 'providers/location.dart';
 import 'providers/location_sharing.dart';
 import 'router/app_router.dart';
+import 'services/app_log.dart';
 
 Future<void> main() async {
   final container = await bootstrap();
@@ -26,6 +29,8 @@ Future<void> main() async {
 /// the car the engine may start before the phone's window exists.
 Future<ProviderContainer> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // First, so problems while starting end up in the log too.
+  unawaited(AppLog.instance.install());
   var webConfig = const <String, dynamic>{};
   if (kIsWeb) {
     // maplibre-gl-js lives in web/maplibre/ and not on a CDN: otherwise every

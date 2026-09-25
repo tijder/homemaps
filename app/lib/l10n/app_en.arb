@@ -453,6 +453,18 @@
   "sourceTraffic": "Traffic, roadworks and lane signals",
   "sourceCode": "Source code",
   "licenses": "Licenses",
+  "saveLog": "Save log",
+  "saveLogSubtitle": "Save the app log to a file for troubleshooting",
+  "logSaved": "Log saved",
+  "logSaveFailed": "Could not save the log: {error}",
+  "@logSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "logEmpty": "There is no log to save yet",
   "dawarich": "Dawarich",
   "dawarichHelp": "Enter the address of your own Dawarich. Then sign in, and you can share your location with your family, record your trips while navigating and see family members on the map.",
   "dawarichNotSignedIn": "Not signed in",

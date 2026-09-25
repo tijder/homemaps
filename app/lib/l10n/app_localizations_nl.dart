@@ -721,6 +721,24 @@ class AppLocalizationsNl extends AppLocalizations {
   String get licenses => 'Licenties';
 
   @override
+  String get saveLog => 'Log opslaan';
+
+  @override
+  String get saveLogSubtitle =>
+      'Sla het app-log op als bestand voor probleemonderzoek';
+
+  @override
+  String get logSaved => 'Log opgeslagen';
+
+  @override
+  String logSaveFailed(String error) {
+    return 'Log opslaan mislukt: $error';
+  }
+
+  @override
+  String get logEmpty => 'Er is nog geen log om op te slaan';
+
+  @override
   String get dawarich => 'Dawarich';
 
   @override

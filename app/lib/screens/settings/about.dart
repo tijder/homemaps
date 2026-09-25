@@ -1,8 +1,11 @@
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../services/app_log.dart';
 import 'section.dart';
 
 /// What HomeMaps is, which version, and where the map, the routes, search and
@@ -21,6 +24,35 @@ class AboutSettings extends StatelessWidget {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } on Object {
       // No browser: then it's just the text.
+    }
+  }
+
+  /// The system save dialog; replaceable in tests. Null when cancelled.
+  @visibleForTesting
+  static Future<Uri?> Function(String fileName, Uint8List bytes) saveFile =
+      (fileName, bytes) => FilePicker.saveFile(
+        fileName: fileName,
+        bytes: bytes,
+        mimeType: 'text/plain',
+      );
+
+  static Future<void> _saveLog(BuildContext context) async {
+    final l = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final bytes = AppLog.instance.export();
+      if (bytes == null) {
+        messenger.showSnackBar(SnackBar(content: Text(l.logEmpty)));
+        return;
+      }
+      final date = DateTime.now().toIso8601String().split('T').first;
+      if (await saveFile('homemaps-log-$date.txt', bytes) == null) return;
+      messenger.showSnackBar(SnackBar(content: Text(l.logSaved)));
+    } on Object catch (error) {
+      debugPrint('Could not save the log: $error');
+      messenger.showSnackBar(
+        SnackBar(content: Text(l.logSaveFailed('$error'))),
+      );
     }
   }
 
@@ -107,6 +139,14 @@ class AboutSettings extends StatelessWidget {
                     ),
                   ),
                 ),
+                // The web has no log file: the browser console has it all.
+                if (!kIsWeb)
+                  ListTile(
+                    leading: const Icon(Icons.save_alt),
+                    title: Text(l.saveLog),
+                    subtitle: Text(l.saveLogSubtitle),
+                    onTap: () => _saveLog(context),
+                  ),
               ],
             ),
           ],

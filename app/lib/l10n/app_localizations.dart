@@ -1214,6 +1214,36 @@ abstract class AppLocalizations {
   /// **'Licenses'**
   String get licenses;
 
+  /// No description provided for @saveLog.
+  ///
+  /// In en, this message translates to:
+  /// **'Save log'**
+  String get saveLog;
+
+  /// No description provided for @saveLogSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save the app log to a file for troubleshooting'**
+  String get saveLogSubtitle;
+
+  /// No description provided for @logSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Log saved'**
+  String get logSaved;
+
+  /// No description provided for @logSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the log: {error}'**
+  String logSaveFailed(String error);
+
+  /// No description provided for @logEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no log to save yet'**
+  String get logEmpty;
+
   /// No description provided for @dawarich.
   ///
   /// In en, this message translates to:

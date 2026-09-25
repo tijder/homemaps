@@ -1,9 +1,13 @@
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:homemaps/l10n/app_localizations.dart';
 import 'package:homemaps/screens/settings/settings_screen.dart';
 import 'package:homemaps/screens/settings/about.dart';
+import 'package:homemaps/services/app_log.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 void main() {
@@ -39,5 +43,42 @@ void main() {
     await tester.tap(find.text('Licenties'));
     await tester.pumpAndSettle();
     expect(find.byType(LicensePage), findsOneWidget);
+  });
+
+  testWidgets('about: save the log', (tester) async {
+    AboutSettings.info = () async => PackageInfo(
+      appName: 'HomeMaps',
+      packageName: 'nl.homemaps',
+      version: '0.4.0',
+      buildNumber: '64',
+    );
+    String? savedName;
+    Uint8List? savedBytes;
+    AboutSettings.saveFile = (name, bytes) async {
+      savedName = name;
+      savedBytes = bytes;
+      return Uri.file('/tmp/$name');
+    };
+    tester.view.physicalSize = const Size(500, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          locale: const Locale('nl'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SettingsScreen(category: 'about'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    AppLog.instance.add('something happened');
+    await tester.tap(find.text('Log opslaan'));
+    await tester.pumpAndSettle();
+    expect(savedName, startsWith('homemaps-log-'));
+    expect(utf8.decode(savedBytes!), contains('something happened'));
+    expect(find.text('Log opgeslagen'), findsOneWidget);
   });
 }
