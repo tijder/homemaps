@@ -74,7 +74,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'There is no road near one of the points that this mode of travel can use.';
 
   @override
-  String get serverUnreachable => 'The server cannot be reached.';
+  String get serverUnreachable => 'No HomeMaps server found at this address';
 
   @override
   String get fastest => 'Fastest';
@@ -143,7 +143,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serverInvalid =>
-      'Enter an address starting with http:// or https://.';
+      'Enter a web address, for example maps.example.org.';
+
+  @override
+  String get serverChecking => 'Checking the server…';
+
+  @override
+  String get serverWorks => 'The server works: map, search and routes';
+
+  @override
+  String serverPartlyWorks(String parts) {
+    return 'The server answers, but not everything works: $parts';
+  }
+
+  @override
+  String get serverPartMap => 'map';
+
+  @override
+  String get serverPartSearch => 'search';
+
+  @override
+  String get serverPartRoutes => 'routes';
 
   @override
   String get save => 'Save';

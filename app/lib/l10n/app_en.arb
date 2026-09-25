@@ -59,7 +59,21 @@
   "settings": "Settings",
   "server": "Server",
   "serverHelp": "The address of your HomeMaps installation, for example https://maps.example.org",
-  "serverInvalid": "Enter an address starting with http:// or https://.",
+  "serverInvalid": "Enter a web address, for example maps.example.org.",
+  "serverChecking": "Checking the server…",
+  "serverWorks": "The server works: map, search and routes",
+  "serverUnreachable": "No HomeMaps server found at this address",
+  "serverPartlyWorks": "The server answers, but not everything works: {parts}",
+  "@serverPartlyWorks": {
+    "placeholders": {
+      "parts": {
+        "type": "String"
+      }
+    }
+  },
+  "serverPartMap": "map",
+  "serverPartSearch": "search",
+  "serverPartRoutes": "routes",
   "save": "Save",
   "serverRequired": "Set the address of your server first.",
   "about": "About",

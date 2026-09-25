@@ -227,7 +227,7 @@ abstract class AppLocalizations {
   /// No description provided for @serverUnreachable.
   ///
   /// In en, this message translates to:
-  /// **'The server cannot be reached.'**
+  /// **'No HomeMaps server found at this address'**
   String get serverUnreachable;
 
   /// No description provided for @fastest.
@@ -353,8 +353,44 @@ abstract class AppLocalizations {
   /// No description provided for @serverInvalid.
   ///
   /// In en, this message translates to:
-  /// **'Enter an address starting with http:// or https://.'**
+  /// **'Enter a web address, for example maps.example.org.'**
   String get serverInvalid;
+
+  /// No description provided for @serverChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking the server…'**
+  String get serverChecking;
+
+  /// No description provided for @serverWorks.
+  ///
+  /// In en, this message translates to:
+  /// **'The server works: map, search and routes'**
+  String get serverWorks;
+
+  /// No description provided for @serverPartlyWorks.
+  ///
+  /// In en, this message translates to:
+  /// **'The server answers, but not everything works: {parts}'**
+  String serverPartlyWorks(String parts);
+
+  /// No description provided for @serverPartMap.
+  ///
+  /// In en, this message translates to:
+  /// **'map'**
+  String get serverPartMap;
+
+  /// No description provided for @serverPartSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'search'**
+  String get serverPartSearch;
+
+  /// No description provided for @serverPartRoutes.
+  ///
+  /// In en, this message translates to:
+  /// **'routes'**
+  String get serverPartRoutes;
 
   /// No description provided for @save.
   ///

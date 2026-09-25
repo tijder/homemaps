@@ -75,7 +75,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Bij een van de punten ligt geen weg die je met dit vervoermiddel kunt gebruiken.';
 
   @override
-  String get serverUnreachable => 'De server is niet bereikbaar.';
+  String get serverUnreachable => 'Geen HomeMaps-server gevonden op dit adres';
 
   @override
   String get fastest => 'Snelste';
@@ -144,7 +144,27 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get serverInvalid =>
-      'Vul een adres in dat met http:// of https:// begint.';
+      'Vul een webadres in, bijvoorbeeld maps.example.org.';
+
+  @override
+  String get serverChecking => 'Server controleren…';
+
+  @override
+  String get serverWorks => 'De server werkt: kaart, zoeken en routes';
+
+  @override
+  String serverPartlyWorks(String parts) {
+    return 'De server antwoordt, maar niet alles werkt: $parts';
+  }
+
+  @override
+  String get serverPartMap => 'kaart';
+
+  @override
+  String get serverPartSearch => 'zoeken';
+
+  @override
+  String get serverPartRoutes => 'routes';
 
   @override
   String get save => 'Opslaan';
