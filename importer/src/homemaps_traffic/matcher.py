@@ -228,13 +228,12 @@ class Valhalla:
 
 
 # `edge.length` is the driven part; the percent_along's (only on the first and
-# last edge of a trace) say where on the edge it starts and ends.
+# last edge of a trace) say where on the edge it starts and ends. Valhalla sends
+# those always and does not know them as a filter: asking logs an error for each.
 TRACE_ATTRIBUTES = [
     "edge.id",
     "edge.length",
     "edge.way_id",
-    "edge.source_percent_along",
-    "edge.target_percent_along",
 ]
 
 
