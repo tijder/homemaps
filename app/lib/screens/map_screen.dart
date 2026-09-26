@@ -345,35 +345,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           .showSnackBar(SnackBar(content: Text(l.stopFirst)));
       return;
     }
-    Place? place;
-    if (request.point case final point?) {
-      place = request.label == null
-          ? Place.fromPoint(point)
-          : Place(label: request.label!, point: point);
-    } else if (request.search case final search?) {
-      try {
-        final found = await ref
-            .read(photonProvider)
-            ?.search(
-              search,
-              near: ref.read(locationProvider).fix?.point ?? _center(),
-            );
-        place = found?.firstOrNull;
-      } on Object {
-        place = null;
-      }
-      if (!mounted) return;
-      if (place == null) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(l.notFound(search))));
-        return;
-      }
-    }
-    if (place == null) return;
+    final place = await _placeFor(request);
+    if (place == null || !mounted) return;
+    // A start and stops (from iOS): looked up before the planner changes, so
+    // the route is calculated once they are all known. A start that isn't
+    // found becomes your location, a stop that isn't found is left out.
+    final from = request.from == null ? null : await _placeFor(request.from!);
+    final via = [for (final stop in request.via) ?await _placeFor(stop)];
+    if (!mounted) return;
     final planner = ref.read(plannerProvider.notifier);
     planner.toSearch();
     planner.showPlace(place);
-    if (request.navigate) planner.startRoute();
+    if (request.navigate) {
+      planner.startRoute();
+      via.forEach(planner.addVia);
+      if (from != null) planner.setFrom(from);
+    }
     // A bare point gets its address once Photon knows it.
     if (request.point != null && request.label == null) {
       try {
@@ -390,6 +377,36 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         // Then it stays coordinates.
       }
     }
+  }
+
+  /// The place a link points at: its point, or the first search result
+  /// (with a message if there is none).
+  Future<Place?> _placeFor(GeoRequest request) async {
+    if (request.point case final point?) {
+      return request.label == null
+          ? Place.fromPoint(point)
+          : Place(label: request.label!, point: point);
+    }
+    final search = request.search;
+    if (search == null) return null;
+    Place? place;
+    try {
+      final found = await ref
+          .read(photonProvider)
+          ?.search(
+            search,
+            near: ref.read(locationProvider).fix?.point ?? _center(),
+          );
+      place = found?.firstOrNull;
+    } on Object {
+      place = null;
+    }
+    if (place == null && mounted) {
+      final l = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l.notFound(search))));
+    }
+    return place;
   }
 
   /// Location on from the route panel (for navigation): without moving the

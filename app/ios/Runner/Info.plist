@@ -16,6 +16,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>homemaps</string>
+				<string>geo-navigation</string>
 			</array>
 		</dict>
 	</array>

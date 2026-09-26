@@ -34,6 +34,47 @@ void main() {
     );
   });
 
+  test('geo-navigation place: a coordinate or an address', () {
+    final point = read('geo-navigation:///place?coordinate=52.1,5.2')!;
+    expect(point.point, const LatLng(52.1, 5.2));
+    expect(point.navigate, isFalse);
+    expect(
+      read('geo-navigation:///place?address=Stationsplein%201,%20Utrecht')
+          ?.search,
+      'Stationsplein 1, Utrecht',
+    );
+    expect(
+      read('geo-navigation://place?coordinate=52.1,5.2')?.point,
+      const LatLng(52.1, 5.2),
+    );
+  });
+
+  test('geo-navigation directions: destination, start and stops', () {
+    final only = read('geo-navigation:///directions?destination=52.1,5.2')!;
+    expect(only.point, const LatLng(52.1, 5.2));
+    expect(only.navigate, isTrue);
+    expect(only.from, isNull);
+    expect(only.via, isEmpty);
+    final full = read(
+      'geo-navigation:///directions?source=52.0,5.0'
+      '&waypoint=Amersfoort&waypoint=52.2,5.4'
+      '&destination=Zwolle%20Centraal',
+    )!;
+    expect(full.search, 'Zwolle Centraal');
+    expect(full.navigate, isTrue);
+    expect(full.from?.point, const LatLng(52.0, 5.0));
+    expect(full.via.map((v) => v.search ?? v.point), [
+      'Amersfoort',
+      const LatLng(52.2, 5.4),
+    ]);
+  });
+
+  test('geo-navigation without anything usable: null', () {
+    expect(read('geo-navigation:///directions?source=52.0,5.0'), isNull);
+    expect(read('geo-navigation:///place'), isNull);
+    expect(read('geo-navigation:///search?q=Utrecht'), isNull);
+  });
+
   test('nonsense and other schemes: null', () {
     expect(read('geo:0,0'), isNull);
     expect(read('geo:hello'), isNull);
