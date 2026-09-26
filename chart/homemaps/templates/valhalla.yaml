@@ -13,6 +13,7 @@ data:
   build.sh: | {{- .Files.Get "files/valhalla-build.sh" | nindent 4 }}
   fetch.py: | {{- .Files.Get "files/fetch.py" | nindent 4 }}
   elevation.py: | {{- .Files.Get "files/elevation.py" | nindent 4 }}
+  boundaries.py: | {{- .Files.Get "files/boundaries.py" | nindent 4 }}
   # The config is regenerated on every start, so it matches the version of the
   # image. The paths point to /data/active: that is where the build job puts a
   # complete tileset, in a single rename.
@@ -172,7 +173,7 @@ spec:
               command: ["/bin/bash", "/script/build.sh"]
               env:
                 - { name: PBF_URL, value: {{ .Values.region.pbfUrl | quote }} }
-                - { name: ELEVATION_BBOX, value: {{ .Values.region.bbox | quote }} }
+                - { name: REGION_BBOX, value: {{ .Values.region.bbox | quote }} }
                 - { name: BUILD_THREADS, value: {{ .Values.valhalla.build.threads | quote }} }
               securityContext: {{- include "homemaps.containerSecurity" . | nindent 16 }}
               resources: {{- toYaml .Values.valhalla.build.resources | nindent 16 }}

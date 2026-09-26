@@ -13,8 +13,10 @@ region:
   name: netherlands
   # -- The same PBF for Valhalla.
   pbfUrl: https://download.geofabrik.de/europe/netherlands-latest.osm.pbf
-  # -- minlon,minlat,maxlon,maxlat for the elevation tiles; empty = no elevation data
-  # (then there is no elevation profile and cycling ignores slopes).
+  # -- minlon,minlat,maxlon,maxlat for the elevation tiles and the country
+  # boundaries (from Overpass, for Valhalla). Empty = no elevation data (then there
+  # is no elevation profile and cycling ignores slopes), and the boundaries come
+  # from the extract: the build fails if that leaves no complete country.
   bbox: "3.3,50.7,7.3,53.6"
 
 # All volumes. `longhorn-no-backup` or similar fits here: everything on them
