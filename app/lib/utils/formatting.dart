@@ -14,12 +14,12 @@ String distance(double meters, [String? language]) {
 }
 
 /// A distance that doesn't change with every meter: below 100 m to 10 m,
-/// above that to 50 m.
+/// below 1 km to 50 m, above that to 100 m (shown with one decimal anyway).
 double roundDistance(double meters) => meters < 100
     ? (meters / 10).round() * 10
     : meters < 1000
     ? (meters / 50).round() * 50
-    : meters;
+    : (meters / 100).round() * 100;
 
 /// "12 min", "1 u 05".
 String duration(double seconds) {

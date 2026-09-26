@@ -531,6 +531,8 @@ void main() {
     expect(distance(15300, 'nl'), '15 km');
     expect(roundDistance(816), 800);
     expect(roundDistance(87), 90);
+    expect(roundDistance(1486), 1500);
+    expect(roundDistance(10627), 10600);
 
     final route = utrecht();
     final enRoute = StepList.steps(route, toNext: 816);

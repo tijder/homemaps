@@ -22,8 +22,8 @@ class FakeCarHost extends CarHostApi {
   Future<void> setTexts(Map<String, String> texts) async =>
       _record('setTexts', [texts]);
   @override
-  Future<void> setStyle(String style, bool isJson) async =>
-      _record('setStyle', [style, isJson]);
+  Future<void> setStyle(String style, bool isJson, bool dark) async =>
+      _record('setStyle', [style, isJson, dark]);
   @override
   Future<void> registerImage(String key, Uint8List png, double scale) async =>
       _record('registerImage', [key, png, scale]);
@@ -69,11 +69,10 @@ class FakeCarHost extends CarHostApi {
   Future<void> startNavigation(CarTrip trip) async =>
       _record('startNavigation', [trip]);
   @override
-  Future<void> updateManeuver(
-    CarManeuver next,
-    CarTrip trip,
-    CarSpeed speed,
-  ) async => _record('updateManeuver', [next, trip, speed]);
+  Future<void> updateManeuver(CarManeuver next, CarTrip trip) async =>
+      _record('updateManeuver', [next, trip]);
+  @override
+  Future<void> setSpeed(CarSpeed speed) async => _record('setSpeed', [speed]);
   @override
   Future<void> setRecalculating(bool recalculating) async =>
       _record('setRecalculating', [recalculating]);

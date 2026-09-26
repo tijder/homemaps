@@ -425,6 +425,7 @@ class CarManeuver {
     this.roundaboutExit,
     this.roundaboutAngle,
     this.sign,
+    this.signIconKey,
     required this.iconKey,
     required this.metersToNext,
     required this.then,
@@ -449,6 +450,10 @@ class CarManeuver {
   double? roundaboutAngle;
 
   CarRoadSign? sign;
+
+  /// The sign as an image (shields and directions, as the phone's panel),
+  /// registered earlier; null without a sign.
+  String? signIconKey;
 
   /// An image registered earlier with [CarHostApi.registerImage].
   String iconKey;
@@ -478,6 +483,7 @@ class CarManeuver {
       roundaboutExit,
       roundaboutAngle,
       sign,
+      signIconKey,
       iconKey,
       metersToNext,
       then,
@@ -501,12 +507,13 @@ class CarManeuver {
       roundaboutExit: result[4] as int?,
       roundaboutAngle: result[5] as double?,
       sign: result[6] as CarRoadSign?,
-      iconKey: result[7]! as String,
-      metersToNext: result[8]! as double,
-      then: (result[9]! as List<Object?>).cast<CarManeuver>(),
-      lanes: (result[10] as List<Object?>?)?.cast<CarLane>(),
-      lanesIconKey: result[11] as String?,
-      lanesAhead: result[12] as double?,
+      signIconKey: result[7] as String?,
+      iconKey: result[8]! as String,
+      metersToNext: result[9]! as double,
+      then: (result[10]! as List<Object?>).cast<CarManeuver>(),
+      lanes: (result[11] as List<Object?>?)?.cast<CarLane>(),
+      lanesIconKey: result[12] as String?,
+      lanesAhead: result[13] as double?,
     );
   }
 
@@ -526,6 +533,7 @@ class CarManeuver {
         _deepEquals(roundaboutExit, other.roundaboutExit) &&
         _deepEquals(roundaboutAngle, other.roundaboutAngle) &&
         _deepEquals(sign, other.sign) &&
+        _deepEquals(signIconKey, other.signIconKey) &&
         _deepEquals(iconKey, other.iconKey) &&
         _deepEquals(metersToNext, other.metersToNext) &&
         _deepEquals(then, other.then) &&
@@ -540,7 +548,7 @@ class CarManeuver {
 
   @override
   String toString() {
-    return 'CarManeuver(type: $type, instruction: $instruction, shortAction: $shortAction, streets: $streets, roundaboutExit: $roundaboutExit, roundaboutAngle: $roundaboutAngle, sign: $sign, iconKey: $iconKey, metersToNext: $metersToNext, then: $then, lanes: $lanes, lanesIconKey: $lanesIconKey, lanesAhead: $lanesAhead)';
+    return 'CarManeuver(type: $type, instruction: $instruction, shortAction: $shortAction, streets: $streets, roundaboutExit: $roundaboutExit, roundaboutAngle: $roundaboutAngle, sign: $sign, signIconKey: $signIconKey, iconKey: $iconKey, metersToNext: $metersToNext, then: $then, lanes: $lanes, lanesIconKey: $lanesIconKey, lanesAhead: $lanesAhead)';
   }
 }
 
@@ -618,6 +626,7 @@ class CarSpeed {
     this.cameraText,
     this.cameraDetail,
     required this.cameraOver,
+    this.matrixIconKey,
   });
 
   int? limitKmh;
@@ -640,6 +649,10 @@ class CarSpeed {
   /// Your average in the section is above its limit: the sign goes red.
   bool cameraOver;
 
+  /// The next gantry's matrix signs (MSI) as one image, registered earlier;
+  /// null when there is none ahead. Shown where the lanes go, instead of them.
+  String? matrixIconKey;
+
   List<Object?> _toList() {
     return <Object?>[
       limitKmh,
@@ -649,6 +662,7 @@ class CarSpeed {
       cameraText,
       cameraDetail,
       cameraOver,
+      matrixIconKey,
     ];
   }
 
@@ -666,6 +680,7 @@ class CarSpeed {
       cameraText: result[4] as String?,
       cameraDetail: result[5] as String?,
       cameraOver: result[6]! as bool,
+      matrixIconKey: result[7] as String?,
     );
   }
 
@@ -684,7 +699,8 @@ class CarSpeed {
         _deepEquals(cameraIconKey, other.cameraIconKey) &&
         _deepEquals(cameraText, other.cameraText) &&
         _deepEquals(cameraDetail, other.cameraDetail) &&
-        _deepEquals(cameraOver, other.cameraOver);
+        _deepEquals(cameraOver, other.cameraOver) &&
+        _deepEquals(matrixIconKey, other.matrixIconKey);
   }
 
   @override
@@ -693,7 +709,7 @@ class CarSpeed {
 
   @override
   String toString() {
-    return 'CarSpeed(limitKmh: $limitKmh, limitSource: $limitSource, speedMs: $speedMs, cameraIconKey: $cameraIconKey, cameraText: $cameraText, cameraDetail: $cameraDetail, cameraOver: $cameraOver)';
+    return 'CarSpeed(limitKmh: $limitKmh, limitSource: $limitSource, speedMs: $speedMs, cameraIconKey: $cameraIconKey, cameraText: $cameraText, cameraDetail: $cameraDetail, cameraOver: $cameraOver, matrixIconKey: $matrixIconKey)';
   }
 }
 
@@ -1174,7 +1190,8 @@ class CarHostApi {
   }
 
   /// The map style: a URL, or the style itself as JSON (the night version).
-  Future<void> setStyle(String style, bool isJson) async {
+  /// [dark]: it's a night style, so the map's backdrop is dark too.
+  Future<void> setStyle(String style, bool isJson, bool dark) async {
     final pigeonVar_channelName =
         'dev.flutter.pigeon.homemaps.CarHostApi.setStyle$pigeonVar_messageChannelSuffix';
     final pigeonVar_channel = BasicMessageChannel<Object?>(
@@ -1183,7 +1200,7 @@ class CarHostApi {
       binaryMessenger: pigeonVar_binaryMessenger,
     );
     final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[style, isJson],
+      <Object?>[style, isJson, dark],
     );
     final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
 
@@ -1472,11 +1489,7 @@ class CarHostApi {
     );
   }
 
-  Future<void> updateManeuver(
-    CarManeuver next,
-    CarTrip trip,
-    CarSpeed speed,
-  ) async {
+  Future<void> updateManeuver(CarManeuver next, CarTrip trip) async {
     final pigeonVar_channelName =
         'dev.flutter.pigeon.homemaps.CarHostApi.updateManeuver$pigeonVar_messageChannelSuffix';
     final pigeonVar_channel = BasicMessageChannel<Object?>(
@@ -1485,7 +1498,29 @@ class CarHostApi {
       binaryMessenger: pigeonVar_binaryMessenger,
     );
     final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[next, trip, speed],
+      <Object?>[next, trip],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  /// Your speed, the limit and what's ahead on the road: every fix on which
+  /// something of it changed, apart from the maneuver.
+  Future<void> setSpeed(CarSpeed speed) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.homemaps.CarHostApi.setSpeed$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[speed],
     );
     final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
 

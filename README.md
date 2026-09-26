@@ -86,6 +86,17 @@ draws the map with MapLibre, the same SDK maplibre_gl brings for the phone,
 and fills the car's templates: home, work and recent places, search, a route
 preview, and turn-by-turn with the next maneuver, lanes, speed limit and ETA.
 
+The car looks like the phone: the instruction panel is the app's blue
+(`guidanceBackgroundColor` on CarPlay, `setBackgroundColor` on Android Auto)
+with white icons Dart draws, the map's day or night version follows the
+phone's dark mode (not the car's), distances are "1,5 km" as on the phone,
+and the camera sits one zoom level further out with the position at three
+quarters of the height. On the map, bottom right: the speed camera ahead, the
+limit and your own speed; at the top the matrix signs (MSI) as an image from
+Dart, and on CarPlay before iOS 18 the lanes too (from 18 CarPlay draws
+`CPLaneGuidance` in the panel itself). At an exit the sign (exit number, road
+shields, directions) is an image in the instruction.
+
 **Android Auto** (`app/android/.../car/`): a `CarAppService` in the
 navigation category; the map is a `Presentation` on a virtual display on the
 car's surface. Test without a car with the Desktop Head Unit: install it in
@@ -100,7 +111,10 @@ Auto declaration, category Navigation.
 
 **CarPlay** (`app/ios/Runner/CarPlay/`): a `CPTemplateApplicationScene` with
 `CPMapTemplate` and a `CPNavigationSession`; the map is an `MLNMapView` in the
-CarPlay window. It needs Apple's `com.apple.developer.carplay-maps`
+CarPlay window. A `CPTemplateApplicationDashboardScene` puts the same map on
+CarPlay's dashboard with stop and voice buttons; without it CarPlay hands the
+navigation slot (sidebar, dashboard) to Apple Maps as soon as another app is
+in front. `CarHost` feeds both windows. It needs Apple's `com.apple.developer.carplay-maps`
 entitlement (request it at developer.apple.com/carplay, category Navigation;
 weeks to months). Once granted, add the CarPlay Navigation capability to the
 App ID and `<key>com.apple.developer.carplay-maps</key><true/>` to

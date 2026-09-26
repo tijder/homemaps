@@ -69,31 +69,60 @@ void main() {
 
   test('icon keys: the same picture is the same key', () {
     expect(
-      maneuverIconKey(maneuver(26, exit: 2, angle: 91), dark: false),
-      maneuverIconKey(maneuver(26, exit: 2, angle: 93), dark: false),
+      maneuverIconKey(maneuver(26, exit: 2, angle: 91)),
+      maneuverIconKey(maneuver(26, exit: 2, angle: 93)),
     );
     expect(
-      maneuverIconKey(maneuver(26, exit: 2, angle: 91), dark: false),
-      isNot(maneuverIconKey(maneuver(26, exit: 3, angle: 91), dark: false)),
+      maneuverIconKey(maneuver(26, exit: 2, angle: 91)),
+      isNot(maneuverIconKey(maneuver(26, exit: 3, angle: 91))),
     );
+    const lanes = [
+      Lane(directions: ['left'], correct: false),
+      Lane(directions: ['straight'], correct: true),
+    ];
+    expect(lanesIconKey(lanes), lanesIconKey(lanes));
+    expect(lanesIconKey(lanes), isNot(lanesIconKey(lanes, ahead: '400 m')));
     expect(
-      maneuverIconKey(maneuver(10), dark: true),
-      isNot(maneuverIconKey(maneuver(10), dark: false)),
+      signIconKey(const RoadSign(exit: '12', roads: ['A12'])),
+      isNot(signIconKey(const RoadSign(exit: '13', roads: ['A12']))),
     );
+    expect(matrixIconKey(['70', 'x']), isNot(matrixIconKey(['70', '70'])));
   });
 
   test('icons are PNGs', () async {
-    final turn = await maneuverPng(maneuver(10), dark: false);
+    final turn = await maneuverPng(maneuver(10));
     expect(turn.sublist(1, 4), 'PNG'.codeUnits);
-    final roundabout = await maneuverPng(
-      maneuver(26, exit: 2, angle: 90),
-      dark: true,
-    );
+    final roundabout = await maneuverPng(maneuver(26, exit: 2, angle: 90));
     expect(roundabout.sublist(1, 4), 'PNG'.codeUnits);
     final lanes = await lanesPng(const [
       Lane(directions: ['left'], correct: false),
       Lane(directions: ['straight', 'right'], correct: true, usage: 'right'),
-    ], dark: false);
+    ]);
     expect(lanes.sublist(1, 4), 'PNG'.codeUnits);
+    final ahead = await lanesPng(const [
+      Lane(directions: ['left'], correct: false),
+      Lane(directions: ['straight'], correct: true),
+    ], ahead: '400 m');
+    expect(ahead.sublist(1, 4), 'PNG'.codeUnits);
+    final sign = await signPng(
+      const RoadSign(
+        exit: '12',
+        roads: ['A12', 'N228'],
+        directions: ['Utrecht'],
+      ),
+      exitText: 'Afrit 12',
+    );
+    expect(sign.sublist(1, 4), 'PNG'.codeUnits);
+    final matrix = await matrixPng([
+      '70',
+      '70r',
+      'x',
+      '<',
+      '>',
+      'open',
+      'end',
+      '',
+    ]);
+    expect(matrix.sublist(1, 4), 'PNG'.codeUnits);
   });
 }

@@ -56,8 +56,9 @@ class MapSurfaceRenderer(private val carContext: CarContext, private val name: S
     private var map: MapLibreMap? = null
     private var style: Style? = null
     private var visibleArea: Rect? = null
-    private var speedLimit: TextView? = null
-    private var cameraSign: CameraSign? = null
+    private var root: FrameLayout? = null
+    private var signs: Signs? = null
+    private var matrix: MatrixView? = null
     private var width = 0
     private var height = 0
     private var dpi = 0
@@ -123,10 +124,12 @@ class MapSurfaceRenderer(private val carContext: CarContext, private val name: S
             val view = MapView(presentation.context, options)
             mapView = view
             val root = FrameLayout(presentation.context)
+            root.setBackgroundColor(if (CarHost.styleDark) Color.rgb(0x1c, 0x1c, 0x1e) else Color.rgb(0xe0, 0xe0, 0xe0))
             root.addView(view, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+            this.root = root
             if (name == "main") {
-                root.addView(speedLimitView(presentation.context))
-                root.addView(cameraSignView(presentation.context))
+                root.addView(signsView(presentation.context))
+                root.addView(matrixView(presentation.context))
             }
             presentation.setContentView(root)
             this.presentation = presentation
@@ -149,7 +152,7 @@ class MapSurfaceRenderer(private val carContext: CarContext, private val name: S
     override fun onVisibleAreaChanged(visibleArea: Rect) {
         this.visibleArea = visibleArea
         applyPadding()
-        updateSpeedLimit()
+        updateOverlays()
     }
 
     override fun onStableAreaChanged(stableArea: Rect) {}
@@ -181,67 +184,30 @@ class MapSurfaceRenderer(private val carContext: CarContext, private val name: S
         CarHost.userMovedMap()
     }
 
-    /** The speed limit as a round sign, bottom left inside the visible area. */
-    private fun speedLimitView(context: android.content.Context): View {
-        val size = (56 * dpi / 160f).toInt()
-        val view = TextView(context)
-        view.gravity = Gravity.CENTER
-        view.setTextColor(Color.BLACK)
-        view.textSize = 20f
-        view.setTypeface(null, android.graphics.Typeface.BOLD)
-        view.background = GradientDrawable().apply {
-            shape = GradientDrawable.OVAL
-            setColor(Color.WHITE)
-            setStroke((5 * dpi / 160f).toInt(), Color.RED)
-        }
-        view.visibility = View.GONE
-        view.layoutParams = FrameLayout.LayoutParams(size, size, Gravity.BOTTOM or Gravity.START)
-        speedLimit = view
-        updateSpeedLimit()
-        return view
-    }
+    private fun dp(value: Int) = (value * dpi / 160f).toInt()
 
-    private fun updateSpeedLimit() {
-        updateCameraSign()
-        val view = speedLimit ?: return
-        val limit = CarHost.speed?.limitKmh
-        if (CarHost.screen != CarHost.Screen.NAVIGATING || limit == null) {
-            view.visibility = View.GONE
-            return
-        }
-        view.visibility = View.VISIBLE
-        view.text = limit.toString()
-        (view.background as? GradientDrawable)?.setStroke(
-            ((if (CarHost.speed?.limitSource == "msi") 7 else 5) * dpi / 160f).toInt(),
-            Color.RED,
-        )
-        val area = visibleArea
-        val margin = (12 * dpi / 160f).toInt()
-        (view.layoutParams as FrameLayout.LayoutParams).setMargins(
-            (area?.left ?: 0) + margin,
-            0,
-            0,
-            (height - (area?.bottom ?: height)) + margin,
-        )
-        view.requestLayout()
-    }
-
-    /** The views of the camera sign: the box, its icon and its two lines. */
-    private class CameraSign(
-        val box: LinearLayout,
-        val icon: ImageView,
-        val text: TextView,
-        val detail: TextView,
+    /** The views of the column at the bottom right. */
+    private class Signs(
+        val column: LinearLayout,
+        val cameraBox: LinearLayout,
+        val cameraIcon: ImageView,
+        val cameraText: TextView,
+        val cameraDetail: TextView,
+        val limit: TextView,
+        val speedBox: LinearLayout,
+        val speedNumber: TextView,
+        val speedUnit: TextView,
     )
 
     /**
-     * The next speed camera or the average speed check you're in, above the
-     * speed limit, as on the phone (`CameraSign` in `navigation_bar.dart`).
+     * The column at the bottom right of the visible area, as on the phone:
+     * the next speed camera or the average speed check you're in (`CameraSign`
+     * in `navigation_bar.dart`), the speed limit as a round sign (white on
+     * black from the matrix signs), and your own speed, red when you're over.
      */
-    private fun cameraSignView(context: android.content.Context): View {
-        fun dp(value: Int) = (value * dpi / 160f).toInt()
-        val icon = ImageView(context)
-        val text = TextView(context).apply {
+    private fun signsView(context: android.content.Context): View {
+        val cameraIcon = ImageView(context)
+        val cameraText = TextView(context).apply {
             setTextColor(Color.WHITE)
             textSize = 16f
             setTypeface(null, android.graphics.Typeface.BOLD)
@@ -249,63 +215,168 @@ class MapSurfaceRenderer(private val carContext: CarContext, private val name: S
         val row = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            addView(icon, LinearLayout.LayoutParams(dp(20), dp(20)).apply { marginEnd = dp(6) })
-            addView(text)
+            addView(cameraIcon, LinearLayout.LayoutParams(dp(20), dp(20)).apply { marginEnd = dp(6) })
+            addView(cameraText)
         }
-        val detail = TextView(context).apply {
+        val cameraDetail = TextView(context).apply {
             setTextColor(Color.argb(0xb3, 0xff, 0xff, 0xff))
             textSize = 11f
         }
-        val box = LinearLayout(context).apply {
+        val cameraBox = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
             setPadding(dp(10), dp(6), dp(10), dp(6))
             background = GradientDrawable().apply { cornerRadius = dp(10).toFloat() }
             addView(row)
-            addView(detail)
+            addView(cameraDetail)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { bottomMargin = dp(6) }
+        }
+        val limit = TextView(context).apply {
+            gravity = Gravity.CENTER
+            setTextColor(Color.BLACK)
+            textSize = 24f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.WHITE)
+                setStroke(dp(6), Color.rgb(0xd3, 0x2f, 0x2f))
+            }
+            layoutParams = LinearLayout.LayoutParams(dp(64), dp(64)).apply { bottomMargin = dp(6) }
+        }
+        val speedNumber = TextView(context).apply {
+            gravity = Gravity.CENTER
+            textSize = 20f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        val speedUnit = TextView(context).apply {
+            gravity = Gravity.CENTER
+            textSize = 11f
+        }
+        val speedBox = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            minimumWidth = dp(64)
+            setPadding(dp(10), dp(4), dp(10), dp(4))
+            background = GradientDrawable().apply { cornerRadius = dp(10).toFloat() }
+            addView(speedNumber)
+            addView(speedUnit)
+        }
+        val column = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.END
+            addView(cameraBox)
+            addView(limit)
+            addView(speedBox)
             visibility = View.GONE
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.WRAP_CONTENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT,
-                Gravity.BOTTOM or Gravity.START,
+                Gravity.BOTTOM or Gravity.END,
             )
         }
-        cameraSign = CameraSign(box, icon, text, detail)
+        signs = Signs(column, cameraBox, cameraIcon, cameraText, cameraDetail, limit, speedBox, speedNumber, speedUnit)
+        updateOverlays()
+        return column
+    }
+
+    private class MatrixView(val box: FrameLayout, val image: ImageView)
+
+    /**
+     * The matrix signs of the next gantry (MSI), as an image from Dart, at
+     * the top of the visible area. The lanes themselves the host draws in
+     * the routing card (see `NavigationScreen.step`).
+     */
+    private fun matrixView(context: android.content.Context): View {
+        val image = ImageView(context).apply { adjustViewBounds = true }
+        val box = FrameLayout(context).apply {
+            addView(image, FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, dp(44)))
+            visibility = View.GONE
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.TOP or Gravity.CENTER_HORIZONTAL,
+            )
+        }
+        matrix = MatrixView(box, image)
         return box
     }
 
-    private fun updateCameraSign() {
-        val sign = cameraSign ?: return
-        val speed = CarHost.speed
-        val text = speed?.cameraText
-        if (CarHost.screen != CarHost.Screen.NAVIGATING || text == null) {
-            sign.box.visibility = View.GONE
-            return
-        }
-        sign.box.visibility = View.VISIBLE
-        sign.text.text = text
-        sign.detail.text = speed.cameraDetail ?: ""
-        sign.detail.visibility = if (speed.cameraDetail == null) View.GONE else View.VISIBLE
-        sign.icon.setImageBitmap(speed.cameraIconKey?.let { CarHost.images[it] })
-        (sign.box.background as? GradientDrawable)?.setColor(
-            if (speed.cameraOver) Color.rgb(0xd3, 0x2f, 0x2f) else Color.rgb(0x26, 0x32, 0x38),
-        )
-        // Above the speed limit sign, or in its place when there is no limit.
+    /** The signs for what Dart sent last, inside the visible area. */
+    private fun updateOverlays() {
         val area = visibleArea
-        val margin = (12 * dpi / 160f).toInt()
-        val limitHeight = if (speed.limitKmh == null) 0 else ((56 + 6) * dpi / 160f).toInt()
-        (sign.box.layoutParams as FrameLayout.LayoutParams).setMargins(
-            (area?.left ?: 0) + margin,
-            0,
-            0,
-            (height - (area?.bottom ?: height)) + margin + limitHeight,
-        )
-        sign.box.requestLayout()
+        val margin = dp(12)
+        val navigating = CarHost.screen == CarHost.Screen.NAVIGATING
+        val speed = CarHost.speed
+        signs?.let { s ->
+            if (!navigating || speed == null) {
+                s.column.visibility = View.GONE
+            } else {
+                val text = speed.cameraText
+                s.cameraBox.visibility = if (text == null) View.GONE else View.VISIBLE
+                if (text != null) {
+                    s.cameraText.text = text
+                    s.cameraDetail.text = speed.cameraDetail ?: ""
+                    s.cameraDetail.visibility = if (speed.cameraDetail == null) View.GONE else View.VISIBLE
+                    s.cameraIcon.setImageBitmap(speed.cameraIconKey?.let { CarHost.images[it] })
+                    (s.cameraBox.background as? GradientDrawable)?.setColor(
+                        if (speed.cameraOver) Color.rgb(0xd3, 0x2f, 0x2f) else Color.rgb(0x26, 0x32, 0x38),
+                    )
+                }
+                val limit = speed.limitKmh
+                s.limit.visibility = if (limit == null) View.GONE else View.VISIBLE
+                if (limit != null) {
+                    val msi = speed.limitSource == "msi"
+                    s.limit.text = limit.toString()
+                    s.limit.setTextColor(if (msi) Color.WHITE else Color.BLACK)
+                    (s.limit.background as? GradientDrawable)?.setColor(if (msi) Color.BLACK else Color.WHITE)
+                }
+                val ms = speed.speedMs
+                s.speedBox.visibility = if (ms == null) View.GONE else View.VISIBLE
+                if (ms != null) {
+                    val kmh = Math.round(ms * 3.6).toInt()
+                    val speeding = limit != null && kmh > limit + 5
+                    s.speedNumber.text = kmh.toString()
+                    s.speedUnit.text = CarHost.text("kmh")
+                    val color = if (speeding) Color.WHITE else Color.BLACK
+                    s.speedNumber.setTextColor(color)
+                    s.speedUnit.setTextColor(color)
+                    (s.speedBox.background as? GradientDrawable)?.setColor(
+                        if (speeding) Color.rgb(0xd3, 0x2f, 0x2f) else Color.WHITE,
+                    )
+                }
+                s.column.visibility = View.VISIBLE
+                (s.column.layoutParams as FrameLayout.LayoutParams).setMargins(
+                    0,
+                    0,
+                    (width - (area?.right ?: width)) + margin,
+                    (height - (area?.bottom ?: height)) + margin,
+                )
+                s.column.requestLayout()
+            }
+        }
+        matrix?.let { m ->
+            val bitmap = if (navigating) speed?.matrixIconKey?.let { CarHost.images[it] } else null
+            m.box.visibility = if (bitmap == null) View.GONE else View.VISIBLE
+            if (bitmap != null) {
+                m.image.setImageBitmap(bitmap)
+                (m.box.layoutParams as FrameLayout.LayoutParams).setMargins(
+                    (area?.left ?: 0) + margin,
+                    (area?.top ?: 0) + margin,
+                    (width - (area?.right ?: width)) + margin,
+                    0,
+                )
+                m.box.requestLayout()
+            }
+        }
     }
 
     private fun release() {
-        speedLimit = null
-        cameraSign = null
+        signs = null
+        matrix = null
+        root = null
         style = null
         map = null
         mapView?.let {
@@ -371,7 +442,7 @@ class MapSurfaceRenderer(private val carContext: CarContext, private val name: S
         style.addLayer(
             SymbolLayer("arrow-head", "arrow").withProperties(
                 PropertyFactory.iconImage("arrow-head"),
-                PropertyFactory.iconSize(0.5f),
+                PropertyFactory.iconSize(0.65f),
                 PropertyFactory.iconRotate(Expression.get("bearing")),
                 PropertyFactory.iconRotationAlignment("map"),
                 PropertyFactory.iconAllowOverlap(true),
@@ -381,7 +452,7 @@ class MapSurfaceRenderer(private val carContext: CarContext, private val name: S
         style.addLayer(
             SymbolLayer("position", "position").withProperties(
                 PropertyFactory.iconImage("puck"),
-                PropertyFactory.iconSize(0.5f),
+                PropertyFactory.iconSize(0.65f),
                 PropertyFactory.iconRotate(Expression.get("heading")),
                 PropertyFactory.iconRotationAlignment("map"),
                 PropertyFactory.iconAllowOverlap(true),
@@ -396,11 +467,15 @@ class MapSurfaceRenderer(private val carContext: CarContext, private val name: S
         style.getSourceAs<GeoJsonSource>(source)?.setGeoJson(geoJson ?: EMPTY)
     }
 
-    /** Following: the position at two thirds of the height, as on the phone. */
+    /**
+     * Following: the position at three quarters of the height (the screen is
+     * low, so as much road ahead as fits; the phone has two thirds). The same
+     * in `CarPlayMapViewController.applyInsets`.
+     */
     private fun applyPadding() {
         val map = map ?: return
         val area = visibleArea
-        val top = (area?.top ?: 0) + if (CarHost.following) (height * 0.35).toInt() else 0
+        val top = (area?.top ?: 0) + if (CarHost.following) (height * 0.5).toInt() else 0
         map.easeCamera(
             CameraUpdateFactory.paddingTo(
                 (area?.left ?: 0).toDouble(),
@@ -414,9 +489,14 @@ class MapSurfaceRenderer(private val carContext: CarContext, private val name: S
 
     // ---------------------------------------------------------------- Dart
 
-    override fun onStyle() = loadStyle()
+    override fun onStyle() {
+        root?.setBackgroundColor(if (CarHost.styleDark) Color.rgb(0x1c, 0x1c, 0x1e) else Color.rgb(0xe0, 0xe0, 0xe0))
+        loadStyle()
+    }
 
     override fun onImage(key: String) {
+        // A sign that was waiting for its image.
+        if (key == CarHost.speed?.matrixIconKey || key == CarHost.speed?.cameraIconKey) updateOverlays()
         val style = style ?: return
         val bitmap = CarHost.images[key] ?: return
         if (style.isFullyLoaded) style.addImage(key, bitmap)
@@ -459,5 +539,6 @@ class MapSurfaceRenderer(private val carContext: CarContext, private val name: S
 
     override fun onFollowing() = applyPadding()
 
-    override fun onScreen() = updateSpeedLimit()
+    override fun onScreen() = updateOverlays()
+    override fun onSpeed() = updateOverlays()
 }

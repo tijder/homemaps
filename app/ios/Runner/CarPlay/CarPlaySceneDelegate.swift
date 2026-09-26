@@ -114,8 +114,12 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     let template = CPMapTemplate()
     template.mapDelegate = self
     template.automaticallyHidesNavigationBar = true
+    // The instruction panel in the app's blue (the route line's colour; the
+    // phone's header is the same family), not CarPlay's default. The icons
+    // Dart draws are white for it.
+    template.guidanceBackgroundColor = UIColor(hex: 0x1565c0)
     mapTemplate = template
-    host.listener = self
+    host.addListener(self)
     operations.removeAll()
     operationRunning = false
     setRoot(template)
@@ -129,7 +133,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     _ templateApplicationScene: CPTemplateApplicationScene,
     didDisconnect interfaceController: CPInterfaceController, from window: CPWindow
   ) {
-    if host.listener === self { host.listener = nil }
+    host.removeListener(self)
     operations.removeAll()
     operationRunning = false
     session = nil
@@ -320,8 +324,14 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
   func hostStyleChanged() { mapVC?.loadStyle() }
   func hostImageAdded(_ key: String) {
     mapVC?.imageAdded(key)
-    // A maneuver that was waiting for its icon.
-    if key == host.maneuver?.iconKey || key == host.maneuver?.then.first?.iconKey { shownManeuverKey = nil; hostManeuverChanged() }
+    // A maneuver that was waiting for its icon, or a sign for its image.
+    if key == host.maneuver?.iconKey || key == host.maneuver?.then.first?.iconKey
+      || key == host.maneuver?.signIconKey || key == host.maneuver?.lanesIconKey
+    {
+      shownManeuverKey = nil
+      hostManeuverChanged()
+    }
+    if key == host.speed?.matrixIconKey || key == host.speed?.cameraIconKey { mapVC?.speedChanged() }
   }
   func hostRoutesChanged() { mapVC?.routesChanged() }
   func hostDrivenChanged() { mapVC?.drivenChanged() }
@@ -376,9 +386,11 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     }
   }
 
+  func hostSpeedChanged() { mapVC?.speedChanged() }
+
   func hostManeuverChanged() {
     guard let session = session, let template = mapTemplate, let trip = trip else { return }
-    mapVC?.speedChanged()
+    mapVC?.lanesChanged()
     if host.recalculating {
       if shownManeuverKey != "recalculating" {
         shownManeuverKey = "recalculating"
@@ -392,9 +404,13 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         ManeuverBuilder.estimates(meters: carTrip.remainingMeters, seconds: carTrip.remainingSeconds), for: trip,
         with: .default)
     }
-    let key = "\(next.iconKey)|\(next.instruction)|\(next.then.first?.instruction ?? "")|\(next.lanesIconKey ?? "")"
+    let key =
+      "\(next.iconKey)|\(next.instruction)|\(next.then.first?.instruction ?? "")|\(next.lanesIconKey ?? "")|\(next.signIconKey ?? "")"
     if key != shownManeuverKey {
       shownManeuverKey = key
+      NSLog(
+        "CarPlay: maneuver %@, %ld lanes (%@), sign %@", next.instruction, next.lanes?.count ?? 0,
+        next.lanesIconKey ?? "-", next.signIconKey ?? "-")
       var maneuvers = [ManeuverBuilder.maneuver(next)]
       if let then = next.then.first { maneuvers.append(ManeuverBuilder.maneuver(then)) }
       if #available(iOS 18.0, *), let lanes = next.lanes, !lanes.isEmpty {
@@ -500,11 +516,17 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
   func searchTemplateSearchButtonPressed(_ searchTemplate: CPSearchTemplate) {}
 }
 
-/// Distances and durations as the phone shows them.
+/// Distances and durations as the phone shows them ("2,6 km" in Dutch).
 enum Distance {
   static func format(_ meters: Double) -> String {
     if meters < 1000 { return "\(Int(meters)) m" }
-    if meters < 10000 { return String(format: "%.1f km", meters / 1000) }
+    if meters < 10000 {
+      let formatter = NumberFormatter()
+      formatter.locale = Locale.current
+      formatter.minimumFractionDigits = 1
+      formatter.maximumFractionDigits = 1
+      return "\(formatter.string(from: NSNumber(value: meters / 1000)) ?? String(format: "%.1f", meters / 1000)) km"
+    }
     return "\(Int(meters / 1000)) km"
   }
 

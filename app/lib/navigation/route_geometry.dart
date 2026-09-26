@@ -68,3 +68,7 @@ double followZoom(double speedMs) => (17.5 - speedMs * 0.1).clamp(14.5, 17.0);
 
 /// The tilt while following.
 const followTilt = 50.0;
+
+/// The car's screen is low and wide and further from your eyes than the
+/// phone: one zoom level further out, so you see as far ahead.
+const carZoomOffset = -1.0;

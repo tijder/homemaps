@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/widgets.dart' show Brightness;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:homemaps/car/car_api.g.dart';
@@ -134,7 +135,11 @@ void main() {
     expect(home.args[2], isFalse, reason: 'no location yet');
   });
 
-  test('dark mode: the night style, once it is there', () async {
+  test('night follows the phone, not the car', () async {
+    final dispatcher = TestWidgetsFlutterBinding.instance.platformDispatcher;
+    addTearDown(dispatcher.clearPlatformBrightnessTestValue);
+    dispatcher.platformBrightnessTestValue = Brightness.light;
+    // The car says night, the phone day: day.
     bridge.connected(
       CarSurface(
         width: 800,
@@ -145,8 +150,18 @@ void main() {
       ),
     );
     await settle();
-    // The regular style first; the night JSON needs a fetch that fails here.
+    expect(host.last('setStyle')!.args, [
+      'https://maps.example.org/tiles/styles/osm-bright/style.json',
+      false,
+      false,
+    ]);
+    // The phone goes dark: the night style, the regular one first (the night
+    // JSON needs a fetch that fails here).
+    dispatcher.platformBrightnessTestValue = Brightness.dark;
+    bridge.didChangePlatformBrightness();
+    await settle();
     expect(host.last('setStyle')!.args[1], isFalse);
+    expect(host.last('setStyle')!.args[2], isTrue);
   });
 
   test('a recent place: location on, route preview, then the trip', () async {
@@ -208,7 +223,7 @@ void main() {
       expect(host.named('followCamera').length, greaterThanOrEqualTo(5));
       final camera = host.last('followCamera')!.args.single as CarCamera;
       expect(camera.tilt, 50);
-      expect(camera.zoom, closeTo(16.2, 0.01), reason: '13 m/s');
+      expect(camera.zoom, closeTo(15.2, 0.01), reason: '13 m/s, one out');
       // 100 m in five fixes: the rounded distance changed at most a few times,
       // not five.
       final updates = host.named('updateManeuver').length - before;
@@ -382,10 +397,9 @@ void main() {
     await driveTo(along(route.points, 20)[1]);
     await waitFor(
       () =>
-          (host.last('updateManeuver')?.args[2] as CarSpeed?)?.cameraIconKey !=
-          null,
+          (host.last('setSpeed')?.args[0] as CarSpeed?)?.cameraIconKey != null,
     );
-    final speed = host.last('updateManeuver')!.args[2] as CarSpeed;
+    final speed = host.last('setSpeed')!.args[0] as CarSpeed;
     expect(speed.cameraIconKey, 'camera-speedCamera');
     expect(speed.cameraText, '800 m');
     expect(speed.cameraOver, isFalse);

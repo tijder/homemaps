@@ -14,9 +14,25 @@ final class CarPlayMapViewController: UIViewController, MLNMapViewDelegate {
   private var pendingCamera: CarCamera?
   private let speedLimit = SpeedLimitView()
   private let cameraSign = CameraSignView()
+  private let speedView = SpeedView()
+  private let laneBar = LaneBarView()
+
+  /// Also draw the lanes on the map when CarPlay shows them itself in the
+  /// instruction panel (iOS 18, `CPLaneGuidance`). Off: then they'd be there
+  /// twice. Turn on if a head unit turns out not to show them.
+  private static let lanesOverlayWithLaneGuidance = false
+
+  /// The position while following: at three quarters of the height (the
+  /// screen is low, so as much road ahead as fits); the phone has two thirds.
+  /// The same in `MapSurfaceRenderer.applyPadding` on Android.
+  private static let followFraction: CGFloat = 0.5
 
   /// Dark mode of the car's screen changed.
   var onAppearanceChanged: (() -> Void)?
+
+  /// The dashboard's small window: only the speed limit on the map, and the
+  /// position not as low.
+  var compact = false
 
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -34,20 +50,22 @@ final class CarPlayMapViewController: UIViewController, MLNMapViewDelegate {
     mapView.isUserInteractionEnabled = false
     view.addSubview(mapView)
     self.mapView = mapView
-    speedLimit.isHidden = true
-    view.addSubview(speedLimit)
-    cameraSign.isHidden = true
-    view.addSubview(cameraSign)
+    for overlay in [speedLimit, cameraSign, speedView, laneBar] {
+      overlay.isHidden = true
+      view.addSubview(overlay)
+    }
     loadStyle()
   }
 
   override func viewSafeAreaInsetsDidChange() {
     super.viewSafeAreaInsetsDidChange()
     applyInsets()
-    let insets = view.safeAreaInsets
-    speedLimit.frame = CGRect(
-      x: insets.left + 12, y: view.bounds.height - insets.bottom - 12 - 56, width: 56, height: 56)
     speedChanged()
+  }
+
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    layoutOverlays()
   }
 
   override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
@@ -67,6 +85,8 @@ final class CarPlayMapViewController: UIViewController, MLNMapViewDelegate {
       return
     }
     styleReady = false
+    // What shows until the style is there, and around it: dark at night.
+    view.backgroundColor = UIColor(hex: CarHost.shared.styleDark ? 0x1c1c1e : 0xe0e0e0)
     if CarHost.shared.styleIsJson {
       NSLog("CarPlay map: style json (%d bytes)", style.utf8.count)
       mapView.styleJSON = style
@@ -127,7 +147,7 @@ final class CarPlayMapViewController: UIViewController, MLNMapViewDelegate {
     add(line("arrow", "arrow", .white, 6))
     let head = MLNSymbolStyleLayer(identifier: "arrow-head", source: style.source(withIdentifier: "arrow")!)
     head.iconImageName = NSExpression(forConstantValue: "arrow-head")
-    head.iconScale = NSExpression(forConstantValue: 0.5)
+    head.iconScale = NSExpression(forConstantValue: 0.65)
     head.iconRotation = NSExpression(forKeyPath: "bearing")
     head.iconRotationAlignment = NSExpression(forConstantValue: "map")
     head.iconAllowsOverlap = NSExpression(forConstantValue: true)
@@ -136,7 +156,7 @@ final class CarPlayMapViewController: UIViewController, MLNMapViewDelegate {
     style.addLayer(head)
     let puck = MLNSymbolStyleLayer(identifier: "position", source: style.source(withIdentifier: "position")!)
     puck.iconImageName = NSExpression(forConstantValue: "puck")
-    puck.iconScale = NSExpression(forConstantValue: 0.5)
+    puck.iconScale = NSExpression(forConstantValue: 0.65)
     puck.iconRotation = NSExpression(forKeyPath: "heading")
     puck.iconRotationAlignment = NSExpression(forConstantValue: "map")
     puck.iconAllowsOverlap = NSExpression(forConstantValue: true)
@@ -199,11 +219,12 @@ final class CarPlayMapViewController: UIViewController, MLNMapViewDelegate {
       completionHandler: nil)
   }
 
-  /// Following: the position at two thirds of the height, as on the phone.
+  /// Following: the position low on the screen (see [followFraction]); the
+  /// safe area keeps it right of the instruction panel.
   func applyInsets() {
     guard let mapView = mapView else { return }
     var insets = view.safeAreaInsets
-    if CarHost.shared.following { insets.top += view.bounds.height * 0.35 }
+    if CarHost.shared.following { insets.top += view.bounds.height * (compact ? 0.35 : Self.followFraction) }
     mapView.setContentInset(insets, animated: false, completionHandler: nil)
   }
 
@@ -220,35 +241,146 @@ final class CarPlayMapViewController: UIViewController, MLNMapViewDelegate {
     mapView?.setZoomLevel(mapView.zoomLevel + steps, animated: true)
   }
 
+  /// The column at the bottom right, top to bottom: the camera ahead, the
+  /// speed limit, your own speed. Only while navigating.
   func speedChanged() {
     let speed = CarHost.shared.speed
     let navigating = CarHost.shared.screen == .navigating
-    showCamera(navigating ? speed : nil)
-    guard navigating, let limit = speed?.limitKmh else {
-      speedLimit.isHidden = true
-      return
+    if navigating, !compact, let speed = speed, let text = speed.cameraText {
+      cameraSign.show(
+        icon: speed.cameraIconKey.flatMap { CarHost.shared.images[$0] }, text: text,
+        detail: speed.cameraDetail, over: speed.cameraOver)
+      cameraSign.isHidden = false
+    } else {
+      cameraSign.isHidden = true
     }
-    speedLimit.isHidden = false
-    speedLimit.show(limit: Int(limit), matrix: speed?.limitSource == "msi")
+    if navigating, let limit = speed?.limitKmh {
+      speedLimit.show(limit: Int(limit), matrix: speed?.limitSource == "msi")
+      speedLimit.isHidden = false
+    } else {
+      speedLimit.isHidden = true
+    }
+    if navigating, !compact, let ms = speed?.speedMs {
+      let kmh = Int((ms * 3.6).rounded())
+      let speeding = speed?.limitKmh.map { kmh > Int($0) + 5 } ?? false
+      speedView.show(kmh: kmh, unit: CarHost.shared.text("kmh"), speeding: speeding)
+      speedView.isHidden = false
+    } else {
+      speedView.isHidden = true
+    }
+    lanesChanged()
+    layoutOverlays()
   }
 
-  /// The next speed camera or the average speed check you're in: above the
-  /// speed limit, or in its place when there is no limit.
-  private func showCamera(_ speed: CarSpeed?) {
-    guard let speed = speed, let text = speed.cameraText else {
-      cameraSign.isHidden = true
-      return
+  /// The bar at the top of the map: the matrix signs of the next gantry, or
+  /// else the lanes (when CarPlay doesn't draw those in the panel itself).
+  func lanesChanged() {
+    let host = CarHost.shared
+    var image: UIImage?
+    if host.screen == .navigating && !compact {
+      if let key = host.speed?.matrixIconKey {
+        image = host.images[key]
+      } else if let key = host.maneuver?.lanesIconKey {
+        var carPlayDrawsLanes = false
+        if #available(iOS 18.0, *) { carPlayDrawsLanes = !Self.lanesOverlayWithLaneGuidance }
+        if !carPlayDrawsLanes { image = host.images[key] }
+      }
     }
-    cameraSign.show(
-      icon: speed.cameraIconKey.flatMap { CarHost.shared.images[$0] }, text: text,
-      detail: speed.cameraDetail, over: speed.cameraOver)
-    let size = cameraSign.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
+    laneBar.image = image
+    laneBar.isHidden = image == nil
+    layoutOverlays()
+  }
+
+  private func layoutOverlays() {
     let insets = view.safeAreaInsets
-    let below: CGFloat = speed.limitKmh == nil ? 0 : 56 + 6
-    cameraSign.frame = CGRect(
-      x: insets.left + 12, y: view.bounds.height - insets.bottom - 12 - below - size.height,
-      width: size.width, height: size.height)
-    cameraSign.isHidden = false
+    let margin: CGFloat = 12
+    let right = view.bounds.width - insets.right - margin
+    var bottom = view.bounds.height - insets.bottom - margin
+    for overlay in [speedView, speedLimit, cameraSign] where !overlay.isHidden {
+      let size = overlay.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
+      overlay.frame = CGRect(x: right - size.width, y: bottom - size.height, width: size.width, height: size.height)
+      bottom -= size.height + 6
+    }
+    if !laneBar.isHidden {
+      let size = laneBar.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
+      let width = min(size.width, view.bounds.width - insets.left - insets.right - 2 * margin)
+      let x = insets.left + (view.bounds.width - insets.left - insets.right - width) / 2
+      laneBar.frame = CGRect(x: x, y: insets.top + margin, width: width, height: size.height)
+    }
+  }
+}
+
+/// The lanes or the matrix signs as an image, on a dark rounded bar (the
+/// phone's `LaneBar` and `MatrixBar`). The image is drawn at 3x.
+final class LaneBarView: UIView {
+  private let imageView = UIImageView()
+
+  var image: UIImage? {
+    didSet {
+      imageView.image = image
+      guard let image = image else { return }
+      let height: CGFloat = 32
+      size.constant = image.size.width * height / image.size.height
+    }
+  }
+  private var size: NSLayoutConstraint!
+
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    backgroundColor = UIColor(hex: 0x263238)
+    layer.cornerRadius = 10
+    imageView.contentMode = .scaleAspectFit
+    imageView.translatesAutoresizingMaskIntoConstraints = false
+    addSubview(imageView)
+    size = imageView.widthAnchor.constraint(equalToConstant: 0)
+    NSLayoutConstraint.activate([
+      size,
+      imageView.heightAnchor.constraint(equalToConstant: 32),
+      imageView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
+      imageView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10),
+      imageView.topAnchor.constraint(equalTo: topAnchor, constant: 6),
+      imageView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
+    ])
+  }
+
+  required init?(coder: NSCoder) { fatalError() }
+}
+
+/// Your own speed under the limit, as on the phone: the number with "km/h"
+/// below it, red when you're over the limit.
+final class SpeedView: UIView {
+  private let number = UILabel()
+  private let unit = UILabel()
+
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    layer.cornerRadius = 10
+    number.font = .systemFont(ofSize: 20, weight: .bold)
+    number.textAlignment = .center
+    unit.font = .systemFont(ofSize: 11)
+    unit.textAlignment = .center
+    let column = UIStackView(arrangedSubviews: [number, unit])
+    column.axis = .vertical
+    column.alignment = .center
+    column.translatesAutoresizingMaskIntoConstraints = false
+    addSubview(column)
+    NSLayoutConstraint.activate([
+      column.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
+      column.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10),
+      column.topAnchor.constraint(equalTo: topAnchor, constant: 4),
+      column.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -4),
+      widthAnchor.constraint(greaterThanOrEqualToConstant: 64),
+    ])
+  }
+
+  required init?(coder: NSCoder) { fatalError() }
+
+  func show(kmh: Int, unit text: String, speeding: Bool) {
+    number.text = "\(kmh)"
+    unit.text = text
+    backgroundColor = speeding ? UIColor(hex: 0xd32f2f) : .white
+    number.textColor = speeding ? .white : .black
+    unit.textColor = speeding ? .white : .black
   }
 }
 
@@ -298,34 +430,40 @@ final class CameraSignView: UIView {
   }
 }
 
-/// The speed limit as a round sign on the map, red ring when it comes from
-/// the overhead signs (as on the phone).
+/// The speed limit as a round sign on the map; white on black when it comes
+/// from the overhead matrix signs (as on the phone).
 final class SpeedLimitView: UIView {
   private let label = UILabel()
+  static let size: CGFloat = 64
 
   override init(frame: CGRect) {
     super.init(frame: frame)
     backgroundColor = .white
-    layer.borderColor = UIColor.red.cgColor
-    layer.borderWidth = 5
+    layer.borderColor = UIColor(hex: 0xd32f2f).cgColor
+    layer.borderWidth = 6
+    layer.cornerRadius = Self.size / 2
     label.textAlignment = .center
     label.textColor = .black
-    label.font = .systemFont(ofSize: 20, weight: .bold)
+    label.font = .systemFont(ofSize: 24, weight: .heavy)
     label.adjustsFontSizeToFitWidth = true
     addSubview(label)
   }
 
   required init?(coder: NSCoder) { fatalError() }
 
+  override var intrinsicContentSize: CGSize { CGSize(width: Self.size, height: Self.size) }
+
+  override func systemLayoutSizeFitting(_ targetSize: CGSize) -> CGSize { intrinsicContentSize }
+
   override func layoutSubviews() {
     super.layoutSubviews()
-    layer.cornerRadius = bounds.width / 2
     label.frame = bounds.insetBy(dx: 8, dy: 8)
   }
 
   func show(limit: Int, matrix: Bool) {
     label.text = "\(limit)"
-    layer.borderWidth = matrix ? 7 : 5
+    backgroundColor = matrix ? .black : .white
+    label.textColor = matrix ? .white : .black
   }
 }
 

@@ -29,6 +29,9 @@ object CarHost : CarHostApi {
         fun onFitBounds(bounds: CarBounds, paddingPx: Double) {}
         fun onFollowing() {}
 
+        /** Your speed, the limit, the camera or the matrix signs changed. */
+        fun onSpeed() {}
+
         /** Something on the templates changed: invalidate. */
         fun onScreen() {}
         fun onAlert(alert: CarAlert?) {}
@@ -49,6 +52,8 @@ object CarHost : CarHostApi {
     var style: String? = null
         private set
     var styleIsJson = false
+        private set
+    var styleDark = false
         private set
     val images = mutableMapOf<String, Bitmap>()
     var routesGeoJson: String? = null
@@ -184,9 +189,10 @@ object CarHost : CarHostApi {
         each { onScreen() }
     }
 
-    override fun setStyle(style: String, isJson: Boolean) {
+    override fun setStyle(style: String, isJson: Boolean, dark: Boolean) {
         this.style = style
         styleIsJson = isJson
+        styleDark = dark
         each { onStyle() }
     }
 
@@ -269,11 +275,15 @@ object CarHost : CarHostApi {
         each { onScreen() }
     }
 
-    override fun updateManeuver(next: CarManeuver, trip: CarTrip, speed: CarSpeed) {
+    override fun updateManeuver(next: CarManeuver, trip: CarTrip) {
         maneuver = next
         this.trip = trip
-        this.speed = speed
         each { onScreen() }
+    }
+
+    override fun setSpeed(speed: CarSpeed) {
+        this.speed = speed
+        each { onSpeed() }
     }
 
     override fun setRecalculating(recalculating: Boolean) {

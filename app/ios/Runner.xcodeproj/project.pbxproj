@@ -11,6 +11,7 @@
 		CA12A0000000000000000004 /* CarHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA12A0000000000000000003 /* CarHost.swift */; };
 		CA12A0000000000000000006 /* CarPlayMapViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA12A0000000000000000005 /* CarPlayMapViewController.swift */; };
 		CA12A0000000000000000008 /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA12A0000000000000000007 /* CarPlaySceneDelegate.swift */; };
+		CA12A000000000000000000C /* CarPlayDashboardSceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA12A000000000000000000B /* CarPlayDashboardSceneDelegate.swift */; };
 		CA12A000000000000000000A /* ManeuverBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA12A0000000000000000009 /* ManeuverBuilder.swift */; };
 		CA12A0000000000000000202 /* MapLibre in Frameworks */ = {isa = PBXBuildFile; productRef = CA12A0000000000000000201 /* MapLibre */; };
 		A1C0DE032EC4000000000003 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A1C0DE022EC4000000000002 /* PrivacyInfo.xcprivacy */; };
@@ -53,6 +54,7 @@
 		CA12A0000000000000000003 /* CarHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarHost.swift; sourceTree = "<group>"; };
 		CA12A0000000000000000005 /* CarPlayMapViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayMapViewController.swift; sourceTree = "<group>"; };
 		CA12A0000000000000000007 /* CarPlaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlaySceneDelegate.swift; sourceTree = "<group>"; };
+		CA12A000000000000000000B /* CarPlayDashboardSceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayDashboardSceneDelegate.swift; sourceTree = "<group>"; };
 		CA12A0000000000000000009 /* ManeuverBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManeuverBuilder.swift; sourceTree = "<group>"; };
 		A1C0DE012EC4000000000001 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		A1C0DE022EC4000000000002 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -95,6 +97,7 @@
 				CA12A0000000000000000003 /* CarHost.swift */,
 				CA12A0000000000000000005 /* CarPlayMapViewController.swift */,
 				CA12A0000000000000000007 /* CarPlaySceneDelegate.swift */,
+				CA12A000000000000000000B /* CarPlayDashboardSceneDelegate.swift */,
 				CA12A0000000000000000009 /* ManeuverBuilder.swift */,
 			);
 			path = CarPlay;
@@ -321,6 +324,7 @@
 				CA12A0000000000000000004 /* CarHost.swift in Sources */,
 				CA12A0000000000000000006 /* CarPlayMapViewController.swift in Sources */,
 				CA12A0000000000000000008 /* CarPlaySceneDelegate.swift in Sources */,
+				CA12A000000000000000000C /* CarPlayDashboardSceneDelegate.swift in Sources */,
 				CA12A000000000000000000A /* ManeuverBuilder.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

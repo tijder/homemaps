@@ -470,6 +470,9 @@ struct CarManeuver: Hashable, CustomStringConvertible {
   /// Where you leave the roundabout, clockwise from straight on (degrees).
   var roundaboutAngle: Double? = nil
   var sign: CarRoadSign? = nil
+  /// The sign as an image (shields and directions, as the phone's panel),
+  /// registered earlier; null without a sign.
+  var signIconKey: String? = nil
   /// An image registered earlier with [CarHostApi.registerImage].
   var iconKey: String
   /// Already rounded so it doesn't change every meter.
@@ -494,12 +497,13 @@ struct CarManeuver: Hashable, CustomStringConvertible {
     let roundaboutExit: Int64? = nilOrValue(pigeonVar_list[4])
     let roundaboutAngle: Double? = nilOrValue(pigeonVar_list[5])
     let sign: CarRoadSign? = nilOrValue(pigeonVar_list[6])
-    let iconKey = pigeonVar_list[7] as! String
-    let metersToNext = pigeonVar_list[8] as! Double
-    let then = pigeonVar_list[9] as! [CarManeuver]
-    let lanes: [CarLane]? = nilOrValue(pigeonVar_list[10])
-    let lanesIconKey: String? = nilOrValue(pigeonVar_list[11])
-    let lanesAhead: Double? = nilOrValue(pigeonVar_list[12])
+    let signIconKey: String? = nilOrValue(pigeonVar_list[7])
+    let iconKey = pigeonVar_list[8] as! String
+    let metersToNext = pigeonVar_list[9] as! Double
+    let then = pigeonVar_list[10] as! [CarManeuver]
+    let lanes: [CarLane]? = nilOrValue(pigeonVar_list[11])
+    let lanesIconKey: String? = nilOrValue(pigeonVar_list[12])
+    let lanesAhead: Double? = nilOrValue(pigeonVar_list[13])
 
     return CarManeuver(
       type: type,
@@ -509,6 +513,7 @@ struct CarManeuver: Hashable, CustomStringConvertible {
       roundaboutExit: roundaboutExit,
       roundaboutAngle: roundaboutAngle,
       sign: sign,
+      signIconKey: signIconKey,
       iconKey: iconKey,
       metersToNext: metersToNext,
       then: then,
@@ -526,6 +531,7 @@ struct CarManeuver: Hashable, CustomStringConvertible {
       roundaboutExit,
       roundaboutAngle,
       sign,
+      signIconKey,
       iconKey,
       metersToNext,
       then,
@@ -538,7 +544,7 @@ struct CarManeuver: Hashable, CustomStringConvertible {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return CarApiPigeonInternal.deepEquals(lhs.type, rhs.type) && CarApiPigeonInternal.deepEquals(lhs.instruction, rhs.instruction) && CarApiPigeonInternal.deepEquals(lhs.shortAction, rhs.shortAction) && CarApiPigeonInternal.deepEquals(lhs.streets, rhs.streets) && CarApiPigeonInternal.deepEquals(lhs.roundaboutExit, rhs.roundaboutExit) && CarApiPigeonInternal.deepEquals(lhs.roundaboutAngle, rhs.roundaboutAngle) && CarApiPigeonInternal.deepEquals(lhs.sign, rhs.sign) && CarApiPigeonInternal.deepEquals(lhs.iconKey, rhs.iconKey) && CarApiPigeonInternal.deepEquals(lhs.metersToNext, rhs.metersToNext) && CarApiPigeonInternal.deepEquals(lhs.then, rhs.then) && CarApiPigeonInternal.deepEquals(lhs.lanes, rhs.lanes) && CarApiPigeonInternal.deepEquals(lhs.lanesIconKey, rhs.lanesIconKey) && CarApiPigeonInternal.deepEquals(lhs.lanesAhead, rhs.lanesAhead)
+    return CarApiPigeonInternal.deepEquals(lhs.type, rhs.type) && CarApiPigeonInternal.deepEquals(lhs.instruction, rhs.instruction) && CarApiPigeonInternal.deepEquals(lhs.shortAction, rhs.shortAction) && CarApiPigeonInternal.deepEquals(lhs.streets, rhs.streets) && CarApiPigeonInternal.deepEquals(lhs.roundaboutExit, rhs.roundaboutExit) && CarApiPigeonInternal.deepEquals(lhs.roundaboutAngle, rhs.roundaboutAngle) && CarApiPigeonInternal.deepEquals(lhs.sign, rhs.sign) && CarApiPigeonInternal.deepEquals(lhs.signIconKey, rhs.signIconKey) && CarApiPigeonInternal.deepEquals(lhs.iconKey, rhs.iconKey) && CarApiPigeonInternal.deepEquals(lhs.metersToNext, rhs.metersToNext) && CarApiPigeonInternal.deepEquals(lhs.then, rhs.then) && CarApiPigeonInternal.deepEquals(lhs.lanes, rhs.lanes) && CarApiPigeonInternal.deepEquals(lhs.lanesIconKey, rhs.lanesIconKey) && CarApiPigeonInternal.deepEquals(lhs.lanesAhead, rhs.lanesAhead)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -550,6 +556,7 @@ struct CarManeuver: Hashable, CustomStringConvertible {
     CarApiPigeonInternal.deepHash(value: roundaboutExit, hasher: &hasher)
     CarApiPigeonInternal.deepHash(value: roundaboutAngle, hasher: &hasher)
     CarApiPigeonInternal.deepHash(value: sign, hasher: &hasher)
+    CarApiPigeonInternal.deepHash(value: signIconKey, hasher: &hasher)
     CarApiPigeonInternal.deepHash(value: iconKey, hasher: &hasher)
     CarApiPigeonInternal.deepHash(value: metersToNext, hasher: &hasher)
     CarApiPigeonInternal.deepHash(value: then, hasher: &hasher)
@@ -559,7 +566,7 @@ struct CarManeuver: Hashable, CustomStringConvertible {
   }
 
   public var description: String {
-    return "CarManeuver(type: \(String(describing: type)), instruction: \(String(describing: instruction)), shortAction: \(String(describing: shortAction)), streets: \(String(describing: streets)), roundaboutExit: \(String(describing: roundaboutExit)), roundaboutAngle: \(String(describing: roundaboutAngle)), sign: \(String(describing: sign)), iconKey: \(String(describing: iconKey)), metersToNext: \(String(describing: metersToNext)), then: \(String(describing: then)), lanes: \(String(describing: lanes)), lanesIconKey: \(String(describing: lanesIconKey)), lanesAhead: \(String(describing: lanesAhead)))"
+    return "CarManeuver(type: \(String(describing: type)), instruction: \(String(describing: instruction)), shortAction: \(String(describing: shortAction)), streets: \(String(describing: streets)), roundaboutExit: \(String(describing: roundaboutExit)), roundaboutAngle: \(String(describing: roundaboutAngle)), sign: \(String(describing: sign)), signIconKey: \(String(describing: signIconKey)), iconKey: \(String(describing: iconKey)), metersToNext: \(String(describing: metersToNext)), then: \(String(describing: then)), lanes: \(String(describing: lanes)), lanesIconKey: \(String(describing: lanesIconKey)), lanesAhead: \(String(describing: lanesAhead)))"
   }
 }
 
@@ -630,6 +637,9 @@ struct CarSpeed: Hashable, CustomStringConvertible {
   var cameraDetail: String? = nil
   /// Your average in the section is above its limit: the sign goes red.
   var cameraOver: Bool
+  /// The next gantry's matrix signs (MSI) as one image, registered earlier;
+  /// null when there is none ahead. Shown where the lanes go, instead of them.
+  var matrixIconKey: String? = nil
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
@@ -641,6 +651,7 @@ struct CarSpeed: Hashable, CustomStringConvertible {
     let cameraText: String? = nilOrValue(pigeonVar_list[4])
     let cameraDetail: String? = nilOrValue(pigeonVar_list[5])
     let cameraOver = pigeonVar_list[6] as! Bool
+    let matrixIconKey: String? = nilOrValue(pigeonVar_list[7])
 
     return CarSpeed(
       limitKmh: limitKmh,
@@ -649,7 +660,8 @@ struct CarSpeed: Hashable, CustomStringConvertible {
       cameraIconKey: cameraIconKey,
       cameraText: cameraText,
       cameraDetail: cameraDetail,
-      cameraOver: cameraOver
+      cameraOver: cameraOver,
+      matrixIconKey: matrixIconKey
     )
   }
   func toList() -> [Any?] {
@@ -661,13 +673,14 @@ struct CarSpeed: Hashable, CustomStringConvertible {
       cameraText,
       cameraDetail,
       cameraOver,
+      matrixIconKey,
     ]
   }
   static func == (lhs: CarSpeed, rhs: CarSpeed) -> Bool {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return CarApiPigeonInternal.deepEquals(lhs.limitKmh, rhs.limitKmh) && CarApiPigeonInternal.deepEquals(lhs.limitSource, rhs.limitSource) && CarApiPigeonInternal.deepEquals(lhs.speedMs, rhs.speedMs) && CarApiPigeonInternal.deepEquals(lhs.cameraIconKey, rhs.cameraIconKey) && CarApiPigeonInternal.deepEquals(lhs.cameraText, rhs.cameraText) && CarApiPigeonInternal.deepEquals(lhs.cameraDetail, rhs.cameraDetail) && CarApiPigeonInternal.deepEquals(lhs.cameraOver, rhs.cameraOver)
+    return CarApiPigeonInternal.deepEquals(lhs.limitKmh, rhs.limitKmh) && CarApiPigeonInternal.deepEquals(lhs.limitSource, rhs.limitSource) && CarApiPigeonInternal.deepEquals(lhs.speedMs, rhs.speedMs) && CarApiPigeonInternal.deepEquals(lhs.cameraIconKey, rhs.cameraIconKey) && CarApiPigeonInternal.deepEquals(lhs.cameraText, rhs.cameraText) && CarApiPigeonInternal.deepEquals(lhs.cameraDetail, rhs.cameraDetail) && CarApiPigeonInternal.deepEquals(lhs.cameraOver, rhs.cameraOver) && CarApiPigeonInternal.deepEquals(lhs.matrixIconKey, rhs.matrixIconKey)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -679,10 +692,11 @@ struct CarSpeed: Hashable, CustomStringConvertible {
     CarApiPigeonInternal.deepHash(value: cameraText, hasher: &hasher)
     CarApiPigeonInternal.deepHash(value: cameraDetail, hasher: &hasher)
     CarApiPigeonInternal.deepHash(value: cameraOver, hasher: &hasher)
+    CarApiPigeonInternal.deepHash(value: matrixIconKey, hasher: &hasher)
   }
 
   public var description: String {
-    return "CarSpeed(limitKmh: \(String(describing: limitKmh)), limitSource: \(String(describing: limitSource)), speedMs: \(String(describing: speedMs)), cameraIconKey: \(String(describing: cameraIconKey)), cameraText: \(String(describing: cameraText)), cameraDetail: \(String(describing: cameraDetail)), cameraOver: \(String(describing: cameraOver)))"
+    return "CarSpeed(limitKmh: \(String(describing: limitKmh)), limitSource: \(String(describing: limitSource)), speedMs: \(String(describing: speedMs)), cameraIconKey: \(String(describing: cameraIconKey)), cameraText: \(String(describing: cameraText)), cameraDetail: \(String(describing: cameraDetail)), cameraOver: \(String(describing: cameraOver)), matrixIconKey: \(String(describing: matrixIconKey)))"
   }
 }
 
@@ -1083,7 +1097,8 @@ protocol CarHostApi {
   /// `CarBridge.texts`), so the translations stay in one place.
   func setTexts(texts: [String: String]) throws
   /// The map style: a URL, or the style itself as JSON (the night version).
-  func setStyle(style: String, isJson: Bool) throws
+  /// [dark]: it's a night style, so the map's backdrop is dark too.
+  func setStyle(style: String, isJson: Bool, dark: Bool) throws
   /// A PNG for the map (arrow head, location dot) or the templates (maneuver
   /// and lane icons), by key. [scale] is the pixel ratio it was drawn at.
   func registerImage(key: String, png: FlutterStandardTypedData, scale: Double) throws
@@ -1107,7 +1122,10 @@ protocol CarHostApi {
   func showLoading(loading: Bool) throws
   func showMessage(title: String, text: String) throws
   func startNavigation(trip: CarTrip) throws
-  func updateManeuver(next: CarManeuver, trip: CarTrip, speed: CarSpeed) throws
+  func updateManeuver(next: CarManeuver, trip: CarTrip) throws
+  /// Your speed, the limit and what's ahead on the road: every fix on which
+  /// something of it changed, apart from the maneuver.
+  func setSpeed(speed: CarSpeed) throws
   func setRecalculating(recalculating: Bool) throws
   func showArrived(destinationLabel: String) throws
   func endNavigation() throws
@@ -1155,14 +1173,16 @@ class CarHostApiSetup {
       setTextsChannel.setMessageHandler(nil)
     }
     /// The map style: a URL, or the style itself as JSON (the night version).
+    /// [dark]: it's a night style, so the map's backdrop is dark too.
     let setStyleChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.homemaps.CarHostApi.setStyle\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       setStyleChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
         let styleArg = args[0] as! String
         let isJsonArg = args[1] as! Bool
+        let darkArg = args[2] as! Bool
         do {
-          try api.setStyle(style: styleArg, isJson: isJsonArg)
+          try api.setStyle(style: styleArg, isJson: isJsonArg, dark: darkArg)
           reply(wrapResult(nil))
         } catch {
           reply(wrapError(error))
@@ -1390,9 +1410,8 @@ class CarHostApiSetup {
         let args = message as! [Any?]
         let nextArg = args[0] as! CarManeuver
         let tripArg = args[1] as! CarTrip
-        let speedArg = args[2] as! CarSpeed
         do {
-          try api.updateManeuver(next: nextArg, trip: tripArg, speed: speedArg)
+          try api.updateManeuver(next: nextArg, trip: tripArg)
           reply(wrapResult(nil))
         } catch {
           reply(wrapError(error))
@@ -1400,6 +1419,23 @@ class CarHostApiSetup {
       }
     } else {
       updateManeuverChannel.setMessageHandler(nil)
+    }
+    /// Your speed, the limit and what's ahead on the road: every fix on which
+    /// something of it changed, apart from the maneuver.
+    let setSpeedChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.homemaps.CarHostApi.setSpeed\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      setSpeedChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let speedArg = args[0] as! CarSpeed
+        do {
+          try api.setSpeed(speed: speedArg)
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      setSpeedChannel.setMessageHandler(nil)
     }
     let setRecalculatingChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.homemaps.CarHostApi.setRecalculating\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {

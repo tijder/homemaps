@@ -76,6 +76,17 @@
 					<string>$(PRODUCT_MODULE_NAME).CarPlaySceneDelegate</string>
 				</dict>
 			</array>
+			<key>CPTemplateApplicationDashboardSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneClassName</key>
+					<string>CPTemplateApplicationDashboardScene</string>
+					<key>UISceneConfigurationName</key>
+					<string>CarPlayDashboard</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).CarPlayDashboardSceneDelegate</string>
+				</dict>
+			</array>
 		</dict>
 	</dict>
 	<key>UIBackgroundModes</key>

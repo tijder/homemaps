@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ui' show Locale, PlatformDispatcher;
+import 'dart:ui' show Brightness, Locale, PlatformDispatcher;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart'
+    show WidgetsBinding, WidgetsBindingObserver;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
@@ -45,7 +47,7 @@ enum CarScreen { home, preview, navigating }
 /// (the map's GeoJSON, the next maneuver, the ETA) and handles what the driver
 /// does in the car. Everything the phone's screen does with the navigation
 /// state, this does too, without widgets.
-class CarBridge implements CarFlutterApi {
+class CarBridge with WidgetsBindingObserver implements CarFlutterApi {
   CarBridge(this._ref, this._host);
 
   final Ref _ref;
@@ -71,6 +73,7 @@ class CarBridge implements CarFlutterApi {
   int? _pushedSegment;
   List<LatLng>? _pushedArrow;
   String? _pushedManeuver;
+  String? _pushedSpeed;
   bool? _pushedRecalculating;
   bool _arrivedShown = false;
   String? _alertShown;
@@ -86,6 +89,7 @@ class CarBridge implements CarFlutterApi {
   void init() {
     _locale(PlatformDispatcher.instance.locale);
     CarFlutterApi.setUp(this);
+    WidgetsBinding.instance.addObserver(this);
     _send(_host.ready());
     _ref.listen(settingsProvider, (_, _) => _pushStyle());
     _ref.listen(locationProvider.select((s) => s.fix), (_, fix) {
@@ -100,7 +104,15 @@ class CarBridge implements CarFlutterApi {
     });
   }
 
-  void dispose() => CarFlutterApi.setUp(null);
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    CarFlutterApi.setUp(null);
+  }
+
+  /// The phone went to dark mode or back: the map in the car follows, as
+  /// the phone's map does.
+  @override
+  void didChangePlatformBrightness() => _pushStyle();
 
   /// The phone's language: nl is Dutch, everything else English (Valhalla
   /// knows 'nl-NL' and 'en-US').
@@ -115,8 +127,6 @@ class CarBridge implements CarFlutterApi {
   Future<void> _send(Future<void> call) => call.catchError((Object error) {
     debugPrint('car: $error');
   });
-
-  bool get _dark => _surface?.dark ?? false;
 
   /// The labels of the templates.
   Map<String, String> get texts => {
@@ -148,6 +158,7 @@ class CarBridge implements CarFlutterApi {
     'noLocation': _l.navigatingWithoutLocation,
     'openApp': _l.carOpenApp,
     'searching': _l.locationSearching,
+    'kmh': _l.kmh,
   };
 
   // ------------------------------------------------------------ from the car
@@ -168,6 +179,7 @@ class CarBridge implements CarFlutterApi {
       _pushedSegment = null;
       _pushedArrow = null;
       _pushedManeuver = null;
+      _pushedSpeed = null;
       _pushedRecalculating = null;
       _arrivedShown = false;
       _alertShown = null;
@@ -191,18 +203,9 @@ class CarBridge implements CarFlutterApi {
 
   @override
   void surfaceChanged(CarSurface surface) {
-    final darkChanged = surface.dark != _surface?.dark;
+    // The car's day or night mode changes nothing: the map follows the
+    // phone, and the icons are white on our own blue panel.
     _surface = surface;
-    if (darkChanged) {
-      // The icons are drawn for a background; new ones.
-      _images.removeWhere(
-        (key) => key.startsWith('m:') || key.startsWith('l:'),
-      );
-      _pushedManeuver = null;
-      _pushStyle();
-      final nav = _ref.read(navigationProvider);
-      if (nav != null) unawaited(_pushManeuver(nav));
-    }
   }
 
   @override
@@ -396,7 +399,9 @@ class CarBridge implements CarFlutterApi {
   }
 
   /// The map style, as on the phone: the night version of the regular map
-  /// when the car is in dark mode (or the theme says night).
+  /// when the phone is in dark mode (or the theme says night). The car's
+  /// own day or night mode doesn't count, as the phone's map doesn't look
+  /// at the car either (see `map_screen.dart`).
   void _pushStyle() {
     if (_surface == null) return;
     final config = _ref.read(appConfigProvider);
@@ -406,7 +411,9 @@ class CarBridge implements CarFlutterApi {
     final night =
         settings.style == MapStyle.map.id &&
         switch (settings.theme) {
-          MapTheme.automatic => _dark,
+          MapTheme.automatic =>
+            WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+                Brightness.dark,
           MapTheme.day => false,
           MapTheme.night => true,
         };
@@ -414,16 +421,16 @@ class CarBridge implements CarFlutterApi {
     if (wanted == _pushedStyle) return;
     _pushedStyle = wanted;
     if (!night) {
-      _send(_host.setStyle(url, false));
+      _send(_host.setStyle(url, false, false));
       return;
     }
     // Until the night style is there (or if it fails) the regular one.
-    _send(_host.setStyle(url, false));
+    _send(_host.setStyle(url, false, true));
     _ref
         .read(nightStyleProvider(url).future)
         .then((json) {
           if (_pushedStyle == wanted && _surface != null) {
-            _send(_host.setStyle(json, true));
+            _send(_host.setStyle(json, true, true));
           }
         })
         .catchError((Object _) {});
@@ -529,7 +536,7 @@ class CarBridge implements CarFlutterApi {
             ? CarCamera(
                 lat: onRoad.point.latitude,
                 lon: onRoad.point.longitude,
-                zoom: followZoom(onRoad.speed ?? 0),
+                zoom: followZoom(onRoad.speed ?? 0) + carZoomOffset,
                 bearing: onRoad.heading ?? nav.status?.routeHeading ?? 0,
                 tilt: followTilt,
                 // About the time until the next fix, so the map glides.
@@ -538,7 +545,7 @@ class CarBridge implements CarFlutterApi {
             : CarCamera(
                 lat: onRoad.point.latitude,
                 lon: onRoad.point.longitude,
-                zoom: 15,
+                zoom: 15 + carZoomOffset,
                 bearing: 0,
                 tilt: 0,
                 animateMs: 500,
@@ -556,6 +563,7 @@ class CarBridge implements CarFlutterApi {
         _pushedSegment = null;
         _pushedArrow = null;
         _pushedManeuver = null;
+        _pushedSpeed = null;
         _pushedRecalculating = null;
         _arrivedShown = false;
         _alertShown = null;
@@ -638,6 +646,7 @@ class CarBridge implements CarFlutterApi {
       return;
     }
     unawaited(_pushManeuver(nav));
+    unawaited(_pushSpeed(nav));
   }
 
   CarTrip _trip(NavigationState nav) {
@@ -654,7 +663,7 @@ class CarBridge implements CarFlutterApi {
   }
 
   /// The next maneuver, only when something visible changed: the maneuver,
-  /// its rounded distance, the lanes, the limit or the ETA minute.
+  /// its rounded distance, the lanes or the ETA minute.
   Future<void> _pushManeuver(NavigationState nav) async {
     final status = nav.status;
     if (status == null || nav.recalculating || _surface == null) return;
@@ -662,27 +671,28 @@ class CarBridge implements CarFlutterApi {
     final next = maneuvers[status.next];
     final toNext = roundDistance(status.toNext);
     final lanes = nav.lanes;
+    final laneAhead = lanes == null || lanes.atManeuver
+        ? null
+        : distance(roundDistance(lanes.ahead), _l.localeName);
     final laneKey = lanes == null
-        ? ''
-        : lanesIconKey(lanes.perLane, dark: _dark);
+        ? null
+        : lanesIconKey(lanes.perLane, ahead: laneAhead);
+    final sign = next.signpost;
+    final signKey = sign == null ? null : signIconKey(sign);
     final etaMinute = (status.remainingSeconds / 60).round();
-    final camera = CameraSign.describe(_l, nav.camera, nav.section);
-    final cameraKey = camera == null ? null : 'camera-${camera.kind.name}';
     final signature =
         '${identityHashCode(nav.route)}:${status.next}:$toNext:$laneKey:'
-        '${lanes?.ahead.round()}:${nav.limit}:${nav.limitSource}:$etaMinute:'
-        '$cameraKey:${camera?.text}:${camera?.detail}:${camera?.over}';
+        '$etaMinute';
     if (signature == _pushedManeuver) return;
     _pushedManeuver = signature;
 
-    final dark = _dark;
-    final iconKey = maneuverIconKey(next, dark: dark);
-    await _image(iconKey, () => maneuverPng(next, dark: dark), 4);
+    final iconKey = maneuverIconKey(next);
+    await _image(iconKey, () => maneuverPng(next), 4);
     CarManeuver? then;
     if (afterwardsIndex(nav.route, status.next) case final i?) {
       final after = maneuvers[i];
-      final afterKey = maneuverIconKey(after, dark: dark);
-      await _image(afterKey, () => maneuverPng(after, dark: dark), 4);
+      final afterKey = maneuverIconKey(after);
+      await _image(afterKey, () => maneuverPng(after), 4);
       then = carManeuver(
         after,
         _l,
@@ -691,18 +701,22 @@ class CarBridge implements CarFlutterApi {
       );
     }
     if (lanes != null) {
-      await _image(laneKey, () => lanesPng(lanes.perLane, dark: dark), 3);
-    }
-    if (camera != null) {
       await _image(
-        cameraKey!,
-        () => cameraPng(CameraSign.icon(camera.kind)),
-        2,
+        laneKey!,
+        () => lanesPng(lanes.perLane, ahead: laneAhead),
+        3,
+      );
+    }
+    if (sign != null) {
+      final exit = sign.exit;
+      await _image(
+        signKey!,
+        () => signPng(sign, exitText: exit == null ? null : _l.exit(exit)),
+        3,
       );
     }
     // Another maneuver came along while the icons were drawn.
     if (_pushedManeuver != signature || _surface == null) return;
-    final fix = nav.fix;
     await _send(
       _host.updateManeuver(
         carManeuver(
@@ -710,20 +724,54 @@ class CarBridge implements CarFlutterApi {
           _l,
           iconKey: iconKey,
           metersToNext: toNext,
+          signIconKey: signKey,
           then: [?then],
           lanes: lanes?.perLane,
-          lanesIconKey: lanes == null ? null : laneKey,
+          lanesIconKey: laneKey,
           lanesAhead: lanes == null || lanes.atManeuver ? null : lanes.ahead,
         ),
         _trip(nav),
+      ),
+    );
+  }
+
+  /// Your speed, the limit, the camera ahead and the matrix signs: on every
+  /// fix on which one of them changed.
+  Future<void> _pushSpeed(NavigationState nav) async {
+    if (_surface == null) return;
+    final speedMs = nav.fix?.speed;
+    final kmh = speedMs == null ? null : (speedMs * 3.6).round();
+    final camera = CameraSign.describe(_l, nav.camera, nav.section);
+    final cameraKey = camera == null ? null : 'camera-${camera.kind.name}';
+    final matrix = nav.matrix?.perLane;
+    final matrixKey = matrix == null ? null : matrixIconKey(matrix);
+    final signature =
+        '$kmh:${nav.limit}:${nav.limitSource}:$cameraKey:${camera?.text}:'
+        '${camera?.detail}:${camera?.over}:$matrixKey';
+    if (signature == _pushedSpeed) return;
+    _pushedSpeed = signature;
+    if (camera != null) {
+      await _image(
+        cameraKey!,
+        () => cameraPng(CameraSign.icon(camera.kind)),
+        2,
+      );
+    }
+    if (matrix != null) {
+      await _image(matrixKey!, () => matrixPng(matrix), 3);
+    }
+    if (_pushedSpeed != signature || _surface == null) return;
+    await _send(
+      _host.setSpeed(
         CarSpeed(
           limitKmh: nav.limit,
           limitSource: nav.limitSource.name,
-          speedMs: fix?.speed,
+          speedMs: speedMs,
           cameraIconKey: cameraKey,
           cameraText: camera?.text,
           cameraDetail: camera?.detail,
           cameraOver: camera?.over ?? false,
+          matrixIconKey: matrixKey,
         ),
       ),
     );

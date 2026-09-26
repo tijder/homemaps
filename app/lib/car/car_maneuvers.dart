@@ -64,6 +64,7 @@ CarManeuver carManeuver(
   AppLocalizations l, {
   required String iconKey,
   required double metersToNext,
+  String? signIconKey,
   List<CarManeuver> then = const [],
   List<Lane>? lanes,
   String? lanesIconKey,
@@ -76,6 +77,7 @@ CarManeuver carManeuver(
   roundaboutExit: m.roundaboutExit,
   roundaboutAngle: m.roundaboutAngle,
   sign: carRoadSign(m.signpost),
+  signIconKey: signIconKey,
   iconKey: iconKey,
   metersToNext: metersToNext,
   then: then,

@@ -493,6 +493,11 @@ data class CarManeuver (
   /** Where you leave the roundabout, clockwise from straight on (degrees). */
   val roundaboutAngle: Double? = null,
   val sign: CarRoadSign? = null,
+  /**
+   * The sign as an image (shields and directions, as the phone's panel),
+   * registered earlier; null without a sign.
+   */
+  val signIconKey: String? = null,
   /** An image registered earlier with [CarHostApi.registerImage]. */
   val iconKey: String,
   /** Already rounded so it doesn't change every meter. */
@@ -519,13 +524,14 @@ data class CarManeuver (
       val roundaboutExit = pigeonVar_list[4] as Long?
       val roundaboutAngle = pigeonVar_list[5] as Double?
       val sign = pigeonVar_list[6] as CarRoadSign?
-      val iconKey = pigeonVar_list[7] as String
-      val metersToNext = pigeonVar_list[8] as Double
-      val then = pigeonVar_list[9] as List<CarManeuver>
-      val lanes = pigeonVar_list[10] as List<CarLane>?
-      val lanesIconKey = pigeonVar_list[11] as String?
-      val lanesAhead = pigeonVar_list[12] as Double?
-      return CarManeuver(type, instruction, shortAction, streets, roundaboutExit, roundaboutAngle, sign, iconKey, metersToNext, then, lanes, lanesIconKey, lanesAhead)
+      val signIconKey = pigeonVar_list[7] as String?
+      val iconKey = pigeonVar_list[8] as String
+      val metersToNext = pigeonVar_list[9] as Double
+      val then = pigeonVar_list[10] as List<CarManeuver>
+      val lanes = pigeonVar_list[11] as List<CarLane>?
+      val lanesIconKey = pigeonVar_list[12] as String?
+      val lanesAhead = pigeonVar_list[13] as Double?
+      return CarManeuver(type, instruction, shortAction, streets, roundaboutExit, roundaboutAngle, sign, signIconKey, iconKey, metersToNext, then, lanes, lanesIconKey, lanesAhead)
     }
   }
   fun toList(): List<Any?> {
@@ -537,6 +543,7 @@ data class CarManeuver (
       roundaboutExit,
       roundaboutAngle,
       sign,
+      signIconKey,
       iconKey,
       metersToNext,
       then,
@@ -553,7 +560,7 @@ data class CarManeuver (
       return true
     }
     val other = other as CarManeuver
-    return CarApiPigeonUtils.deepEquals(this.type, other.type) && CarApiPigeonUtils.deepEquals(this.instruction, other.instruction) && CarApiPigeonUtils.deepEquals(this.shortAction, other.shortAction) && CarApiPigeonUtils.deepEquals(this.streets, other.streets) && CarApiPigeonUtils.deepEquals(this.roundaboutExit, other.roundaboutExit) && CarApiPigeonUtils.deepEquals(this.roundaboutAngle, other.roundaboutAngle) && CarApiPigeonUtils.deepEquals(this.sign, other.sign) && CarApiPigeonUtils.deepEquals(this.iconKey, other.iconKey) && CarApiPigeonUtils.deepEquals(this.metersToNext, other.metersToNext) && CarApiPigeonUtils.deepEquals(this.then, other.then) && CarApiPigeonUtils.deepEquals(this.lanes, other.lanes) && CarApiPigeonUtils.deepEquals(this.lanesIconKey, other.lanesIconKey) && CarApiPigeonUtils.deepEquals(this.lanesAhead, other.lanesAhead)
+    return CarApiPigeonUtils.deepEquals(this.type, other.type) && CarApiPigeonUtils.deepEquals(this.instruction, other.instruction) && CarApiPigeonUtils.deepEquals(this.shortAction, other.shortAction) && CarApiPigeonUtils.deepEquals(this.streets, other.streets) && CarApiPigeonUtils.deepEquals(this.roundaboutExit, other.roundaboutExit) && CarApiPigeonUtils.deepEquals(this.roundaboutAngle, other.roundaboutAngle) && CarApiPigeonUtils.deepEquals(this.sign, other.sign) && CarApiPigeonUtils.deepEquals(this.signIconKey, other.signIconKey) && CarApiPigeonUtils.deepEquals(this.iconKey, other.iconKey) && CarApiPigeonUtils.deepEquals(this.metersToNext, other.metersToNext) && CarApiPigeonUtils.deepEquals(this.then, other.then) && CarApiPigeonUtils.deepEquals(this.lanes, other.lanes) && CarApiPigeonUtils.deepEquals(this.lanesIconKey, other.lanesIconKey) && CarApiPigeonUtils.deepEquals(this.lanesAhead, other.lanesAhead)
   }
 
   override fun hashCode(): Int {
@@ -565,6 +572,7 @@ data class CarManeuver (
     result = 31 * result + CarApiPigeonUtils.deepHash(this.roundaboutExit)
     result = 31 * result + CarApiPigeonUtils.deepHash(this.roundaboutAngle)
     result = 31 * result + CarApiPigeonUtils.deepHash(this.sign)
+    result = 31 * result + CarApiPigeonUtils.deepHash(this.signIconKey)
     result = 31 * result + CarApiPigeonUtils.deepHash(this.iconKey)
     result = 31 * result + CarApiPigeonUtils.deepHash(this.metersToNext)
     result = 31 * result + CarApiPigeonUtils.deepHash(this.then)
@@ -574,7 +582,7 @@ data class CarManeuver (
     return result
   }
   override fun toString(): String {
-    return "CarManeuver(type=$type, instruction=$instruction, shortAction=$shortAction, streets=$streets, roundaboutExit=$roundaboutExit, roundaboutAngle=$roundaboutAngle, sign=$sign, iconKey=$iconKey, metersToNext=$metersToNext, then=$then, lanes=$lanes, lanesIconKey=$lanesIconKey, lanesAhead=$lanesAhead)"
+    return "CarManeuver(type=$type, instruction=$instruction, shortAction=$shortAction, streets=$streets, roundaboutExit=$roundaboutExit, roundaboutAngle=$roundaboutAngle, sign=$sign, signIconKey=$signIconKey, iconKey=$iconKey, metersToNext=$metersToNext, then=$then, lanes=$lanes, lanesIconKey=$lanesIconKey, lanesAhead=$lanesAhead)"
   }
 }
 
@@ -647,7 +655,12 @@ data class CarSpeed (
   val cameraText: String? = null,
   val cameraDetail: String? = null,
   /** Your average in the section is above its limit: the sign goes red. */
-  val cameraOver: Boolean
+  val cameraOver: Boolean,
+  /**
+   * The next gantry's matrix signs (MSI) as one image, registered earlier;
+   * null when there is none ahead. Shown where the lanes go, instead of them.
+   */
+  val matrixIconKey: String? = null
 )
  {
   companion object {
@@ -659,7 +672,8 @@ data class CarSpeed (
       val cameraText = pigeonVar_list[4] as String?
       val cameraDetail = pigeonVar_list[5] as String?
       val cameraOver = pigeonVar_list[6] as Boolean
-      return CarSpeed(limitKmh, limitSource, speedMs, cameraIconKey, cameraText, cameraDetail, cameraOver)
+      val matrixIconKey = pigeonVar_list[7] as String?
+      return CarSpeed(limitKmh, limitSource, speedMs, cameraIconKey, cameraText, cameraDetail, cameraOver, matrixIconKey)
     }
   }
   fun toList(): List<Any?> {
@@ -671,6 +685,7 @@ data class CarSpeed (
       cameraText,
       cameraDetail,
       cameraOver,
+      matrixIconKey,
     )
   }
   override fun equals(other: Any?): Boolean {
@@ -681,7 +696,7 @@ data class CarSpeed (
       return true
     }
     val other = other as CarSpeed
-    return CarApiPigeonUtils.deepEquals(this.limitKmh, other.limitKmh) && CarApiPigeonUtils.deepEquals(this.limitSource, other.limitSource) && CarApiPigeonUtils.deepEquals(this.speedMs, other.speedMs) && CarApiPigeonUtils.deepEquals(this.cameraIconKey, other.cameraIconKey) && CarApiPigeonUtils.deepEquals(this.cameraText, other.cameraText) && CarApiPigeonUtils.deepEquals(this.cameraDetail, other.cameraDetail) && CarApiPigeonUtils.deepEquals(this.cameraOver, other.cameraOver)
+    return CarApiPigeonUtils.deepEquals(this.limitKmh, other.limitKmh) && CarApiPigeonUtils.deepEquals(this.limitSource, other.limitSource) && CarApiPigeonUtils.deepEquals(this.speedMs, other.speedMs) && CarApiPigeonUtils.deepEquals(this.cameraIconKey, other.cameraIconKey) && CarApiPigeonUtils.deepEquals(this.cameraText, other.cameraText) && CarApiPigeonUtils.deepEquals(this.cameraDetail, other.cameraDetail) && CarApiPigeonUtils.deepEquals(this.cameraOver, other.cameraOver) && CarApiPigeonUtils.deepEquals(this.matrixIconKey, other.matrixIconKey)
   }
 
   override fun hashCode(): Int {
@@ -693,10 +708,11 @@ data class CarSpeed (
     result = 31 * result + CarApiPigeonUtils.deepHash(this.cameraText)
     result = 31 * result + CarApiPigeonUtils.deepHash(this.cameraDetail)
     result = 31 * result + CarApiPigeonUtils.deepHash(this.cameraOver)
+    result = 31 * result + CarApiPigeonUtils.deepHash(this.matrixIconKey)
     return result
   }
   override fun toString(): String {
-    return "CarSpeed(limitKmh=$limitKmh, limitSource=$limitSource, speedMs=$speedMs, cameraIconKey=$cameraIconKey, cameraText=$cameraText, cameraDetail=$cameraDetail, cameraOver=$cameraOver)"
+    return "CarSpeed(limitKmh=$limitKmh, limitSource=$limitSource, speedMs=$speedMs, cameraIconKey=$cameraIconKey, cameraText=$cameraText, cameraDetail=$cameraDetail, cameraOver=$cameraOver, matrixIconKey=$matrixIconKey)"
   }
 }
 
@@ -1124,8 +1140,11 @@ interface CarHostApi {
    * `CarBridge.texts`), so the translations stay in one place.
    */
   fun setTexts(texts: Map<String, String>)
-  /** The map style: a URL, or the style itself as JSON (the night version). */
-  fun setStyle(style: String, isJson: Boolean)
+  /**
+   * The map style: a URL, or the style itself as JSON (the night version).
+   * [dark]: it's a night style, so the map's backdrop is dark too.
+   */
+  fun setStyle(style: String, isJson: Boolean, dark: Boolean)
   /**
    * A PNG for the map (arrow head, location dot) or the templates (maneuver
    * and lane icons), by key. [scale] is the pixel ratio it was drawn at.
@@ -1155,7 +1174,12 @@ interface CarHostApi {
   fun showLoading(loading: Boolean)
   fun showMessage(title: String, text: String)
   fun startNavigation(trip: CarTrip)
-  fun updateManeuver(next: CarManeuver, trip: CarTrip, speed: CarSpeed)
+  fun updateManeuver(next: CarManeuver, trip: CarTrip)
+  /**
+   * Your speed, the limit and what's ahead on the road: every fix on which
+   * something of it changed, apart from the maneuver.
+   */
+  fun setSpeed(speed: CarSpeed)
   fun setRecalculating(recalculating: Boolean)
   fun showArrived(destinationLabel: String)
   fun endNavigation()
@@ -1213,8 +1237,9 @@ interface CarHostApi {
             val args = message as List<Any?>
             val styleArg = args[0] as String
             val isJsonArg = args[1] as Boolean
+            val darkArg = args[2] as Boolean
             val wrapped: List<Any?> = try {
-              api.setStyle(styleArg, isJsonArg)
+              api.setStyle(styleArg, isJsonArg, darkArg)
               listOf(null)
             } catch (exception: Throwable) {
               CarApiPigeonUtils.wrapError(exception)
@@ -1474,9 +1499,26 @@ interface CarHostApi {
             val args = message as List<Any?>
             val nextArg = args[0] as CarManeuver
             val tripArg = args[1] as CarTrip
-            val speedArg = args[2] as CarSpeed
             val wrapped: List<Any?> = try {
-              api.updateManeuver(nextArg, tripArg, speedArg)
+              api.updateManeuver(nextArg, tripArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              CarApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.homemaps.CarHostApi.setSpeed$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val speedArg = args[0] as CarSpeed
+            val wrapped: List<Any?> = try {
+              api.setSpeed(speedArg)
               listOf(null)
             } catch (exception: Throwable) {
               CarApiPigeonUtils.wrapError(exception)

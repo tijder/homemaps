@@ -5,9 +5,17 @@ import UIKit
 /// distance, and on iOS 17.4+ the type, exit angle and lanes for the
 /// instrument cluster and head-up display.
 enum ManeuverBuilder {
+  /// The distance in the unit the phone shows it in: metres below a
+  /// kilometre, then kilometres with one decimal, from ten whole ones.
+  /// CarPlay formats the measurement itself, in the phone's locale.
+  static func distance(_ meters: Double) -> Measurement<UnitLength> {
+    if meters < 1000 { return Measurement(value: meters.rounded(), unit: UnitLength.meters) }
+    if meters < 10000 { return Measurement(value: (meters / 100).rounded() / 10, unit: UnitLength.kilometers) }
+    return Measurement(value: (meters / 1000).rounded(), unit: UnitLength.kilometers)
+  }
+
   static func estimates(meters: Double, seconds: Double) -> CPTravelEstimates {
-    CPTravelEstimates(
-      distanceRemaining: Measurement(value: meters, unit: UnitLength.meters), timeRemaining: seconds)
+    CPTravelEstimates(distanceRemaining: distance(meters), timeRemaining: seconds)
   }
 
   static func maneuver(_ m: CarManeuver) -> CPManeuver {
@@ -15,6 +23,18 @@ enum ManeuverBuilder {
     var variants = [m.instruction]
     if let short = m.shortAction, short != m.instruction { variants.append(short) }
     maneuver.instructionVariants = variants
+    // At an exit: briefly what you do, with the sign (exit number, road
+    // shields, directions) as an image on the line below, as the phone's
+    // header shows it.
+    if let key = m.signIconKey, let sign = CarHost.shared.images[key] {
+      let text = NSMutableAttributedString(string: (m.shortAction ?? m.instruction) + "\n")
+      let attachment = NSTextAttachment()
+      attachment.image = sign
+      let height: CGFloat = 24
+      attachment.bounds = CGRect(x: 0, y: -6, width: sign.size.width * height / sign.size.height, height: height)
+      text.append(NSAttributedString(attachment: attachment))
+      maneuver.attributedInstructionVariants = [text]
+    }
     if let image = CarHost.shared.images[m.iconKey] { maneuver.symbolImage = image }
     maneuver.initialTravelEstimates = estimates(meters: m.metersToNext, seconds: 0)
     maneuver.userInfo = m.iconKey

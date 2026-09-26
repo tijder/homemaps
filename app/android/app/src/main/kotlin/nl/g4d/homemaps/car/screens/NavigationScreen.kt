@@ -8,8 +8,11 @@ import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.Alert
 import androidx.car.app.model.AlertCallback
+import android.text.SpannableString
+import android.text.Spanned
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
+import androidx.car.app.model.CarIconSpan
 import androidx.car.app.model.CarText
 import androidx.car.app.model.DateTimeWithZone
 import androidx.car.app.model.Template
@@ -182,8 +185,20 @@ class NavigationScreen(carContext: CarContext, private val cluster: Boolean = fa
         return builder.build()
     }
 
+    /**
+     * At an exit: briefly what you do, with the sign (exit number, road
+     * shields, directions) as an image after it, as the phone's header.
+     */
+    private fun cue(m: CarManeuver): CharSequence {
+        val text = m.shortAction ?: m.instruction
+        val sign = bitmapIcon(m.signIconKey) ?: return text
+        val cue = SpannableString("$text  ")
+        cue.setSpan(CarIconSpan.create(sign, CarIconSpan.ALIGN_CENTER), cue.length - 1, cue.length, Spanned.SPAN_INCLUSIVE_EXCLUSIVE)
+        return cue
+    }
+
     private fun step(m: CarManeuver): Step {
-        val builder = Step.Builder(m.shortAction ?: m.instruction)
+        val builder = Step.Builder(cue(m))
             .setManeuver(maneuver(m))
         if (m.streets.isNotEmpty()) builder.setRoad(m.streets.joinToString(", "))
         m.lanes?.let { lanes ->
@@ -193,8 +208,13 @@ class NavigationScreen(carContext: CarContext, private val cluster: Boolean = fa
         return builder.build()
     }
 
+    companion object {
+        /** The app's blue behind the instructions, as on CarPlay and the phone's header. */
+        val panelColor: CarColor = CarColor.createCustom(0xFF1565C0.toInt(), 0xFF0D47A1.toInt())
+    }
+
     override fun onGetTemplate(): Template {
-        val builder = NavigationTemplate.Builder()
+        val builder = NavigationTemplate.Builder().setBackgroundColor(panelColor)
         val arrived = CarHost.arrivedAt
         val next = CarHost.maneuver
         when {

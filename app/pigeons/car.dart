@@ -140,6 +140,7 @@ class CarManeuver {
     required this.roundaboutExit,
     required this.roundaboutAngle,
     required this.sign,
+    required this.signIconKey,
     required this.iconKey,
     required this.metersToNext,
     required this.then,
@@ -161,6 +162,10 @@ class CarManeuver {
   /// Where you leave the roundabout, clockwise from straight on (degrees).
   double? roundaboutAngle;
   CarRoadSign? sign;
+
+  /// The sign as an image (shields and directions, as the phone's panel),
+  /// registered earlier; null without a sign.
+  String? signIconKey;
 
   /// An image registered earlier with [CarHostApi.registerImage].
   String iconKey;
@@ -205,6 +210,7 @@ class CarSpeed {
     required this.cameraText,
     required this.cameraDetail,
     required this.cameraOver,
+    required this.matrixIconKey,
   });
 
   int? limitKmh;
@@ -223,6 +229,10 @@ class CarSpeed {
 
   /// Your average in the section is above its limit: the sign goes red.
   bool cameraOver;
+
+  /// The next gantry's matrix signs (MSI) as one image, registered earlier;
+  /// null when there is none ahead. Shown where the lanes go, instead of them.
+  String? matrixIconKey;
 }
 
 class CarPosition {
@@ -325,7 +335,8 @@ abstract class CarHostApi {
   void setTexts(Map<String, String> texts);
 
   /// The map style: a URL, or the style itself as JSON (the night version).
-  void setStyle(String style, bool isJson);
+  /// [dark]: it's a night style, so the map's backdrop is dark too.
+  void setStyle(String style, bool isJson, bool dark);
 
   /// A PNG for the map (arrow head, location dot) or the templates (maneuver
   /// and lane icons), by key. [scale] is the pixel ratio it was drawn at.
@@ -364,7 +375,11 @@ abstract class CarHostApi {
   void showMessage(String title, String text);
 
   void startNavigation(CarTrip trip);
-  void updateManeuver(CarManeuver next, CarTrip trip, CarSpeed speed);
+  void updateManeuver(CarManeuver next, CarTrip trip);
+
+  /// Your speed, the limit and what's ahead on the road: every fix on which
+  /// something of it changed, apart from the maneuver.
+  void setSpeed(CarSpeed speed);
   void setRecalculating(bool recalculating);
   void showArrived(String destinationLabel);
   void endNavigation();
