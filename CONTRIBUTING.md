@@ -8,4 +8,4 @@ whose subject line doesn't follow this, because `release.yml` derives the
 version bump and the release notes from it: `fix` → patch, `feat` → minor,
 `!` or `BREAKING CHANGE` → major.
 
-Common scopes: `app`, `chart`, `importer`, `ci`.
+Common scopes: `app`, `chart`, `importer`, `website`, `ci`.

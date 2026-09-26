@@ -1,0 +1,5 @@
+{
+  "version.label": {"message": "Huidig", "description": "The label for version current"},
+  "sidebar.user.category.Using the app": {"message": "De app gebruiken", "description": "The label for category Using the app in sidebar user"},
+  "sidebar.admin.category.Self-hosting": {"message": "Zelf hosten", "description": "The label for category Self-hosting in sidebar admin"}
+}

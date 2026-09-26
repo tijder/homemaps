@@ -9,3 +9,8 @@ yet; the pods wait for them. Start the two build jobs once by hand:
 
 After that they refresh themselves on their schedule. Photon fetches its own index.
 To check: helm test {{ .Release.Name }} -n {{ .Release.Namespace }}
+{{- if .Values.website.enabled }}
+
+The documentation site is at https://{{ first .Values.website.hostnames }}; its
+download buttons come from website.config.
+{{- end }}

@@ -44,6 +44,32 @@ web:
   # the app derives everything from its own origin (/valhalla, /geocode, /tiles).
   config: {}
 
+# The documentation site (ghcr.io/tijder/homemaps-website), off by default.
+# It gets its own hostname next to the app's; with httpRoute/ingress enabled
+# the chart adds a second route for it.
+website:
+  enabled: false
+  image:
+    repository: ghcr.io/tijder/homemaps-website
+    tag: ""  # empty = appVersion of the chart
+    pullPolicy: IfNotPresent
+  # -- Hostname(s) of the site, for the HTTPRoute or Ingress. Required when enabled.
+  hostnames: []
+  # -- The absolute address in canonical links and the sitemap, without a
+  # trailing slash. Empty = derived from each request (Host, X-Forwarded-Proto).
+  siteUrl: ""
+  # -- Contents of /config.json: the links behind the buttons on the landing
+  # page. An empty value hides its button. appUrl empty = https:// plus the
+  # first hostname of httpRoute or ingress.
+  config:
+    appUrl: ""
+    testflightUrl: ""
+    playStoreUrl: ""
+    appStoreUrl: ""
+  resources:
+    requests: { cpu: 10m, memory: 32Mi }
+    limits: { memory: 128Mi }
+
 tiles:
   enabled: true
   image:

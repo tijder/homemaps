@@ -1,0 +1,81 @@
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.hero {
+  justify-content: flex-start;
+}
+
+/* On the blue hero: a white main button and white outlines for the others. */
+.heroMain {
+  --ifm-button-background-color: #fff;
+  --ifm-button-border-color: #fff;
+  --ifm-button-color: var(--ifm-color-primary-darkest);
+}
+
+.heroMain:hover {
+  --ifm-button-background-color: #e8f0fb;
+  --ifm-button-border-color: #e8f0fb;
+}
+
+.heroOther {
+  --ifm-button-background-color: transparent;
+  --ifm-button-border-color: rgba(255, 255, 255, 0.75);
+  --ifm-button-color: #fff;
+}
+
+.heroOther:hover {
+  --ifm-button-background-color: rgba(255, 255, 255, 0.14);
+  --ifm-button-border-color: #fff;
+}
+
+.version {
+  margin-left: 0.5rem;
+  font-size: 0.75em;
+  opacity: 0.75;
+}
+
+.badges {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1.1;
+  padding: 0.45rem 1rem;
+  border-radius: 0.5rem;
+  background: #111;
+  color: #fff !important;
+  border: 1px solid #555;
+  text-decoration: none !important;
+}
+
+.badge:hover {
+  background: #222;
+}
+
+.badgeSmall {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badgeBig {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .buttons {
+    justify-content: center;
+  }
+  .buttons :global(.button) {
+    width: 100%;
+  }
+}

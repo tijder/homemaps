@@ -10,6 +10,7 @@ cluster, and nothing goes out while it's in use.
 | `importer/` | Python sidecar that writes live speeds and closures from NDW into Valhalla's `traffic.tar` ([README](importer/README.md)) |
 | `docker/web/` | nginx image around the web build; proxies `/valhalla`, `/geocode`, `/tiles` and `/traffic` |
 | `ci/` | kind test bed (`up.sh`) with Andorra and a fake NDW feed |
+| `website/` | Docusaurus site (landing page, user and admin docs, English and Dutch); image `homemaps-website`, built on a release with that release's screenshots, optional `website` component in the chart |
 
 ## Installing
 
@@ -34,6 +35,7 @@ cd app && flutter build web --release --wasm --no-web-resources-cdn
 ci/up.sh            # the whole chart in kind, with tests (KIND_EXPERIMENTAL_PROVIDER=podman works)
 ci/up.sh --down
 cd importer && pip install -e '.[dev]' && pytest && ruff check .
+cd website && npm ci && npm start       # the site; `npm run start -- --locale nl` for Dutch
 ```
 
 Testing navigation without driving: open the web app with

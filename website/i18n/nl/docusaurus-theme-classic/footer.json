@@ -1,0 +1,16 @@
+{
+  "link.title.Docs": {"message": "Documentatie", "description": "The title of the footer links column with title=Docs in the footer"},
+  "link.title.Project": {"message": "Project", "description": "The title of the footer links column with title=Project in the footer"},
+  "link.title.Built on": {"message": "Gebouwd op", "description": "The title of the footer links column with title=Built on in the footer"},
+  "link.item.label.Getting started": {"message": "Aan de slag", "description": "The label of footer link with label=Getting started linking to /docs/user/getting-started"},
+  "link.item.label.Navigation": {"message": "Navigatie", "description": "The label of footer link with label=Navigation linking to /docs/user/navigation"},
+  "link.item.label.Install the server": {"message": "De server installeren", "description": "The label of footer link with label=Install the server linking to /docs/admin/install"},
+  "link.item.label.GitHub": {"message": "GitHub", "description": "The label of footer link with label=GitHub linking to https://github.com/tijder/homemaps"},
+  "link.item.label.Releases": {"message": "Releases", "description": "The label of footer link with label=Releases linking to https://github.com/tijder/homemaps/releases"},
+  "link.item.label.Issues": {"message": "Issues", "description": "The label of footer link with label=Issues linking to https://github.com/tijder/homemaps/issues"},
+  "link.item.label.OpenStreetMap": {"message": "OpenStreetMap", "description": "The label of footer link with label=OpenStreetMap linking to https://www.openstreetmap.org/copyright"},
+  "link.item.label.Valhalla": {"message": "Valhalla", "description": "The label of footer link with label=Valhalla linking to https://github.com/valhalla/valhalla"},
+  "link.item.label.MapLibre": {"message": "MapLibre", "description": "The label of footer link with label=MapLibre linking to https://maplibre.org"},
+  "link.item.label.Photon": {"message": "Photon", "description": "The label of footer link with label=Photon linking to https://photon.komoot.io"},
+  "copyright": {"message": "Kaartgegevens © OpenStreetMap-bijdragers. HomeMaps is open source.", "description": "The footer copyright"}
+}

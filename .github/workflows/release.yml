@@ -343,6 +343,26 @@ jobs:
           push: true
           tags: ${{ steps.meta-traffic.outputs.tags }}
           labels: ${{ steps.meta-traffic.outputs.labels }}
+      # The website is only built here: it carries the screenshots of this
+      # release and the version in its download links.
+      - name: Screenshots into the website
+        run: unzip -q "dist/homemaps-screenshots-$VERSION.zip" -d website/static/img/screenshots
+      - id: meta-website
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE_PREFIX }}-website
+          flavor: latest=true
+          tags: |
+            type=semver,pattern={{version}},value=${{ env.VERSION }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ env.VERSION }}
+      - uses: docker/build-push-action@v7
+        with:
+          context: website
+          file: website/Dockerfile
+          push: true
+          build-args: VERSION=${{ env.VERSION }}
+          tags: ${{ steps.meta-website.outputs.tags }}
+          labels: ${{ steps.meta-website.outputs.labels }}
 
       # Chart, app and importer share one version: the chart pulls the images with its
       # appVersion.

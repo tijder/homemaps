@@ -1,0 +1,70 @@
+{{- if .Values.website.enabled }}
+{{- $s := dict "root" . "name" "website" }}
+{{- $name := include "homemaps.component" $s }}
+{{- $_ := include "homemaps.websiteHostnames" . }}
+{{- $config := merge (dict "appUrl" (include "homemaps.appUrl" .)) .Values.website.config }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}
+  labels: {{- include "homemaps.labels" $s | nindent 4 }}
+data:
+  config.json: {{ $config | toJson | quote }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels: {{- include "homemaps.labels" $s | nindent 4 }}
+spec:
+  selector: {{- include "homemaps.selector" $s | nindent 4 }}
+  ports:
+    - { name: http, port: 8080, targetPort: http }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels: {{- include "homemaps.labels" $s | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 0
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {{- include "homemaps.selector" $s | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "homemaps.labels" $s | nindent 8 }}
+      annotations:
+        checksum/config: {{ $config | toJson | sha256sum | trunc 16 }}
+    spec:
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: website
+          image: {{ include "homemaps.image" (dict "root" . "image" .Values.website.image) }}
+          imagePullPolicy: {{ .Values.website.image.pullPolicy }}
+          env:
+            # Empty: nginx derives the address from Host and X-Forwarded-Proto.
+            - { name: SITE_URL, value: {{ .Values.website.siteUrl | quote }} }
+          securityContext: {{- include "homemaps.containerSecurity" . | nindent 12 }}
+          ports:
+            - { name: http, containerPort: 8080 }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 30
+          resources: {{- toYaml .Values.website.resources | nindent 12 }}
+          volumeMounts:
+            - { name: config, mountPath: /usr/share/nginx/html/config }
+      volumes:
+        - name: config
+          configMap: { name: {{ $name }} }
+{{- end }}

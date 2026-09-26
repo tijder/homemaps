@@ -79,3 +79,22 @@ spec:
 {{- define "homemaps.image" -}}
 {{- printf "%s:%s" .image.repository (default .root.Chart.AppVersion .image.tag) }}
 {{- end }}
+
+{{/* The website's hostnames as JSON; enabled without any is a mistake, not a default. */}}
+{{- define "homemaps.websiteHostnames" -}}
+{{- if not .Values.website.hostnames }}
+{{- fail "website.enabled needs website.hostnames: the site gets a hostname of its own" }}
+{{- end }}
+{{- toJson .Values.website.hostnames }}
+{{- end }}
+
+{{/* The app's address for the website's "Open the web app" button. */}}
+{{- define "homemaps.appUrl" -}}
+{{- if .Values.website.config.appUrl }}
+{{- .Values.website.config.appUrl }}
+{{- else if and .Values.httpRoute.enabled .Values.httpRoute.hostnames }}
+{{- printf "https://%s" (first .Values.httpRoute.hostnames) }}
+{{- else if and .Values.ingress.enabled .Values.ingress.hosts }}
+{{- printf "https://%s" (first .Values.ingress.hosts) }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,64 @@
+# The site is built with https://homemaps.invalid as its address (docusaurus.config.ts).
+# nginx rewrites that in every text response to the real origin, so one image
+# runs under any hostname: SITE_URL if set, otherwise the request's own scheme
+# and host (behind a gateway the scheme comes from X-Forwarded-Proto).
+map $http_x_forwarded_proto $hm_scheme {
+    default   $scheme;
+    "~^https" https;
+    "~^http"  http;
+}
+
+map "${SITE_URL}" $hm_site_url {
+    ""      "$hm_scheme://$http_host";
+    default "${SITE_URL}";
+}
+
+server {
+    listen 8080;
+    listen [::]:8080;
+    server_name _;
+    root /usr/share/nginx/html;
+
+    sub_filter 'https://homemaps.invalid' $hm_site_url;
+    sub_filter_once off;
+    sub_filter_types text/html application/xml text/xml application/javascript text/javascript;
+
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/javascript application/xml image/svg+xml;
+    gzip_min_length 1024;
+
+    location = /healthz {
+        access_log off;
+        return 200 'ok';
+    }
+
+    # Runtime configuration of the landing page: the links behind the buttons.
+    # The chart mounts a ConfigMap at /config; without one there is no file and
+    # the page shows only the GitHub buttons.
+    location = /config.json {
+        add_header Cache-Control "no-cache";
+        try_files /config/config.json =404;
+    }
+
+    # Hashed bundles never change; the screenshots and other images do with a release.
+    location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+    location /nl/assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+    location /img/ {
+        add_header Cache-Control "public, max-age=86400";
+    }
+
+    # Docusaurus writes docs/user/routes.html (trailingSlash: false); index.html
+    # for the roots. Unknown paths get the 404 page of their language.
+    location /nl/ {
+        error_page 404 /nl/404.html;
+        try_files $uri $uri.html $uri/index.html =404;
+    }
+    location / {
+        error_page 404 /404.html;
+        try_files $uri $uri.html $uri/index.html =404;
+    }
+}

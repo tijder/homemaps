@@ -1,27 +1,50 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
+  "extends": [
+    "config:recommended"
+  ],
   "customManagers": [
     {
       "description": "Image tags in the chart values (repository and tag on separate lines)",
       "customType": "regex",
-      "managerFilePatterns": ["/^chart/homemaps/values\\.yaml$/"],
-      "matchStrings": ["repository: (?<depName>[^\\s]+)\\n\\s+tag: \"?(?<currentValue>[^\\s\"]+)\"?"],
+      "managerFilePatterns": [
+        "/^chart/homemaps/values\\.yaml$/"
+      ],
+      "matchStrings": [
+        "repository: (?<depName>[^\\s]+)\\n\\s+tag: \"?(?<currentValue>[^\\s\"]+)\"?"
+      ],
       "datasourceTemplate": "docker"
     }
   ],
   "packageRules": [
     {
       "description": "maplibre_gl belongs to one exact maplibre-gl-js (app/web/maplibre/README.md): never automatically",
-      "matchPackageNames": ["maplibre_gl"],
+      "matchPackageNames": [
+        "maplibre_gl"
+      ],
       "automerge": false,
-      "prBodyNotes": ["Check `kMapLibreJsVersion` in maplibre_gl_web and update `app/web/maplibre/` to exactly that version."]
+      "prBodyNotes": [
+        "Check `kMapLibreJsVersion` in maplibre_gl_web and update `app/web/maplibre/` to exactly that version."
+      ]
     },
     {
       "description": "Valhalla's major is also the version of the traffic.tar format (importer/src/homemaps_traffic/traffictile.py)",
-      "matchPackageNames": ["ghcr.io/valhalla/valhalla"],
-      "matchUpdateTypes": ["major"],
-      "prBodyNotes": ["`TILE_VERSION` in traffictile.py must equal VALHALLA_VERSION_MAJOR; otherwise Valhalla silently ignores all live traffic."]
+      "matchPackageNames": [
+        "ghcr.io/valhalla/valhalla"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "prBodyNotes": [
+        "`TILE_VERSION` in traffictile.py must equal VALHALLA_VERSION_MAJOR; otherwise Valhalla silently ignores all live traffic."
+      ]
+    },
+    {
+      "description": "Docusaurus packages move together",
+      "matchPackageNames": [
+        "/^@docusaurus//"
+      ],
+      "groupName": "docusaurus"
     }
   ]
 }

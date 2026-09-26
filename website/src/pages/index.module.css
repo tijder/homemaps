@@ -1,0 +1,96 @@
+.hero {
+  background: var(--hm-hero-bg);
+  color: #fff;
+  padding: 4rem 0 0;
+  overflow: hidden;
+}
+
+.heroInner {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 3rem;
+  align-items: end;
+}
+
+.heroText {
+  padding-bottom: 4rem;
+}
+
+.heroTitle {
+  font-size: 3rem;
+  line-height: 1.1;
+  margin-bottom: 1rem;
+}
+
+.heroSubtitle {
+  font-size: 1.25rem;
+  opacity: 0.92;
+  max-width: 34rem;
+  margin-bottom: 2rem;
+}
+
+.heroNote {
+  margin-top: 1.5rem;
+  font-size: 0.95rem;
+  opacity: 0.8;
+}
+
+.heroPhone {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.heroPhone img {
+  display: block;
+  width: min(300px, 100%);
+  height: auto;
+  aspect-ratio: 1290 / 2796;
+  object-fit: cover;
+  object-position: top;
+  border-radius: 1.8rem 1.8rem 0 0;
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.35);
+  border: 6px solid rgba(255, 255, 255, 0.18);
+  border-bottom: none;
+  background: #0d47a1;
+  max-height: 520px;
+}
+
+.selfhost {
+  padding: 3rem 0 4rem;
+}
+
+.selfhostInner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: center;
+}
+
+.selfhostInner :global(.theme-code-block) {
+  margin: 0;
+}
+
+@media (max-width: 996px) {
+  .heroInner,
+  .selfhostInner {
+    grid-template-columns: 1fr;
+  }
+  .hero {
+    padding-top: 2.5rem;
+    text-align: center;
+  }
+  .heroText {
+    padding-bottom: 2rem;
+  }
+  .heroTitle {
+    font-size: 2.2rem;
+  }
+  .heroSubtitle {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .heroPhone img {
+    max-height: 360px;
+  }
+}

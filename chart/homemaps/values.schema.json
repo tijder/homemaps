@@ -21,6 +21,24 @@
       }
     },
     "web": { "type": "object", "required": ["enabled"], "properties": { "enabled": { "type": "boolean" }, "config": { "type": "object" } } },
+    "website": {
+      "type": "object",
+      "required": ["enabled"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "hostnames": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "siteUrl": { "type": "string", "pattern": "^$|^https?://[^/]+(/.*[^/])?$" },
+        "config": {
+          "type": "object",
+          "properties": {
+            "appUrl": { "type": "string", "pattern": "^$|^https?://" },
+            "testflightUrl": { "type": "string", "pattern": "^$|^https?://" },
+            "playStoreUrl": { "type": "string", "pattern": "^$|^https?://" },
+            "appStoreUrl": { "type": "string", "pattern": "^$|^https?://" }
+          }
+        }
+      }
+    },
     "tiles": {
       "type": "object",
       "required": ["enabled"],
