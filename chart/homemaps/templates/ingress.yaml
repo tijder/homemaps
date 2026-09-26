@@ -43,7 +43,7 @@ spec:
   {{- with .Values.ingress.className }}
   ingressClassName: {{ . }}
   {{- end }}
-  {{- with .Values.ingress.tls }}
+  {{- with .Values.website.tls | default .Values.ingress.tls }}
   tls: {{- toYaml . | nindent 4 }}
   {{- end }}
   rules:

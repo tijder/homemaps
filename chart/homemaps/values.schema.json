@@ -27,6 +27,8 @@
       "properties": {
         "enabled": { "type": "boolean" },
         "hostnames": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "parentRefs": { "type": "array", "items": { "type": "object" } },
+        "tls": { "type": "array", "items": { "type": "object" } },
         "siteUrl": { "type": "string", "pattern": "^$|^https?://[^/]+(/.*[^/])?$" },
         "config": {
           "type": "object",

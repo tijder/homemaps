@@ -55,6 +55,18 @@ website:
     pullPolicy: IfNotPresent
   # -- Hostname(s) of the site, for the HTTPRoute or Ingress. Required when enabled.
   hostnames: []
+  # -- The Gateway listener(s) for the site's HTTPRoute. A listener with its own
+  # hostname (like https-maps) only admits that one, so the site needs its own
+  # sectionName. Empty = httpRoute.parentRefs.
+  parentRefs: []
+  #  - name: public-gateway
+  #    namespace: default
+  #    sectionName: https-docs
+  # -- TLS for the site's Ingress, same shape as ingress.tls; the certificate
+  # must cover website.hostnames. Empty = ingress.tls.
+  tls: []
+  #  - secretName: homemaps-docs-tls
+  #    hosts: [docs.example.org]
   # -- The absolute address in canonical links and the sitemap, without a
   # trailing slash. Empty = derived from each request (Host, X-Forwarded-Proto).
   siteUrl: ""

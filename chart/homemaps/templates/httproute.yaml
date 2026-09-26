@@ -22,7 +22,7 @@ metadata:
   name: {{ include "homemaps.fullname" . }}-website
   labels: {{- include "homemaps.labels" $s | nindent 4 }}
 spec:
-  parentRefs: {{- toYaml .Values.httpRoute.parentRefs | nindent 4 }}
+  parentRefs: {{- toYaml (.Values.website.parentRefs | default .Values.httpRoute.parentRefs) | nindent 4 }}
   hostnames: {{- toYaml (include "homemaps.websiteHostnames" . | fromJsonArray) | nindent 4 }}
   rules:
     - backendRefs:
