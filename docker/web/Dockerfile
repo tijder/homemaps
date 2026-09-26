@@ -1,7 +1,7 @@
 # The web build is made outside this image (flutter build web, see the workflow)
 # and only packaged here. Build from the repo root:
 #   docker build -f docker/web/Dockerfile .
-FROM nginxinc/nginx-unprivileged:1.31-alpine
+FROM nginxinc/nginx-unprivileged:1.31.6-alpine
 
 # Links the package on ghcr to the repo (visibility, README, releases).
 LABEL org.opencontainers.image.source=https://github.com/tijder/homemaps

@@ -15,6 +15,16 @@ server {
     server_name _;
     root /usr/share/nginx/html;
 
+    # Cross-origin isolated, so the wasm renderer gets SharedArrayBuffer and runs
+    # multi-threaded. That also goes for the skwasm worker, whose script needs
+    # the same headers. require-corp only blocks no-cors loads from other
+    # origins; everything the app fetches elsewhere (location sharing, a tiles
+    # publicUrl) goes through fetch with CORS and is unaffected. Merge, because
+    # otherwise a location with an add_header of its own drops these.
+    add_header_inherit merge;
+    add_header Cross-Origin-Opener-Policy "same-origin" always;
+    add_header Cross-Origin-Embedder-Policy "require-corp" always;
+
     # maplibre-gl-js is loaded as an ES module; with another MIME type the
     # browser refuses it. Older mime.types do not know .mjs.
     types { text/javascript mjs; }
@@ -97,17 +107,17 @@ server {
         try_files /config/config.json /config.json =404;
     }
 
-    # Whatever keeps the same name across releases must not be cached by the browser.
-    location ~ ^/(index\.html|flutter_bootstrap\.js|flutter_service_worker\.js|manifest\.json|version\.json)$ {
-        add_header Cache-Control "no-cache";
-    }
-
     location = /healthz {
         access_log off;
         return 200 "ok\n";
     }
 
+    # Flutter's files keep their names across releases (main.dart.wasm, assets/,
+    # canvaskit/), so everything revalidates: without Cache-Control a browser
+    # guesses a lifetime from Last-Modified and after a release combines a new
+    # bootstrap with an old build. An unchanged file costs a 304.
     location / {
+        add_header Cache-Control "no-cache";
         try_files $uri $uri/ /index.html;
     }
 }

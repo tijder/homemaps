@@ -1,7 +1,7 @@
 # The documentation site: Docusaurus, built once, served by nginx. Built only
 # by release.yml, with the App Store screenshots copied into
 # static/img/screenshots/ first and VERSION set to the release.
-FROM node:22-alpine AS build
+FROM node:22.23.3-alpine AS build
 WORKDIR /site
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
@@ -11,7 +11,7 @@ ARG VERSION=""
 ENV VERSION=$VERSION
 RUN npm run build
 
-FROM nginxinc/nginx-unprivileged:1.31-alpine
+FROM nginxinc/nginx-unprivileged:1.31.6-alpine
 LABEL org.opencontainers.image.source="https://github.com/tijder/homemaps"
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /site/build /usr/share/nginx/html

@@ -1,5 +1,5 @@
 # Build from the repo root:  docker build -f importer/Dockerfile importer
-FROM docker.io/library/python:3.14-alpine
+FROM docker.io/library/python:3.14.7-alpine
 
 # Links the package on ghcr to the repo (visibility, README, releases).
 LABEL org.opencontainers.image.source=https://github.com/tijder/homemaps

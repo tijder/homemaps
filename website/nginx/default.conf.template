@@ -52,7 +52,10 @@ server {
     }
 
     # Docusaurus writes docs/user/routes.html (trailingSlash: false); index.html
-    # for the roots. Unknown paths get the 404 page of their language.
+    # for the roots. Unknown paths get the 404 page of their language. The pages
+    # revalidate: a cached page from before a release points to hashed bundles
+    # that are gone after it.
+    add_header Cache-Control "no-cache";
     location /nl/ {
         error_page 404 /nl/404.html;
         try_files $uri $uri.html $uri/index.html =404;
