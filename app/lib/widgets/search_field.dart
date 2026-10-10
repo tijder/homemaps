@@ -87,13 +87,15 @@ class _SearchFieldState extends ConsumerState<SearchField>
         setState(() => _open = true);
         return;
       }
-      // Left without choosing: back to what was there. The suggestions only go
-      // away a moment later -- in some browsers a click on a suggestion first
-      // removes the focus, and then the list was gone before the click arrived.
-      _text.text = _label;
+      // Left without choosing: back to what was there. Only a moment later --
+      // in some browsers a click on a suggestion first removes the focus, and
+      // then the list was gone before the click arrived. Also the text: the
+      // suggestions depend on it, and putting the label back right away swapped
+      // the search results for the recent places under the click.
       _close?.cancel();
       _close = Timer(const Duration(milliseconds: 250), () {
         if (mounted && !_focus.hasFocus) {
+          _text.text = _label;
           setState(() {
             _results = const [];
             _open = false;
@@ -290,6 +292,7 @@ class _SearchFieldState extends ConsumerState<SearchField>
           ),
         for (final (icon, label, place) in fixed)
           ListTile(
+            key: ValueKey('fixed:$label'),
             dense: true,
             leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
             title: Text(label),
@@ -307,6 +310,7 @@ class _SearchFieldState extends ConsumerState<SearchField>
           ),
         for (final place in recent)
           ListTile(
+            key: ValueKey('recent:${place.label}:${place.point}'),
             dense: true,
             leading: const Icon(Icons.history),
             title: Text(
@@ -325,6 +329,7 @@ class _SearchFieldState extends ConsumerState<SearchField>
           ),
         for (final place in _results)
           ListTile(
+            key: ValueKey('result:${place.label}:${place.point}'),
             dense: true,
             leading: const Icon(Icons.place_outlined),
             title: Text(
