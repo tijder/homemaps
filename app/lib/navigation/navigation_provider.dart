@@ -257,8 +257,13 @@ class NavigationNotifier extends Notifier<NavigationState?> {
   List<int?> _temporary = const [];
 
   /// The intersections with lanes on the current route, in order along the
-  /// route (see [ValhallaService.lanes]); empty until they're in.
-  List<({double along, List<Lane> perLane})> _lanes = const [];
+  /// route (see [ValhallaService.lanes]); empty until they're in. Their
+  /// `notBefore` comes from [_sideRoads], once those are in too.
+  List<LaneJunction> _lanes = const [];
+
+  /// The side roads along the current route (see [ValhallaService.attributes]),
+  /// or null until they're in.
+  List<({double along, bool right})>? _sideRoads;
 
   /// Rejected routes (by length), so as not to keep suggesting the same one.
   final _rejected = <int>{};
@@ -382,6 +387,7 @@ class NavigationNotifier extends Notifier<NavigationState?> {
     _gantries = const [];
     _fetchLimits(route);
     _lanes = const [];
+    _sideRoads = null;
     _fetchLanes(route);
     _incidents = const [];
     _cameras = CamerasOnRoute.empty;
@@ -539,13 +545,56 @@ class NavigationNotifier extends Notifier<NavigationState?> {
   Future<void> _fetchLimits(RouteOption route) async {
     final valhalla = ref.read(valhallaProvider);
     if (valhalla == null || _profile != Profile.car) return;
-    final limits = await valhalla
-        .speedLimits(route.points, _profile)
+    final attributes = await valhalla
+        .attributes(route.points, _profile)
         .catchError((Object _) => null);
+    final tracker = _tracker;
     // A different route in the meantime: this one no longer applies.
-    if (limits != null && identical(state?.route, route)) {
-      _limits = limits;
+    if (attributes == null ||
+        tracker == null ||
+        !identical(state?.route, route) ||
+        !identical(tracker.route, route)) {
+      return;
     }
+    _limits = attributes.limits;
+    final along = tracker.alongOf([
+      for (final road in attributes.sideRoads) road.position,
+    ]);
+    _sideRoads = [
+      for (final (i, road) in attributes.sideRoads.indexed)
+        if (along[i] != null) (along: along[i]!, right: road.right),
+    ];
+    _lanes = _withSideRoads(_lanes);
+  }
+
+  /// Each junction's `notBefore`: the last side road before it (and after the
+  /// junction before it) to the side of its correct lanes. Nothing changes as
+  /// long as the side roads aren't in.
+  List<LaneJunction> _withSideRoads(List<LaneJunction> junctions) {
+    final roads = _sideRoads;
+    if (roads == null) return junctions;
+    var previous = 0.0;
+    return [
+      for (final junction in junctions)
+        () {
+          final right = laneSide(junction.perLane);
+          var notBefore = 0.0;
+          if (right != null) {
+            for (final road in roads) {
+              if (road.along <= previous || road.along >= junction.along) {
+                continue;
+              }
+              if (road.right == right) notBefore = max(notBefore, road.along);
+            }
+          }
+          previous = junction.along;
+          return (
+            along: junction.along,
+            notBefore: notBefore,
+            perLane: junction.perLane,
+          );
+        }(),
+    ];
   }
 
   /// In the background: the lanes along the route (car only).
@@ -563,10 +612,11 @@ class NavigationNotifier extends Notifier<NavigationState?> {
       return;
     }
     final along = tracker.alongOf([for (final a in advice) a.position]);
-    _lanes = [
+    _lanes = _withSideRoads([
       for (final (i, a) in advice.indexed)
-        if (along[i] != null) (along: along[i]!, perLane: a.perLane),
-    ];
+        if (along[i] != null)
+          (along: along[i]!, notBefore: 0.0, perLane: a.perLane),
+    ]);
   }
 
   void _onFix(LocationFix fix) {

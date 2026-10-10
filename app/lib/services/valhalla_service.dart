@@ -24,6 +24,17 @@ class RouteError implements Exception {
 /// route.
 typedef StretchLimit = ({int? limit, int? way});
 
+/// A drivable road that leaves the route at [position], to the right or to
+/// the left. Not driveways and the like: a road you could mistake for the one
+/// you have to take (see [NavigationNotifier] and [chooseLanes]).
+typedef SideRoad = ({LatLng position, bool right});
+
+/// What one `trace_attributes` request says about a route.
+typedef RouteAttributes = ({
+  List<StretchLimit> limits,
+  List<SideRoad> sideRoads,
+});
+
 class ValhallaService {
   ValhallaService(this._dio, this.baseUrl);
 
@@ -200,8 +211,9 @@ class ValhallaService {
   /// The speed limit (km/h) and the OSM way per stretch of [line]: element i
   /// belongs to the stretch from point i to i+1; the limit is null if unknown.
   /// The way is for what Valhalla doesn't read: a limit that depends on the
-  /// time of day (see [TimedSpeedLimits]). Null if the whole request fails.
-  Future<List<StretchLimit>?> speedLimits(
+  /// time of day (see [TimedSpeedLimits]). And, from the same request, the
+  /// drivable side roads along the route. Null if the whole request fails.
+  Future<RouteAttributes?> attributes(
     List<LatLng> line,
     Profile profile, {
     CancelToken? cancel,
@@ -228,17 +240,23 @@ class ValhallaService {
               'edge.way_id',
               'edge.begin_shape_index',
               'edge.end_shape_index',
+              'edge.end_heading',
+              'node.intersecting_edge.begin_heading',
+              'node.intersecting_edge.use',
+              'node.intersecting_edge.road_class',
+              'node.intersecting_edge.driveability',
             ],
             'action': 'include',
           },
         },
         cancelToken: cancel,
       );
+      final json = response.data ?? const {};
       final perStretch = List<StretchLimit>.filled(points.length - 1, (
         limit: null,
         way: null,
       ));
-      for (final edge in (response.data?['edges'] as List? ?? const [])) {
+      for (final edge in (json['edges'] as List? ?? const [])) {
         if (edge is! Map) continue;
         final limit = edge['speed_limit'], way = edge['way_id'];
         final begin = edge['begin_shape_index'], end = edge['end_shape_index'];
@@ -257,14 +275,76 @@ class ValhallaService {
           perStretch[i] = stretch;
         }
       }
-      return [
-        for (var i = 0; i < line.length - 1; i++)
-          perStretch[index[i].clamp(0, perStretch.length - 1)],
-      ];
+      return (
+        limits: [
+          for (var i = 0; i < line.length - 1; i++)
+            perStretch[index[i].clamp(0, perStretch.length - 1)],
+        ],
+        sideRoads: parseSideRoads(json, points),
+      );
     } on DioException catch (error) {
       if (CancelToken.isCancel(error)) rethrow;
       return null;
     }
+  }
+
+  /// Roads you don't drive on: a driveway, a parking aisle, a cycle path.
+  static const _notARoad = {
+    'driveway',
+    'alley',
+    'parking_aisle',
+    'emergency_access',
+    'drive_through',
+    'service_road',
+    'cycleway',
+    'mountain_bike',
+    'sidewalk',
+    'footway',
+    'steps',
+    'path',
+    'pedestrian',
+    'bridleway',
+    'rest_area',
+    'service_area',
+  };
+
+  /// From a `trace_attributes` response: at the end of every edge the side
+  /// roads a driver could take, in order along the route. [points] are the
+  /// points the request was made with (the shape indexes refer to them).
+  static List<SideRoad> parseSideRoads(
+    Map<String, dynamic> json,
+    List<LatLng> points,
+  ) {
+    final out = <SideRoad>[];
+    for (final edge in (json['edges'] as List? ?? const [])) {
+      if (edge is! Map) continue;
+      final heading = edge['end_heading'], end = edge['end_shape_index'];
+      if (heading is! num || end is! num) continue;
+      final i = end.toInt();
+      if (i < 0 || i >= points.length) continue;
+      final crossing = (edge['end_node'] as Map?)?['intersecting_edges'];
+      if (crossing is! List) continue;
+      for (final road in crossing) {
+        if (road is! Map) continue;
+        final drive = road['driveability'];
+        if (drive != 'forward' && drive != 'both') continue;
+        if (road['road_class'] == 'service_other' ||
+            _notARoad.contains(road['use'])) {
+          continue;
+        }
+        final bearing = road['begin_heading'];
+        if (bearing is! num) continue;
+        // Clockwise from where the route goes on: right is 20..160, left is
+        // 200..340. Straight on and back don't count.
+        final turn = (bearing - heading + 360) % 360;
+        if (turn > 20 && turn < 160) {
+          out.add((position: points[i], right: true));
+        } else if (turn > 200 && turn < 340) {
+          out.add((position: points[i], right: false));
+        }
+      }
+    }
+    return out;
   }
 
   /// The lanes at the intersections along [line], where OSM has them (and so

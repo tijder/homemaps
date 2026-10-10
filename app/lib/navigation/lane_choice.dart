@@ -23,6 +23,14 @@ const laneBetween = 400.0;
 /// This close to the maneuver an intersection belongs to the maneuver itself.
 const _atMargin = 50.0;
 
+/// An intersection with lanes, [along] the route. [notBefore]: its lanes stay
+/// hidden until you're this far along -- past the last road before it that
+/// leaves to the side of the correct lanes. On the N201 at Vinkeveen "the two
+/// right lanes" for the A2 Utrecht turn-off would otherwise already show at
+/// the A2 Amsterdam on-ramp 360 m earlier, where the two right lanes are the
+/// wrong ones. Zero if there's no such road (or it isn't known).
+typedef LaneJunction = ({double along, double notBefore, List<Lane> perLane});
+
 /// Which lanes belong in the header, or null.
 ///
 /// As in Google or Apple Maps: the lanes of the turn in the header, only just
@@ -34,7 +42,7 @@ const _atMargin = 50.0;
 /// [maneuver] where the next maneuver is, both along the route; [speed] in
 /// m/s.
 LaneChoice? chooseLanes(
-  List<({double along, List<Lane> perLane})> junctions, {
+  List<LaneJunction> junctions, {
   required double along,
   required double maneuver,
   double? speed,
@@ -42,10 +50,12 @@ LaneChoice? chooseLanes(
   final ahead = speed == null
       ? laneMax
       : (speed * laneSeconds).clamp(laneMin, laneMax);
-  ({double along, List<Lane> perLane})? between, at;
+  LaneJunction? between, at;
   for (final junction in junctions) {
     if (junction.along < along) continue;
     if (junction.along > maneuver + 10) break;
+    // A road to the same side still ahead: those lanes would mislead.
+    if (junction.notBefore > along) continue;
     // One lane, or every lane correct: then there's nothing to choose.
     if (junction.perLane.length < 2 ||
         junction.perLane.every((s) => s.correct)) {
@@ -66,6 +76,18 @@ LaneChoice? chooseLanes(
   }
   if (at != null && maneuver - along <= ahead) {
     return (ahead: at.along - along, perLane: at.perLane, atManeuver: true);
+  }
+  return null;
+}
+
+/// Which side the correct lanes turn to: true for right, false for left, null
+/// if they go straight on (or there are none).
+bool? laneSide(List<Lane> perLane) {
+  for (final lane in perLane) {
+    if (!lane.correct) continue;
+    final direction = lane.usage ?? lane.directions.firstOrNull ?? '';
+    if (direction.contains('right')) return true;
+    if (direction.contains('left')) return false;
   }
   return null;
 }

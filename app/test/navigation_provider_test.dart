@@ -43,20 +43,22 @@ class FakeValhalla extends ValhallaService {
   double? Function(List<LatLng> line) time = (_) => null;
 
   List<StretchLimit>? limits;
+  List<SideRoad> sideRoads = const [];
+  List<LaneAdvice>? laneAdvice;
 
   @override
-  Future<List<StretchLimit>?> speedLimits(
+  Future<RouteAttributes?> attributes(
     List<LatLng> line,
     Profile profile, {
     CancelToken? cancel,
-  }) async => limits;
+  }) async => limits == null ? null : (limits: limits!, sideRoads: sideRoads);
 
   @override
   Future<List<LaneAdvice>?> lanes(
     List<LatLng> line,
     Profile profile, {
     CancelToken? cancel,
-  }) async => null;
+  }) async => laneAdvice;
 
   @override
   Future<double?> travelTime(
@@ -300,6 +302,41 @@ void main() {
     expect(nav.status!.segment, greaterThanOrEqualTo(10));
     expect(nav.limit, 80);
   });
+
+  test(
+    'lanes of a turn: not before an earlier road to the same side',
+    () async {
+      // The left turn at 438 m; a road to the left at 250 m.
+      final turn = route.maneuvers[1];
+      expect(turn.type, 15);
+      const lanes = [
+        Lane(directions: ['left'], correct: true, usage: 'left'),
+        Lane(directions: ['straight'], correct: false),
+      ];
+      valhalla.laneAdvice = [
+        (position: route.points[turn.shapeIndex], perLane: lanes),
+      ];
+      valhalla.limits = [
+        for (var i = 0; i < route.points.length - 1; i++)
+          (limit: null, way: null),
+      ];
+      valhalla.sideRoads = [
+        (position: along(route.points, 50)[5], right: false),
+      ];
+      await start();
+      await Future<void>.delayed(Duration.zero);
+      // At 13 m/s the lanes would show from 455 m before the turn: right away.
+      final points = along(route.points, 50);
+      await driveTo(points[2]);
+      expect(c.read(navigationProvider)!.lanes, isNull);
+      await driveTo(points[4]);
+      expect(c.read(navigationProvider)!.lanes, isNull);
+      await driveTo(points[6]);
+      final choice = c.read(navigationProvider)!.lanes!;
+      expect(choice.perLane, same(lanes));
+      expect(choice.atManeuver, isTrue);
+    },
+  );
 
   test('a temporary speed limit wins when it is lower', () async {
     valhalla.limits = [

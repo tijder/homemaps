@@ -182,4 +182,110 @@ void main() {
     expect(r(2500, null).delay, 0);
     expect(r(2500, null).withNormalTime(2400).delay, 100);
   });
+
+  test('side roads: a drivable road to the side, not a cycle path or a '
+      'driveway, not the road back', () {
+    // The N201 at Vinkeveen, westbound (from trace_attributes): the A2
+    // Amsterdam on-ramp leaves to the right at the end of edge 7, the turn-off
+    // to the A2 Utrecht is edge 10's end node.
+    final points = [for (var i = 0; i < 30; i++) LatLng(52.22 + i * 0.0001, 5)];
+    final json = {
+      'edges': [
+        {
+          'end_heading': 245,
+          'end_shape_index': 14,
+          'end_node': {
+            'intersecting_edges': [
+              {
+                'driveability': 'backward',
+                'begin_heading': 239,
+                'use': 'road',
+                'road_class': 'primary',
+              },
+            ],
+          },
+        },
+        {
+          'end_heading': 250,
+          'end_shape_index': 18,
+          'end_node': {
+            'intersecting_edges': [
+              {
+                'driveability': 'forward',
+                'begin_heading': 341,
+                'use': 'ramp',
+                'road_class': 'primary',
+              },
+              {
+                'driveability': 'backward',
+                'begin_heading': 175,
+                'use': 'turn_channel',
+                'road_class': 'primary',
+              },
+            ],
+          },
+        },
+        {
+          'end_heading': 253,
+          'end_shape_index': 19,
+          'end_node': {
+            'intersecting_edges': [
+              // To the left: a connector you may drive, but not to the right.
+              {
+                'driveability': 'forward',
+                'begin_heading': 142,
+                'use': 'turn_channel',
+                'road_class': 'primary',
+              },
+            ],
+          },
+        },
+        {
+          'end_heading': 246,
+          'end_shape_index': 22,
+          'end_node': {
+            'intersecting_edges': [
+              {
+                'driveability': 'forward',
+                'begin_heading': 239,
+                'use': 'road',
+                'road_class': 'primary',
+              },
+              {
+                'driveability': 'backward',
+                'begin_heading': 169,
+                'use': 'road',
+                'road_class': 'primary',
+              },
+            ],
+          },
+        },
+        {
+          'end_heading': 340,
+          'end_shape_index': 23,
+          'end_node': {
+            'intersecting_edges': [
+              {
+                'begin_heading': 251,
+                'use': 'cycleway',
+                'road_class': 'service_other',
+              },
+              {
+                'driveability': 'both',
+                'begin_heading': 75,
+                'use': 'driveway',
+                'road_class': 'service_other',
+              },
+            ],
+          },
+        },
+        // Without a node: ignored.
+        {'end_heading': 100, 'end_shape_index': 25},
+      ],
+    };
+    expect(ValhallaService.parseSideRoads(json, points), [
+      (position: points[18], right: true),
+      (position: points[19], right: false),
+    ]);
+  });
 }

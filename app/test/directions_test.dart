@@ -39,6 +39,11 @@ List<LaneAdvice> utrechtLanes() => ValhallaService.parseLanes(
   ) as Map).cast<String, dynamic>(),
 );
 
+List<Lane> turnOffLanes(String direction) => [
+  const Lane(directions: ['straight'], correct: false),
+  Lane(directions: [direction], correct: true),
+];
+
 void main() {
   test(
     'roundabout: the exit number and exit angle, same on entry and exit',
@@ -308,8 +313,8 @@ void main() {
     ];
     // An exit you must not take at 1200 m, yours at 1800 m.
     const junctions = [
-      (along: 1200.0, perLane: fork),
-      (along: 1800.0, perLane: exit),
+      (along: 1200.0, notBefore: 0.0, perLane: fork),
+      (along: 1800.0, notBefore: 0.0, perLane: exit),
     ];
     LaneChoice? at(double along, {double? kmh = 100}) => chooseLanes(
       junctions,
@@ -347,12 +352,70 @@ void main() {
       expect(at(1250, kmh: null)!.perLane, same(exit));
     });
 
+    test(
+      'not before an earlier road to the same side (the N201 at '
+      'Vinkeveen: the A2 Amsterdam on-ramp before the A2 Utrecht turn-off)',
+      () {
+        // The two right lanes of the turn-off at 874 m; the on-ramp at 513 m.
+        const turnOff = [
+          Lane(directions: ['straight'], correct: false),
+          Lane(directions: ['straight'], correct: false),
+          Lane(directions: ['right'], correct: true, usage: 'right'),
+          Lane(directions: ['right'], correct: true, usage: 'right'),
+        ];
+        const junctions = [(along: 874.0, notBefore: 513.0, perLane: turnOff)];
+        LaneChoice? at(double along) => chooseLanes(
+          junctions,
+          along: along,
+          maneuver: 874,
+          speed: 80 / 3.6,
+        );
+        // 80 km/h: 780 m in advance, so at 300 m it would show; but not before
+        // the on-ramp.
+        expect(at(300), isNull);
+        expect(at(500), isNull);
+        final choice = at(520)!;
+        expect(choice.perLane, same(turnOff));
+        expect(choice.atManeuver, isTrue);
+        expect(choice.ahead, 354);
+        // An intersection before the maneuver waits just the same.
+        expect(
+          chooseLanes(
+            [(along: 1200.0, notBefore: 1000.0, perLane: fork)],
+            along: 900,
+            maneuver: 1800,
+            speed: 100 / 3.6,
+          ),
+          isNull,
+        );
+      },
+    );
+
+    test('the side of the correct lanes', () {
+      expect(laneSide(turnOffLanes('right')), isTrue);
+      expect(laneSide(turnOffLanes('slight left')), isFalse);
+      expect(laneSide(turnOffLanes('straight')), isNull);
+      expect(laneSide(const []), isNull);
+      // A lane for several directions: the one you use.
+      expect(
+        laneSide(const [
+          Lane(
+            directions: ['straight', 'right'],
+            correct: true,
+            usage: 'right',
+          ),
+        ]),
+        isTrue,
+      );
+    });
+
     test('every lane correct: nothing to choose', () {
       expect(
         chooseLanes(
           [
             (
               along: 500.0,
+              notBefore: 0.0,
               perLane: fork
                   .map((s) => Lane(directions: s.directions, correct: true))
                   .toList(),
