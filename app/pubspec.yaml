@@ -21,7 +21,7 @@ version: 2.2.0+112
 environment:
   sdk: ^3.13.4
   # Pinned exactly so subosito/flutter-action can read it with flutter-version-file.
-  flutter: 3.47.5
+  flutter: 3.47.7
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -35,7 +35,7 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^2.0.0
   maplibre_gl: ^0.27.1
   flutter_riverpod: ^3.4.3
   dio: ^5.11.1

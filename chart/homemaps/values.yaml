@@ -128,7 +128,7 @@ valhalla:
   enabled: true
   image:
     repository: ghcr.io/valhalla/valhalla
-    tag: 3.9.0
+    tag: 3.9.1
     pullPolicy: IfNotPresent
   size: 20Gi
   threads: 2
