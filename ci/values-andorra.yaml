@@ -16,6 +16,9 @@ tiles:
   planetiler:
     scratchSize: 4Gi
     javaOpts: "-Xmx1g"
+    # osmdata.openstreetmap.de is down now and then; fake-ndw serves an empty
+    # water polygons shapefile instead (Andorra has no coast).
+    extraArgs: ["--water_polygons_url=http://fake-ndw:8080/water-polygons-split-3857.zip"]
     resources:
       requests: { cpu: 100m, memory: 512Mi }
       limits: { memory: 3Gi }

@@ -100,6 +100,28 @@ def msi_locations() -> bytes:
     return out.getvalue()
 
 
+def water_polygons() -> bytes:
+    """An empty stand-in for osmdata.openstreetmap.de's water-polygons-split-3857.zip,
+    so planetiler doesn't depend on that server: Andorra has no coast anyway.
+    A complete shapefile (shp, shx, dbf, prj), because GeoTools wants all of them."""
+    header = struct.pack(">i5ii", 9994, 0, 0, 0, 0, 0, 50) + struct.pack("<ii8d", 1000, 5, *[0.0] * 8)
+    dbf = bytearray(struct.pack("<BBBBIHH", 3, 126, 9, 22, 0, 0, 2) + bytes(20))
+    dbf += b"id".ljust(11, b"\0") + b"N" + bytes(4) + bytes([1]) + bytes(15) + b"\r"
+    struct.pack_into("<H", dbf, 8, len(dbf))
+    prj = (
+        'PROJCS["WGS 84 / Pseudo-Mercator",GEOGCS["WGS 84",DATUM["WGS_1984",'
+        'SPHEROID["WGS 84",6378137,298.257223563]],PRIMEM["Greenwich",0],'
+        'UNIT["degree",0.0174532925199433]],PROJECTION["Mercator_1SP"],'
+        'PARAMETER["central_meridian",0],PARAMETER["scale_factor",1],'
+        'PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1]]'
+    )
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w") as archive:
+        for ext, data in (("shp", header), ("shx", header), ("dbf", bytes(dbf)), ("prj", prj)):
+            archive.writestr(f"water-polygons-split-3857/water_polygons.{ext}", data)
+    return out.getvalue()
+
+
 out = Path(sys.argv[1])
 out.mkdir(parents=True, exist_ok=True)
 for name, xml in FEEDS.items():
@@ -108,3 +130,5 @@ for name, xml in FEEDS.items():
     print(out / f"{name}.xml.gz")
 (out / "ndw_msi_shapefiles_latest.zip").write_bytes(msi_locations())
 print(out / "ndw_msi_shapefiles_latest.zip")
+(out / "water-polygons-split-3857.zip").write_bytes(water_polygons())
+print(out / "water-polygons-split-3857.zip")

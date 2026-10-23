@@ -74,7 +74,7 @@ for pair in "tiles-planetiler:planetiler-initial" "valhalla-build:valhalla-initi
   $K get job "$job" >/dev/null 2>&1 || $K create job --from="cronjob/$cronjob" "$job"
 done
 # Don't wait 30 minutes blindly: a job that fails (a source server that is down,
-# like osmdata.openstreetmap.de for planetiler) must stop the run right away.
+# like geofabrik for planetiler) must stop the run right away.
 for _ in $(seq 1 180); do
   finished=0
   for job in valhalla-initial planetiler-initial; do

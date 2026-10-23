@@ -193,6 +193,9 @@ spec:
                 - "--download-dir=/scratch/sources"
                 - "--nodemap-type=sortedtable"
                 - "--storage=mmap"
+                {{- range $pt.extraArgs }}
+                - {{ . | quote }}
+                {{- end }}
               env:
                 - { name: JAVA_TOOL_OPTIONS, value: "{{ $pt.javaOpts }} -Djava.io.tmpdir=/scratch/tmp" }
               securityContext: {{- include "homemaps.containerSecurity" . | nindent 16 }}
@@ -218,6 +221,9 @@ spec:
                 - "--download-dir=/scratch/sources"
                 - "--nodemap-type=sortedtable"
                 - "--storage=mmap"
+                {{- range $pt.extraArgs }}
+                - {{ . | quote }}
+                {{- end }}
               env:
                 - { name: JAVA_TOOL_OPTIONS, value: "{{ $pt.javaOpts }} -Djava.io.tmpdir=/scratch/tmp" }
               securityContext: {{- include "homemaps.containerSecurity" . | nindent 16 }}

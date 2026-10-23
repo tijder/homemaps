@@ -113,6 +113,9 @@ tiles:
     timeZone: Europe/Amsterdam
     scratchSize: 40Gi
     javaOpts: "-Xmx2g"
+    # -- Extra planetiler arguments, for both runs. For instance a mirror for one
+    # of its sources: `--water_polygons_url=...`.
+    extraArgs: []
     # The request is only the threshold for getting scheduled; without a limit the
     # job uses whatever is free.
     resources:
