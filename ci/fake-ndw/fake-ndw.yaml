@@ -11,7 +11,7 @@ spec:
     spec:
       containers:
         - name: http
-          image: docker.io/library/python:3.14-alpine
+          image: docker.io/library/python:3.15-alpine
           command: ["python3", "-m", "http.server", "8080", "--directory", "/feeds"]
           ports: [{ containerPort: 8080 }]
           volumeMounts: [{ name: feeds, mountPath: /feeds }]
