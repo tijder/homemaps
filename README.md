@@ -158,7 +158,8 @@ an iOS 18 simulator: the 26.4+ simulator crashes on `CPMapTemplate`.
   direction or a larger search radius is the next step if that matters.
 - **Point measurements and the planning feed** from NDW are not used; the
   travel times cover main and provincial roads.
-- **tileserver-gl 5.6.0 has no metrics**; only the importer has a
+- **tileserver-gl metrics aren't scraped**: 5.7.0 has an opt-in Prometheus
+  endpoint, but the chart doesn't enable it yet; only the importer has a
   ServiceMonitor and alerts.
 - **Rollout next to `routes`/`tiles` on hilversum** is a separate step.
 

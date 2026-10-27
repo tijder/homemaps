@@ -249,7 +249,7 @@ spec:
             # afterwards. `delete pod` and not `rollout restart`: the latter puts an
             # annotation on the Deployment, and that is drift.
             - name: swap
-              image: docker.io/alpine/kubectl:1.37.0
+              image: docker.io/alpine/kubectl:1.37.1
               imagePullPolicy: IfNotPresent
               command: ["/bin/sh", "-c"]
               args:

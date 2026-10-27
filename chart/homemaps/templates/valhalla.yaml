@@ -187,7 +187,7 @@ spec:
             # at which it sees half a tileset. The importer's match cache expires
             # by itself: it is tied to the tileset.
             - name: swap
-              image: docker.io/alpine/kubectl:1.37.0
+              image: docker.io/alpine/kubectl:1.37.1
               imagePullPolicy: IfNotPresent
               command: ["/bin/sh", "-c"]
               args:

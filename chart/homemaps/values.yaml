@@ -86,7 +86,7 @@ tiles:
   enabled: true
   image:
     repository: docker.io/maptiler/tileserver-gl
-    tag: v5.6.0
+    tag: v5.7.0
     pullPolicy: IfNotPresent
   # -- Empty (recommended): tileserver-gl derives the URLs in style.json from the
   # request, so the same installation works under several hostnames. Only fill
@@ -167,7 +167,7 @@ photon:
   enabled: true
   image:
     repository: docker.io/rtuszik/photon-docker
-    tag: 2.4.0
+    tag: 2.5.0
     pullPolicy: IfNotPresent
   # -- Ready-made index; see https://download1.graphhopper.com/public/
   dbUrl: https://download1.graphhopper.com/public/europe/netherlands/photon-db-netherlands-1.0-latest.tar.bz2
