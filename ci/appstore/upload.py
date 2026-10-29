@@ -146,10 +146,12 @@ def upload(api, set_id, file):
     return reservation["id"]
 
 
-def wait_for_processing(api, ids):
-    """Apple only checks the sizes after the upload; an error shows up here."""
+def wait_for_processing(api, ids, minutes=5):
+    """Apple only checks the sizes after the upload; an error shows up here.
+
+    Returns the screenshots that are still not processed after `minutes`."""
     open_ = set(ids)
-    for _ in range(60):
+    for _ in range(minutes * 12):
         for screenshot in list(open_):
             delivery = api.request("GET", f"/appScreenshots/{screenshot}")["data"]["attributes"]["assetDeliveryState"]
             if delivery["state"] == "COMPLETE":
@@ -157,9 +159,28 @@ def wait_for_processing(api, ids):
             elif delivery["state"] == "FAILED":
                 raise SystemExit(f"screenshot {screenshot} rejected: {delivery.get('errors')}")
         if not open_:
-            return
+            return set()
         time.sleep(5)
-    raise SystemExit(f"still not processed after 5 minutes: {sorted(open_)}")
+    return open_
+
+
+def upload_all(api, uploads, attempts=3):
+    """Uploads (set, file) pairs. Apple sometimes leaves a screenshot stuck in
+    processing forever; such a one is deleted and uploaded again."""
+    pending = {upload(api, set_id, file): (set_id, file) for set_id, file in uploads}
+    for attempt in range(1, attempts + 1):
+        stuck = wait_for_processing(api, pending)
+        if not stuck:
+            return
+        if attempt == attempts:
+            raise SystemExit(f"still not processed after {attempts} attempts: {sorted(stuck)}")
+        print(f"not processed, uploading again: {', '.join(pending[s][1].name for s in sorted(stuck))}")
+        retry = {}
+        for screenshot in stuck:
+            set_id, file = pending[screenshot]
+            api.request("DELETE", f"/appScreenshots/{screenshot}")
+            retry[upload(api, set_id, file)] = (set_id, file)
+        pending = retry
 
 
 def main(dir_, version_string, dry_run=False):
@@ -220,10 +241,9 @@ def main(dir_, version_string, dry_run=False):
                 )["data"]["id"]
             for old in api.all(f"/appScreenshotSets/{set_id}/appScreenshots"):
                 api.request("DELETE", f"/appScreenshots/{old['id']}")
-            for file in own[kind]:
-                new.append(upload(api, set_id, file))
+            new += [(set_id, file) for file in own[kind]]
     if new:
-        wait_for_processing(api, new)
+        upload_all(api, new)
     print("done" if not dry_run else "dry run: nothing changed")
 
 
