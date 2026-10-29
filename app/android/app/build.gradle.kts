@@ -64,7 +64,7 @@ dependencies {
     // brings for the phone (its android/build.gradle), so there is one copy.
     implementation("org.maplibre.gl:android-sdk-opengl:13.5.0")
     // The generated car contract (CarApi.g.kt) talks to Dart with coroutines.
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
 }
 
 kotlin {

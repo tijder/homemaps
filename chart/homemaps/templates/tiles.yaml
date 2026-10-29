@@ -231,7 +231,7 @@ spec:
               volumeMounts:
                 - { name: scratch, mountPath: /scratch }
             - name: merge
-              image: docker.io/library/python:3.14-alpine
+              image: docker.io/library/python:3.15-alpine
               imagePullPolicy: IfNotPresent
               command: ["python3", "/script/merge.py", "/data/tiles/map-new.mbtiles", "/scratch/world.mbtiles"]
               securityContext: {{- include "homemaps.containerSecurity" . | nindent 16 }}

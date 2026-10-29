@@ -21,7 +21,7 @@ version: 2.3.2+127
 environment:
   sdk: ^3.13.4
   # Pinned exactly so subosito/flutter-action can read it with flutter-version-file.
-  flutter: 3.47.8
+  flutter: 3.47.9
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
