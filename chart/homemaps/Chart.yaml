@@ -2,8 +2,8 @@ apiVersion: v2
 name: homemaps
 description: Self-hosted maps and route planner - tiles (planetiler + tileserver-gl), routing (Valhalla) with live NDW traffic, search (Photon) and the web app
 type: application
-version: 2.3.3
-appVersion: "2.3.3"
+version: 2.3.4
+appVersion: "2.3.4"
 home: https://github.com/tijder/homemaps
 sources:
   - https://github.com/tijder/homemaps
