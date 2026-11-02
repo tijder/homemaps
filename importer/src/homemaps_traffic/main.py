@@ -412,9 +412,7 @@ class Importer:
             # accident causes is already in the travel times. A failed fetch
             # therefore only costs the points, not the cycle.
             try:
-                feed = datex3.open_feed(
-                    fetch(f"{self.ndw}/{SRTI}")
-                )
+                feed = datex3.open_feed(fetch(f"{self.ndw}/{SRTI}"))
                 features += maplayer.incidents(datex3.read_incidents(feed))
             except (OSError, ValueError) as error:
                 log.warning("incidents not fetched: %s", error)
