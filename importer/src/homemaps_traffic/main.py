@@ -41,7 +41,7 @@ from .tarindex import TrafficTar
 
 log = logging.getLogger("homemaps_traffic")
 
-SRTI = "veiligheidsgerelateerde_berichten_srti.xml.gz"
+SRTI = "veiligheidsgerelateerde_informatie_srti.xml.gz"
 PLANNING = "planningsfeed_wegwerkzaamheden_en_evenementen.xml.gz"
 SPEED_LIMITS = "tijdelijke_verkeersmaatregelen_maximum_snelheden.xml.gz"
 CURRENT_SITUATION = "actueel_beeld.xml.gz"
@@ -413,7 +413,7 @@ class Importer:
             # therefore only costs the points, not the cycle.
             try:
                 feed = datex3.open_feed(
-                    fetch(f"{self.ndw}/veiligheidsgerelateerde_berichten_srti.xml.gz")
+                    fetch(f"{self.ndw}/{SRTI}")
                 )
                 features += maplayer.incidents(datex3.read_incidents(feed))
             except (OSError, ValueError) as error:

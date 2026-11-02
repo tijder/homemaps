@@ -8,7 +8,7 @@ Valhalla's `traffic.tar` and turns it into the app's traffic layer.
 | `reistijden_meetgegevens` + `reistijden_configuratie_meetlocaties` | live speed per edge |
 | `tijdelijke_verkeersmaatregelen_afsluitingen` (`carriagewayClosures`, `roadClosed`, valid now, not just for trucks) | closed edges |
 | the same feeds, plus `laneClosures` | `/traffic.geojson`: the layer on the map |
-| `veiligheidsgerelateerde_berichten_srti` (accident, breakdown, object on the road) | points in the same layer; the app warns about them while driving |
+| `veiligheidsgerelateerde_informatie_srti` (accident, breakdown, object on the road) | points in the same layer; the app warns about them while driving |
 | `planningsfeed_wegwerkzaamheden_en_evenementen` (18 MB, once an hour) | `/traffic-planned.geojson`: closures of the coming 8 days with their windows, for "leave later" |
 | `tijdelijke_verkeersmaatregelen_maximum_snelheden` (mostly RWS) and the `SpeedManagement` records from the planning feed (also provinces and municipalities) | `kind: speed_limit` in `/traffic.geojson`: temporary maximum speeds that apply now, over the route shape; while driving the app shows the lowest of these and OSM. Not on the map, not in `traffic.tar` |
 | `Matrixsignaalinformatie` (every minute, own thread) + `ndw_msi_shapefiles_latest.zip` (locations, once a day) | `kind: msi` in `/traffic.geojson`: per gantry what the MSI signs show, per lane from left to right (`"80r"` mandatory, `"80"` advisory, `"x"`, `"<"`, `">"`, `"open"`, `"end"`, `""`). Blank gantries only within 3 km of an occupied gantry: that is where a speed ends |

@@ -48,7 +48,7 @@ FEEDS = {
 <sit:locationReference><loc:gmlLineString><loc:posList>{CLOSED}</loc:posList></loc:gmlLineString></sit:locationReference>
 <sit:roadOrCarriagewayOrLaneManagementType>roadClosed</sit:roadOrCarriagewayOrLaneManagementType>
 </sit:situationRecord></sit:situation></mc:payload></mc:messageContainer>""",
-    "veiligheidsgerelateerde_berichten_srti": f"""<mc:messageContainer {NS}><mc:payload>
+    "veiligheidsgerelateerde_informatie_srti": f"""<mc:messageContainer {NS}><mc:payload>
 <sit:situation id="O"><sit:situationRecord xsi:type="sit:Accident" id="FAKE_ACCIDENT" version="1">
 <sit:situationRecordVersionTime>{NOW}</sit:situationRecordVersionTime>
 <sit:validity><com:validityTimeSpecification><com:overallStartTime>2020-01-01T00:00:00Z</com:overallStartTime></com:validityTimeSpecification></sit:validity>
