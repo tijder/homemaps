@@ -68,5 +68,29 @@ pytest && ruff check .
 python ../ci/e2e/traffic_live.py /path/to/traffic.tar http://localhost:8002
 ```
 
-Settings: see the docstring of `main.py`. Metrics on `[::]:9100`
-(`homemaps_traffic_*`); the chart adds an alert on staleness.
+Settings: see the docstring of `main.py`. Metrics on `[::]:9100/metrics`
+(`homemaps_traffic_*`); the chart adds alerts on staleness.
+
+## When a feed fails
+
+NDW renames feeds, serves a truncated file now and then, and is sometimes
+simply down. What happens then:
+
+- **Travel times** fail the cycle. The speeds and closures of the last good
+  cycle stay until `STALE_SECONDS` (three intervals, at least 15 minutes);
+  after that they are cleared from `traffic.tar` and the map layer answers 503.
+  Valhalla has no expiry of its own, so without this an old jam would stay in
+  every route.
+- **Closures** keep the measures of the last good fetch for the same time; the
+  speeds are written either way.
+- **Everything else** (incidents, bridges, maximum speeds, the planning feed, the
+  measurement site configuration) only costs that part.
+- **MSI signs** are withdrawn from the layer after five minutes without a good
+  fetch.
+- A single record that cannot be read is skipped, not the feed.
+
+Per feed there is `homemaps_traffic_feed_last_success_timestamp_seconds{feed=…}`
+(0 = never arrived) and `homemaps_traffic_feed_failures_total{feed=…}`.
+`/healthz` answers 503 when the cycle or the MSI loop has stopped running
+(not when NDW is down: a restart does not help against that); the chart uses
+it as liveness probe.

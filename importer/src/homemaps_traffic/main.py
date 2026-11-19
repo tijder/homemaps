@@ -14,12 +14,16 @@ Settings come from the environment (the chart sets them):
   OSM_PBF            the tileset's OSM file          (/data/source/region.osm.pbf)
   MSI_SECONDS        how often the MSI signs         (60; 0 = never)
   BRIDGES            "false" turns open bridges off  (true)
-  METRICS_PORT       /metrics and the layers         (9100)
+  METRICS_PORT       /metrics, /healthz and the layers (9100)
+  STALE_SECONDS      without a good cycle for this long: traffic is cleared
+                     (three intervals, at least 900)
 """
 
+import http.client
 import io
 import logging
 import os
+import struct
 import sys
 import threading
 import time
@@ -56,6 +60,13 @@ SPEED_LIMIT_LOOKAHEAD = timedelta(hours=2)
 # Planned closures are included this far ahead (the app lets you pick a week).
 PLANNING_LOOKAHEAD = timedelta(days=8)
 MAX_KPH = 160  # above that it is a measurement error, not a car
+# Measurement sites that are still unknown after fetching the configuration (a
+# site with a single point, a version NDW has not published yet): only then
+# is the configuration fetched again for them.
+SITES_RETRY_SECONDS = 3600
+# What fetching and reading a feed can raise: no connection, a connection that
+# drops halfway (IncompleteRead), a truncated gzip, XML that is cut off.
+FEED_ERRORS = (OSError, ValueError, ParseError, EOFError, zlib.error, http.client.HTTPException)
 
 
 def compute_speeds(
@@ -145,16 +156,59 @@ class State:
         self.planned: tuple[bytes, bytes] | None = None
         self.conditional_speeds: tuple[bytes, bytes] | None = None
         self.enforcement: tuple[bytes, bytes] | None = None
+        # name -> (last sign of life, how long it may stay quiet), for /healthz.
+        self.watched: dict[str, tuple[float, float]] = {}
+
+    def _assemble(self) -> None:
+        # The layer is only available once the cycle is there: that is the core
+        # (closures, jams).
+        self.layer = (
+            maplayer.geojson([feature for part in self.parts.values() for feature in part])
+            if "cycle" in self.parts
+            else None
+        )
 
     def set_part(self, name: str, features: list[dict]) -> None:
-        """The part [name] of the traffic layer. The layer only becomes available
-        once the cycle is there: that is the core (closures, jams)."""
+        """The part [name] of the traffic layer."""
         with self.lock:
             self.parts[name] = features
-            if "cycle" in self.parts:
-                self.layer = maplayer.geojson(
-                    [feature for part in self.parts.values() for feature in part]
-                )
+            self._assemble()
+
+    def drop_part(self, name: str) -> bool:
+        """Removes a part that has gone stale; without the cycle there is no
+        layer at all (503), which the app shows as "no traffic data"."""
+        with self.lock:
+            if self.parts.pop(name, None) is None:
+                return False
+            self._assemble()
+            return True
+
+    def feed(self, name: str, ok: bool) -> None:
+        """Per feed when it last arrived and how often it did not: a feed that
+        NDW renames or stops shows up here, not only in the log."""
+        failures = f'feed_failures_total{{feed="{name}"}}'
+        success = f'feed_last_success_timestamp_seconds{{feed="{name}"}}'
+        with self.lock:
+            self.values.setdefault(failures, 0)
+            # 0 = never arrived: an alert on its age then fires as well.
+            self.values.setdefault(success, 0)
+            if ok:
+                self.values[success] = time.time()
+            else:
+                self.values[failures] += 1
+
+    def beat(self, name: str, quiet_seconds: float) -> None:
+        """A loop reports that it is still running; /healthz fails once it has
+        been quiet for longer than [quiet_seconds]."""
+        with self.lock:
+            self.watched[name] = (time.monotonic(), quiet_seconds)
+
+    def stalled(self) -> list[str]:
+        now = time.monotonic()
+        with self.lock:
+            return sorted(
+                name for name, (seen, quiet) in self.watched.items() if now - seen > quiet
+            )
 
     def set_conditional_speeds(self, content: tuple[bytes, bytes]) -> None:
         with self.lock:
@@ -184,7 +238,7 @@ class _Server(ThreadingHTTPServer):
     address_family = AF_INET6
 
 
-def start_metrics(state: State, port: int) -> None:
+def start_metrics(state: State, port: int) -> _Server:
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
             path = self.path.split("?")[0]
@@ -199,6 +253,18 @@ def start_metrics(state: State, port: int) -> None:
                 return
             if path == "/enforcement.geojson":
                 self._layer(state.enforcement, 3600)
+                return
+            if path == "/healthz":
+                # Whether the loops still run, not whether NDW delivers: a restart
+                # helps against a hanging loop, not against a feed that is down.
+                stalled = state.stalled()
+                if stalled:
+                    self._send(503, f"stalled: {', '.join(stalled)}\n".encode(), "text/plain")
+                else:
+                    self._send(200, b"ok\n", "text/plain")
+                return
+            if path not in ("/", "/metrics"):
+                self._send(404, b"not found\n", "text/plain")
                 return
             self._send(200, state.text().encode(), "text/plain; version=0.0.4")
 
@@ -229,6 +295,7 @@ def start_metrics(state: State, port: int) -> None:
 
     server = _Server(("::", port), Handler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server
 
 
 def fetch(url: str) -> io.BytesIO:
@@ -251,6 +318,7 @@ class Importer:
         speed_limits: bool = True,
         osm_pbf: Path | None = None,
         bridges: bool = True,
+        stale_seconds: float = 900,
     ):
         self.tar, self.valhalla, self.ndw, self.state = tar, valhalla, ndw.rstrip("/"), state
         self.with_closures = closures
@@ -268,19 +336,42 @@ class Importer:
         self.closures = MatchCache(cache_dir / "closures.json", tileset, covered_only=True)
         self.speed_limits = MatchCache(cache_dir / "speed_limits.json", tileset)
         self.written: set[int] = set()
+        # Valhalla has no expiry, so the importer keeps track itself: without a
+        # good cycle for this long, an hour-old jam is worse than no data.
+        self.stale_seconds = stale_seconds
+        self.tar_written = self.layer_set = time.time()
+        # The measures of the last good fetch, for when the next one fails.
+        self.measures: list[datex3.Measure] = []
+        self.measures_fetched = 0.0
+        self.sites_fetched = 0.0
+        self.sites_unknown: set[str] = set()
         # What a previous instance wrote is unknown, so clear everything first.
         tar.clear_all()
 
     def _refresh_sites(self, needed: set[str]) -> None:
         """The configuration is 100 MB; only fetch it when the measurements point
         to a site (version) that is not in the cache yet."""
-        if needed <= self.sites.matches.keys():
+        unknown = needed - self.sites.matches.keys()
+        if not unknown:
             return
-        log.info("fetching measurement sites (%d unknown)", len(needed - self.sites.matches.keys()))
-        feed = datex3.open_feed(fetch(f"{self.ndw}/reistijden_configuratie_meetlocaties.xml.gz"))
-        items = {site.key: site.points for site in datex3.read_measurement_sites(feed)}
+        if unknown <= self.sites_unknown and time.time() - self.sites_fetched < SITES_RETRY_SECONDS:
+            return
+        log.info("fetching measurement sites (%d unknown)", len(unknown))
+        try:
+            feed = datex3.open_feed(
+                fetch(f"{self.ndw}/reistijden_configuratie_meetlocaties.xml.gz")
+            )
+            items = {site.key: site.points for site in datex3.read_measurement_sites(feed)}
+        except FEED_ERRORS as error:
+            # The sites that are known keep their speeds.
+            self.state.feed("measurement_sites", False)
+            log.warning("measurement sites not fetched: %s", error)
+            return
+        self.state.feed("measurement_sites", True)
         if self.sites.fill(self.valhalla, items):
             self.sites.save()
+        self.sites_fetched = time.time()
+        self.sites_unknown = needed - self.sites.matches.keys()
 
     def _planning(self) -> None:
         """Once an hour: the planning feed (18 MB) for "leave later". It changes
@@ -301,9 +392,11 @@ class Importer:
                         datex3.open_feed(raw), now, now + SPEED_LIMIT_LOOKAHEAD
                     )
                 )
-        except (OSError, ValueError, ParseError) as error:
+        except FEED_ERRORS as error:
+            self.state.feed("planning", False)
             log.warning("planning feed not fetched: %s", error)
             return
+        self.state.feed("planning", True)
         self.state.set_planned(maplayer.geojson(maplayer.planned_closures(planned)))
         self.state.set(planned_closures=len(planned))
         log.info(
@@ -320,7 +413,9 @@ class Importer:
         try:
             feed = datex3.open_feed(fetch(f"{self.ndw}/{SPEED_LIMITS}"))
             current = list(datex3.read_speed_limits(feed, now, now))
-        except (OSError, ValueError, ParseError) as error:
+            self.state.feed("speed_limits", True)
+        except FEED_ERRORS as error:
+            self.state.feed("speed_limits", False)
             log.warning("maximum speeds not fetched: %s", error)
         valid = current + [s for s in self.planned_speed_limits if s.applies(now)]
         items: dict[str, tuple] = {}
@@ -372,11 +467,51 @@ class Importer:
             time.time() - start,
         )
 
+    def _measures(self) -> list[datex3.Measure]:
+        """The traffic measures that apply now. If the feed fails, those of the
+        last good fetch stay (a closed road is still closed five minutes
+        later) until they are stale; the speeds are written either way."""
+        try:
+            feed = datex3.open_feed(
+                fetch(f"{self.ndw}/tijdelijke_verkeersmaatregelen_afsluitingen.xml.gz")
+            )
+            self.measures = list(datex3.read_measures(feed))
+            self.measures_fetched = time.time()
+            self.state.feed("closures", True)
+        except FEED_ERRORS as error:
+            self.state.feed("closures", False)
+            if time.time() - self.measures_fetched > self.stale_seconds:
+                self.measures = []
+            now = datetime.now(UTC)
+            self.measures = [m for m in self.measures if m.end is None or m.end > now]
+            log.warning(
+                "closures not fetched, %d earlier measures stay: %s", len(self.measures), error
+            )
+        return self.measures
+
+    def expire(self) -> None:
+        """After a failed cycle: whatever has not been refreshed for too long is
+        taken away again. Valhalla would otherwise keep routing around the jams
+        of the last good cycle forever, and the app would keep showing them."""
+        now = time.time()
+        if self.written and now - self.tar_written > self.stale_seconds:
+            _, cleared, _ = self.tar.update({}, self.written)
+            self.written = set()
+            self.state.set(edges_with_speed=0, edges_closed=0, edges_cleared=cleared)
+            log.warning("no good cycle for %d s: %d edges cleared", now - self.tar_written, cleared)
+        if now - self.layer_set > self.stale_seconds and self.state.drop_part("cycle"):
+            log.warning("no good cycle for %d s: traffic layer withdrawn", now - self.layer_set)
+
     def cycle(self) -> None:
         start = time.time()
         self._osm()
-        feed = datex3.open_feed(fetch(f"{self.ndw}/reistijden_meetgegevens.xml.gz"))
-        travel_times = list(datex3.read_travel_times(feed))
+        try:
+            feed = datex3.open_feed(fetch(f"{self.ndw}/reistijden_meetgegevens.xml.gz"))
+            travel_times = list(datex3.read_travel_times(feed))
+        except FEED_ERRORS:
+            self.state.feed("travel_times", False)
+            raise
+        self.state.feed("travel_times", True)
         self._refresh_sites({travel_time.key for travel_time in travel_times})
         records = compute_speeds(travel_times, self.sites.matches)
         speeds = len(records)
@@ -384,10 +519,7 @@ class Importer:
         closed: dict[int, int] = {}
         measures: list[datex3.Measure] = []
         if self.with_closures:
-            feed = datex3.open_feed(
-                fetch(f"{self.ndw}/tijdelijke_verkeersmaatregelen_afsluitingen.xml.gz")
-            )
-            measures = list(datex3.read_measures(feed))
+            measures = self._measures()
             active = [measure.as_closure() for measure in measures if measure.closes]
             items: dict[str, tuple] = {}
             for closure in active:
@@ -401,6 +533,7 @@ class Importer:
         self._planning()
         written, cleared, unknown = self.tar.update(records, self.written)
         self.written = set(records)
+        self.tar_written = time.time()
 
         features = maplayer.measures(measures) + maplayer.slow_segments(
             travel_times, self.sites.matches
@@ -414,7 +547,9 @@ class Importer:
             try:
                 feed = datex3.open_feed(fetch(f"{self.ndw}/{SRTI}"))
                 features += maplayer.incidents(datex3.read_incidents(feed))
-            except (OSError, ValueError) as error:
+                self.state.feed("incidents", True)
+            except FEED_ERRORS as error:
+                self.state.feed("incidents", False)
                 log.warning("incidents not fetched: %s", error)
         if self.with_bridges:
             # An open bridge: only the warning while driving. It closes again
@@ -424,9 +559,12 @@ class Importer:
                 open_bridges = list(datex3.read_bridges(feed))
                 features += maplayer.bridges(open_bridges)
                 self.state.set(bridges_open=len(open_bridges))
-            except (OSError, ValueError, ParseError) as error:
+                self.state.feed("bridges", True)
+            except FEED_ERRORS as error:
+                self.state.feed("bridges", False)
                 log.warning("current situation not fetched: %s", error)
         self.state.set_part("cycle", features)
+        self.layer_set = time.time()
         matched = sum(1 for match in self.sites.matches.values() if match)
         self.state.set(
             last_cycle_timestamp_seconds=time.time(),
@@ -459,6 +597,9 @@ class MsiSigns:
         self.ndw, self.state, self.seconds = ndw.rstrip("/"), state, seconds
         self.locations: dict[str, msi.SignLocation] = {}
         self.locations_fetched = 0.0
+        self.displays_fetched = time.time()
+        # A sign that showed 50 ten minutes ago says nothing about now.
+        self.stale_seconds = max(5 * seconds, 300)
 
     def refresh(self) -> None:
         if not self.locations or time.time() - self.locations_fetched > MSI_LOCATIONS_SECONDS:
@@ -466,24 +607,46 @@ class MsiSigns:
                 self.locations = msi.read_locations(fetch(f"{self.ndw}/{MSI_LOCATIONS}"))
                 self.locations_fetched = time.time()
                 log.info("MSI signs: %d locations", len(self.locations))
-            except (OSError, ValueError, KeyError, StopIteration, zipfile.BadZipFile) as error:
+                self.state.feed("msi_locations", True)
+            except (
+                *FEED_ERRORS,
+                KeyError,
+                IndexError,
+                StopIteration,
+                struct.error,
+                zipfile.BadZipFile,
+            ) as error:
+                self.state.feed("msi_locations", False)
                 log.warning("MSI sign locations not fetched: %s", error)
                 if not self.locations:
                     return
         displays = msi.read_displays(datex3.open_feed(fetch(f"{self.ndw}/{MSI_DISPLAYS}")))
         gantries = msi.gantries(self.locations, displays)
         self.state.set_part("msi", maplayer.msi(gantries))
+        self.displays_fetched = time.time()
         self.state.set(
             msi_gantries=len(gantries),
             msi_timestamp_seconds=time.time(),
         )
 
+    def once(self) -> None:
+        try:
+            self.refresh()
+            self.state.feed("msi", True)
+        except FEED_ERRORS as error:
+            self.state.feed("msi", False)
+            log.warning("MSI signs not fetched: %s", error)
+        except Exception:  # noqa: BLE001 -- the thread must survive whatever a feed does
+            self.state.feed("msi", False)
+            log.exception("MSI signs not fetched")
+        if time.time() - self.displays_fetched > self.stale_seconds and self.state.drop_part("msi"):
+            log.warning("MSI signs are stale: withdrawn from the layer")
+
     def loop(self) -> None:
         while True:
-            try:
-                self.refresh()
-            except (OSError, ValueError, ParseError) as error:
-                log.warning("MSI signs not fetched: %s", error)
+            # Two fetches of two minutes each at most, plus some slack.
+            self.state.beat("msi", 3 * self.seconds + 600)
+            self.once()
             time.sleep(self.seconds)
 
 
@@ -524,6 +687,7 @@ def main() -> None:
         env.get("SPEED_LIMITS", "true").lower() != "false",
         Path(env.get("OSM_PBF", "/data/source/region.osm.pbf")),
         env.get("BRIDGES", "true").lower() != "false",
+        float(env.get("STALE_SECONDS") or max(3 * interval, 900)),
     )
     msi_seconds = int(env.get("MSI_SECONDS", "60"))
     if msi_seconds:
@@ -531,12 +695,15 @@ def main() -> None:
         threading.Thread(target=signs.loop, daemon=True).start()
     failed = 0
     while True:
+        # The first cycle matches every measurement site and may take long.
+        state.beat("cycle", 3 * interval + 1800)
         try:
             importer.cycle()
         except Exception:  # noqa: BLE001 -- one bad cycle must not stop the loop
             failed += 1
             state.set(cycles_failed_total=failed)
             log.exception("cycle failed")
+            importer.expire()
         time.sleep(interval)
 
 

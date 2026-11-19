@@ -5,11 +5,14 @@ therefore goes through iterparse and every handled element is released right awa
 """
 
 import gzip
-from collections.abc import Iterator
+import logging
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import BinaryIO
 from xml.etree.ElementTree import Element, iterparse
+
+log = logging.getLogger(__name__)
 
 Point = tuple[float, float]  # (lat, lon)
 
@@ -49,6 +52,25 @@ def _records(stream: BinaryIO, name: str) -> Iterator[Element]:
             root.clear()
 
 
+def _each[T](stream: BinaryIO, name: str, read: Callable[[Element], T | None]) -> Iterator[T]:
+    """What `read` makes of every element `name`. A record that cannot be read
+    (a number that is not one, a missing id) is skipped: one bad record must
+    not cost the whole feed."""
+    bad = 0
+    for record in _records(stream, name):
+        try:
+            item = read(record)
+        except (ValueError, KeyError) as error:
+            bad += 1
+            if bad == 1:
+                log.warning("%s %s skipped: %r", name, record.attrib.get("id", "?"), error)
+            continue
+        if item is not None:
+            yield item
+    if bad > 1:
+        log.warning("%d records %s skipped", bad, name)
+
+
 def open_feed(path_or_stream) -> BinaryIO:
     return gzip.open(path_or_stream, "rb")
 
@@ -65,12 +87,14 @@ class MeasurementSite:
 
 
 def read_measurement_sites(stream: BinaryIO) -> Iterator[MeasurementSite]:
-    for site in _records(stream, "measurementSite"):
+    def read(site: Element):
         points: list[Point] = []
         for line in _find(site, "posList"):
             points.extend(_points(line.text or ""))
         if len(points) >= 2:
-            yield MeasurementSite(site.attrib["id"], site.attrib.get("version", ""), tuple(points))
+            return MeasurementSite(site.attrib["id"], site.attrib.get("version", ""), tuple(points))
+
+    return _each(stream, "measurementSite", read)
 
 
 @dataclass(frozen=True)
@@ -99,17 +123,19 @@ def _duration(base: Element, name: str) -> float | None:
 
 
 def read_travel_times(stream: BinaryIO) -> Iterator[TravelTime]:
-    for measurement in _records(stream, "siteMeasurements"):
+    def read(measurement: Element):
         reference = _first(measurement, "measurementSiteReference")
         seconds = _duration(measurement, "travelTime")
         if reference is None or seconds is None:
-            continue
-        yield TravelTime(
+            return None
+        return TravelTime(
             reference.attrib["id"],
             reference.attrib.get("version", ""),
             seconds,
             _duration(measurement, "normallyExpectedTravelTime"),
         )
+
+    return _each(stream, "siteMeasurements", read)
 
 
 @dataclass(frozen=True)
@@ -203,20 +229,21 @@ def _text(element: Element, name: str) -> str | None:
 
 def read_measures(stream: BinaryIO, now: datetime | None = None) -> Iterator[Measure]:
     now = now or datetime.now(UTC)
-    for record in _records(stream, "situationRecord"):
+
+    def read(record: Element):
         management_type = _text(record, "roadOrCarriagewayOrLaneManagementType")
         if management_type is None or not _valid(record, now):
-            continue
+            return None
         lines = tuple(
             tuple(points)
             for line in _find(record, "posList")
             if len(points := _points(line.text or "")) >= 2
         )
         if not lines:
-            continue
+            return None
         specification = _first(record, "validityTimeSpecification")
         lanes = _text(record, "numberOfOperationalLanes")
-        yield Measure(
+        return Measure(
             record.attrib["id"],
             record.attrib.get("version", ""),
             management_type,
@@ -228,6 +255,8 @@ def read_measures(stream: BinaryIO, now: datetime | None = None) -> Iterator[Mea
             _time(_text(specification, "overallEndTime")) if specification is not None else None,
             int(lanes) if lanes and lanes.isdigit() else None,
         )
+
+    return _each(stream, "situationRecord", read)
 
 
 def read_closures(stream: BinaryIO, now: datetime | None = None) -> Iterator[Closure]:
@@ -273,13 +302,14 @@ class Incident:
 
 def read_incidents(stream: BinaryIO, now: datetime | None = None) -> Iterator[Incident]:
     now = now or datetime.now(UTC)
-    for record in _records(stream, "situationRecord"):
+
+    def read(record: Element):
         kind = INCIDENT_KINDS.get(record.attrib.get(XSI_TYPE, "").rsplit(":", 1)[-1])
         if kind is None or not _valid(record, now):
-            continue
+            return None
         lat, lon = _text(record, "latitude"), _text(record, "longitude")
         if lat is None or lon is None:
-            continue
+            return None
         bearing = _text(record, "bearing")
         specification = _first(record, "validityTimeSpecification")
         since = (
@@ -287,17 +317,19 @@ def read_incidents(stream: BinaryIO, now: datetime | None = None) -> Iterator[In
         )
         updated = _time(_text(record, "situationRecordVersionTime")) or since
         if updated and now - updated > INCIDENT_EXPIRES:
-            continue
+            return None
         confidence = _text(record, "persistenceEvidenceLevel")
         if confidence and float(confidence) < INCIDENT_MIN_CONFIDENCE:
-            continue
-        yield Incident(
+            return None
+        return Incident(
             record.attrib["id"],
             kind,
             (float(lat), float(lon)),
             float(bearing) if bearing else None,
             since,
         )
+
+    return _each(stream, "situationRecord", read)
 
 
 @dataclass(frozen=True)
@@ -343,26 +375,29 @@ def read_planned_closures(
     stream: BinaryIO, start: datetime, end: datetime
 ) -> Iterator[PlannedClosure]:
     """Closures (for cars) that apply somewhere between [start] and [end]."""
-    for record in _records(stream, "situationRecord"):
+
+    def read(record: Element):
         management_type = _text(record, "roadOrCarriagewayOrLaneManagementType")
         if management_type not in CLOSURE_TYPES or _first(record, "vehicleType") is not None:
-            continue
+            return None
         windows = _windows(record, start, end)
         if not windows:
-            continue
+            return None
         lines = tuple(
             tuple(points)
             for line in _find(record, "posList")
             if len(points := _points(line.text or "")) >= 2
         )
         if lines:
-            yield PlannedClosure(
+            return PlannedClosure(
                 record.attrib["id"],
                 lines,
                 management_type == "roadClosed",
                 _text(record, "carriageway"),
                 tuple(windows),
             )
+
+    return _each(stream, "situationRecord", read)
 
 
 @dataclass(frozen=True)
@@ -395,9 +430,10 @@ def read_speed_limits(
     """Temporary maximum speeds that apply somewhere between [start] and [end],
     from the maximum speeds feed or the planning feed (the same records).
     Whatever applies only to some vehicles, or is only advisory, is dropped."""
-    for record in _records(stream, "situationRecord"):
+
+    def read(record: Element):
         if not record.attrib.get(XSI_TYPE, "").endswith("SpeedManagement"):
-            continue
+            return None
         limit = _text(record, "temporarySpeedLimit")
         compliance = _text(record, "complianceOption")
         if (
@@ -405,23 +441,23 @@ def read_speed_limits(
             or _first(record, "vehicleType") is not None
             or (compliance is not None and compliance != "mandatory")
         ):
-            continue
+            return None
         try:
             kph = round(float(limit))
         except ValueError:
-            continue
+            return None
         if kph <= 0:
-            continue
+            return None
         windows = _windows(record, start, end)
         if not windows:
-            continue
+            return None
         lines = tuple(
             tuple(points)
             for line in _find(record, "posList")
             if len(points := _points(line.text or "")) >= 2
         )
         if lines:
-            yield TemporarySpeedLimit(
+            return TemporarySpeedLimit(
                 record.attrib["id"],
                 record.attrib.get("version", ""),
                 kph,
@@ -429,6 +465,8 @@ def read_speed_limits(
                 _text(record, "causeType"),
                 tuple(windows),
             )
+
+    return _each(stream, "situationRecord", read)
 
 
 BRIDGE_IN_PROGRESS = {"beingImplemented", "implemented", "beingTerminated"}
@@ -447,14 +485,17 @@ def read_bridges(stream: BinaryIO, now: datetime | None = None) -> Iterator[Brid
     (`approved`) only counts once it is in progress: opening, open, or closing
     again -- in all three traffic is at a standstill."""
     now = now or datetime.now(UTC)
-    for record in _records(stream, "situationRecord"):
+
+    def read(record: Element):
         management_type = _text(record, "generalNetworkManagementType") or ""
         if (
             not management_type.startswith("bridge")
             or _text(record, "operatorActionStatus") not in BRIDGE_IN_PROGRESS
             or not _valid(record, now)
         ):
-            continue
+            return None
         lat, lon = _text(record, "latitude"), _text(record, "longitude")
         if lat is not None and lon is not None:
-            yield Bridge(record.attrib["id"], (float(lat), float(lon)))
+            return Bridge(record.attrib["id"], (float(lat), float(lon)))
+
+    return _each(stream, "situationRecord", read)

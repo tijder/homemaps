@@ -6,7 +6,9 @@ requires-python = ">=3.12"
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.6"]
+# ruff pinned: a new version formats differently, and `ruff format --check`
+# in CI would turn main red without a change here. Renovate bumps it.
+dev = ["pytest>=8", "ruff==0.17.5"]
 
 [project.scripts]
 homemaps-traffic = "homemaps_traffic.main:main"
