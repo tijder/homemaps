@@ -690,17 +690,24 @@ class SpeedLimitSign extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final colors = Theme.of(context).colorScheme;
-    final kmh = speed == null ? null : (speed! * 3.6).round();
-    final speeding = limit != null && kmh != null && kmh > limit! + 5;
+    // Shown in the units of the settings; compared in km/h, which is what the
+    // limit is in.
+    final shown = speed == null ? null : speedIn(speed!);
+    final speeding =
+        limit != null && speed != null && speed! * 3.6 > limit! + 5;
+    final unit = speedUnit(l);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         if (limit != null)
           Semantics(
             label: switch (source) {
-              LimitSource.roadworks => l.speedLimitTemporary(limit!),
-              LimitSource.msi => l.speedLimitMatrix(limit!),
-              _ => l.speedLimit(limit!),
+              LimitSource.roadworks => l.speedLimitTemporary(
+                limitIn(limit!),
+                unit,
+              ),
+              LimitSource.msi => l.speedLimitMatrix(limitIn(limit!), unit),
+              _ => l.speedLimit(limitIn(limit!), unit),
             },
             child: Stack(
               clipBehavior: Clip.none,
@@ -723,7 +730,7 @@ class SpeedLimitSign extends StatelessWidget {
                     ],
                   ),
                   child: Text(
-                    '$limit',
+                    '${limitIn(limit!)}',
                     textScaler: TextScaler.noScaling,
                     style: TextStyle(
                       color: source == LimitSource.msi
@@ -755,7 +762,7 @@ class SpeedLimitSign extends StatelessWidget {
               ],
             ),
           ),
-        if (kmh != null) ...[
+        if (shown != null) ...[
           const SizedBox(height: 6),
           Material(
             elevation: 4,
@@ -766,14 +773,14 @@ class SpeedLimitSign extends StatelessWidget {
               child: Column(
                 children: [
                   Text(
-                    '$kmh',
+                    '$shown',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w700,
                       color: speeding ? colors.onError : colors.onSurface,
                     ),
                   ),
                   Text(
-                    l.kmh,
+                    unit,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: speeding ? colors.onError : colors.onSurface,
                     ),
@@ -833,12 +840,12 @@ class CameraSign extends StatelessWidget {
         kind: CameraKind.section,
         text: average == null
             ? l.cameraSection
-            : l.sectionAverageShort(average),
+            : l.sectionAverageShort(kmhIn(average)),
         detail: remaining,
         over: average != null && s.maxspeed != null && average > s.maxspeed!,
         semantics: [
           l.cameraSection,
-          if (average != null) l.sectionAverage(average),
+          if (average != null) l.sectionAverage(kmhIn(average), speedUnit(l)),
           remaining,
         ].join(', '),
       );

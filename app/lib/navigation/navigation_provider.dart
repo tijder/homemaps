@@ -12,6 +12,8 @@ import '../l10n/app_localizations.dart';
 import '../models/place.dart';
 import '../models/profile.dart';
 import '../models/route.dart';
+import '../models/units.dart';
+import '../utils/formatting.dart';
 import '../providers/services.dart';
 import '../providers/settings.dart';
 import '../providers/location.dart';
@@ -63,7 +65,9 @@ class NavTexts {
     final numberFormat = NumberFormat('#0.#', language.replaceAll('-', '_'));
     // From 975 m it is a kilometer: rounded to 50 m that would be "1000
     // meters".
-    String spoken(double meters) => meters < 975
+    String spoken(double meters) => displayUnits == Units.imperial
+        ? _spokenImperial(l, numberFormat, meters)
+        : meters < 975
         // To 50 m: "in 437 meters" sounds like a measurement error.
         ? l.spokenMeters(max(50, (meters / 50).round() * 50))
         : l.spokenKilometers(numberFormat.format(meters / 1000));
@@ -93,6 +97,16 @@ class NavTexts {
       ),
     );
   }
+}
+
+/// "500 feet", "half a mile" as a number: "0.5 miles", "1 mile", "2.5 miles".
+String _spokenImperial(AppLocalizations l, NumberFormat format, double meters) {
+  final miles = meters / 1609.344;
+  if (miles < 0.19) {
+    final feet = meters * 3.28084;
+    return l.spokenFeet(max(100, (feet / 100).round() * 100));
+  }
+  return l.spokenMiles(format.format(miles));
 }
 
 /// A faster route that traffic produced en route; the user decides.

@@ -285,6 +285,8 @@ class RouteOption {
     required double elevationInterval,
   }) {
     final summary = (trip['summary'] as Map).cast<String, dynamic>();
+    // Valhalla gives lengths in the unit that was asked for, and says which.
+    final unit = trip['units'] == 'miles' ? 1609.344 : 1000.0;
     final points = <LatLng>[];
     final maneuvers = <Maneuver>[];
     final elevations = <double>[];
@@ -299,7 +301,7 @@ class RouteOption {
           Maneuver(
             instruction: m['instruction'] as String? ?? '',
             type: (m['type'] as num?)?.toInt() ?? 0,
-            meters: ((m['length'] as num?)?.toDouble() ?? 0) * 1000,
+            meters: ((m['length'] as num?)?.toDouble() ?? 0) * unit,
             seconds: (m['time'] as num?)?.toDouble() ?? 0,
             shapeIndex:
                 offset + ((m['begin_shape_index'] as num?)?.toInt() ?? 0),
@@ -326,7 +328,7 @@ class RouteOption {
       );
     }
     return RouteOption(
-      meters: (summary['length'] as num).toDouble() * 1000,
+      meters: (summary['length'] as num).toDouble() * unit,
       seconds: (summary['time'] as num).toDouble(),
       points: points,
       maneuvers: maneuvers,

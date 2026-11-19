@@ -10,7 +10,10 @@ description: Alles onder Instellingen, in één lijst.
 
 - **Kaart**: de stijl (Kaart, Licht, Donker), dag en nacht, en de lagen Verkeer
   en Flitsers. Zie [Kaart en zoeken](map-and-search.md).
-- **Vervoer**: het vervoermiddel waarmee een nieuwe route begint.
+- **Vervoer**: het vervoermiddel waarmee een nieuwe route begint. Hier kies je ook
+  de **eenheden**: kilometers of mijlen, voor afstanden en snelheden op het
+  scherm en in de stem. Een maximumsnelheid in mijlen wordt op vijf afgerond,
+  zoals op een bord.
 - **Plekken**: thuis, werk en recente plekken.
 
 **Delen**

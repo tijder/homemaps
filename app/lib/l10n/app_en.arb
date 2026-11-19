@@ -122,7 +122,7 @@
   },
   "trafficJam": "Traffic jam",
   "trafficSlow": "Slow traffic",
-  "trafficDelay": "+{duration} delay · {kmh} km/h",
+  "trafficDelay": "+{duration} delay · {kmh} {unit}",
   "@trafficDelay": {
     "placeholders": {
       "duration": {
@@ -130,6 +130,9 @@
       },
       "kmh": {
         "type": "int"
+      },
+      "unit": {
+        "type": "String"
       }
     }
   },
@@ -318,27 +321,36 @@
     }
   },
   "kmh": "km/h",
-  "speedLimit": "Speed limit {kmh} km/h",
+  "speedLimit": "Speed limit {kmh} {unit}",
   "@speedLimit": {
     "placeholders": {
       "kmh": {
         "type": "int"
+      },
+      "unit": {
+        "type": "String"
       }
     }
   },
-  "speedLimitTemporary": "Temporary speed limit {kmh} km/h",
+  "speedLimitTemporary": "Temporary speed limit {kmh} {unit}",
   "@speedLimitTemporary": {
     "placeholders": {
       "kmh": {
         "type": "int"
+      },
+      "unit": {
+        "type": "String"
       }
     }
   },
-  "speedLimitMatrix": "Speed limit {kmh} km/h on the overhead signs",
+  "speedLimitMatrix": "Speed limit {kmh} {unit} on the overhead signs",
   "@speedLimitMatrix": {
     "placeholders": {
       "kmh": {
         "type": "int"
+      },
+      "unit": {
+        "type": "String"
       }
     }
   },
@@ -680,11 +692,14 @@
   "cameraSection": "Average speed check",
   "cameraSectionStart": "Start of average speed check",
   "cameraSectionEnd": "End of average speed check",
-  "cameraChecks": "Checks {kmh} km/h",
+  "cameraChecks": "Checks {kmh} {unit}",
   "@cameraChecks": {
     "placeholders": {
       "kmh": {
         "type": "int"
+      },
+      "unit": {
+        "type": "String"
       }
     }
   },
@@ -699,11 +714,14 @@
       }
     }
   },
-  "sectionAverage": "Average {kmh} km/h",
+  "sectionAverage": "Average {kmh} {unit}",
   "@sectionAverage": {
     "placeholders": {
       "kmh": {
         "type": "int"
+      },
+      "unit": {
+        "type": "String"
       }
     }
   },
@@ -787,5 +805,26 @@
   "stopNotSkipped": "Could not fetch a route without this stop.",
   "alongFailed": "Could not search along the route: the server did not answer.",
   "serverNeedsHttps": "This address uses http://. Android only connects over https, and iOS allows http:// only inside your own network.",
-  "sheetHandle": "Show more or less of the route panel"
+  "sheetHandle": "Show more or less of the route panel",
+  "mph": "mph",
+  "units": "Units",
+  "unitsHelp": "For distances and speeds, on screen and in the voice.",
+  "unitsMetric": "Kilometres",
+  "unitsImperial": "Miles",
+  "spokenFeet": "{feet} feet",
+  "@spokenFeet": {
+    "placeholders": {
+      "feet": {
+        "type": "int"
+      }
+    }
+  },
+  "spokenMiles": "{miles, select, 1{1 mile} other{{miles} miles}}",
+  "@spokenMiles": {
+    "placeholders": {
+      "miles": {
+        "type": "String"
+      }
+    }
+  }
 }

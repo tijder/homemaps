@@ -588,8 +588,8 @@ abstract class AppLocalizations {
   /// No description provided for @trafficDelay.
   ///
   /// In en, this message translates to:
-  /// **'+{duration} delay · {kmh} km/h'**
-  String trafficDelay(String duration, int kmh);
+  /// **'+{duration} delay · {kmh} {unit}'**
+  String trafficDelay(String duration, int kmh, String unit);
 
   /// No description provided for @trafficUntil.
   ///
@@ -930,20 +930,20 @@ abstract class AppLocalizations {
   /// No description provided for @speedLimit.
   ///
   /// In en, this message translates to:
-  /// **'Speed limit {kmh} km/h'**
-  String speedLimit(int kmh);
+  /// **'Speed limit {kmh} {unit}'**
+  String speedLimit(int kmh, String unit);
 
   /// No description provided for @speedLimitTemporary.
   ///
   /// In en, this message translates to:
-  /// **'Temporary speed limit {kmh} km/h'**
-  String speedLimitTemporary(int kmh);
+  /// **'Temporary speed limit {kmh} {unit}'**
+  String speedLimitTemporary(int kmh, String unit);
 
   /// No description provided for @speedLimitMatrix.
   ///
   /// In en, this message translates to:
-  /// **'Speed limit {kmh} km/h on the overhead signs'**
-  String speedLimitMatrix(int kmh);
+  /// **'Speed limit {kmh} {unit} on the overhead signs'**
+  String speedLimitMatrix(int kmh, String unit);
 
   /// No description provided for @incidentAccident.
   ///
@@ -1902,8 +1902,8 @@ abstract class AppLocalizations {
   /// No description provided for @cameraChecks.
   ///
   /// In en, this message translates to:
-  /// **'Checks {kmh} km/h'**
-  String cameraChecks(int kmh);
+  /// **'Checks {kmh} {unit}'**
+  String cameraChecks(int kmh, String unit);
 
   /// No description provided for @cameraAhead.
   ///
@@ -1914,8 +1914,8 @@ abstract class AppLocalizations {
   /// No description provided for @sectionAverage.
   ///
   /// In en, this message translates to:
-  /// **'Average {kmh} km/h'**
-  String sectionAverage(int kmh);
+  /// **'Average {kmh} {unit}'**
+  String sectionAverage(int kmh, String unit);
 
   /// No description provided for @sectionAverageShort.
   ///
@@ -2048,6 +2048,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show more or less of the route panel'**
   String get sheetHandle;
+
+  /// No description provided for @mph.
+  ///
+  /// In en, this message translates to:
+  /// **'mph'**
+  String get mph;
+
+  /// No description provided for @units.
+  ///
+  /// In en, this message translates to:
+  /// **'Units'**
+  String get units;
+
+  /// No description provided for @unitsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'For distances and speeds, on screen and in the voice.'**
+  String get unitsHelp;
+
+  /// No description provided for @unitsMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'Kilometres'**
+  String get unitsMetric;
+
+  /// No description provided for @unitsImperial.
+  ///
+  /// In en, this message translates to:
+  /// **'Miles'**
+  String get unitsImperial;
+
+  /// No description provided for @spokenFeet.
+  ///
+  /// In en, this message translates to:
+  /// **'{feet} feet'**
+  String spokenFeet(int feet);
+
+  /// No description provided for @spokenMiles.
+  ///
+  /// In en, this message translates to:
+  /// **'{miles, select, 1{1 mile} other{{miles} miles}}'**
+  String spokenMiles(String miles);
 }
 
 class _AppLocalizationsDelegate

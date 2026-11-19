@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
+import '../models/units.dart';
+import '../utils/formatting.dart';
 import '../models/profile.dart';
 import '../models/route.dart';
 import '../utils/polyline.dart';
@@ -87,7 +89,8 @@ class ValhallaService {
       ],
       'costing': profile.costing,
       if (options.isNotEmpty) 'costing_options': {profile.costing: options},
-      'units': 'kilometers',
+      // Also the unit of the lengths in the answer: RouteOption reads which.
+      'units': displayUnits == Units.imperial ? 'miles' : 'kilometers',
       'language': language,
       'elevation_interval': elevationInterval,
       // Valhalla only gives alternatives between exactly two points.

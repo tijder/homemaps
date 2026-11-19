@@ -279,8 +279,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get trafficSlow => 'Slow traffic';
 
   @override
-  String trafficDelay(String duration, int kmh) {
-    return '+$duration delay · $kmh km/h';
+  String trafficDelay(String duration, int kmh, String unit) {
+    return '+$duration delay · $kmh $unit';
   }
 
   @override
@@ -531,18 +531,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get kmh => 'km/h';
 
   @override
-  String speedLimit(int kmh) {
-    return 'Speed limit $kmh km/h';
+  String speedLimit(int kmh, String unit) {
+    return 'Speed limit $kmh $unit';
   }
 
   @override
-  String speedLimitTemporary(int kmh) {
-    return 'Temporary speed limit $kmh km/h';
+  String speedLimitTemporary(int kmh, String unit) {
+    return 'Temporary speed limit $kmh $unit';
   }
 
   @override
-  String speedLimitMatrix(int kmh) {
-    return 'Speed limit $kmh km/h on the overhead signs';
+  String speedLimitMatrix(int kmh, String unit) {
+    return 'Speed limit $kmh $unit on the overhead signs';
   }
 
   @override
@@ -1140,8 +1140,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cameraSectionEnd => 'End of average speed check';
 
   @override
-  String cameraChecks(int kmh) {
-    return 'Checks $kmh km/h';
+  String cameraChecks(int kmh, String unit) {
+    return 'Checks $kmh $unit';
   }
 
   @override
@@ -1150,8 +1150,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String sectionAverage(int kmh) {
-    return 'Average $kmh km/h';
+  String sectionAverage(int kmh, String unit) {
+    return 'Average $kmh $unit';
   }
 
   @override
@@ -1238,4 +1238,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sheetHandle => 'Show more or less of the route panel';
+
+  @override
+  String get mph => 'mph';
+
+  @override
+  String get units => 'Units';
+
+  @override
+  String get unitsHelp =>
+      'For distances and speeds, on screen and in the voice.';
+
+  @override
+  String get unitsMetric => 'Kilometres';
+
+  @override
+  String get unitsImperial => 'Miles';
+
+  @override
+  String spokenFeet(int feet) {
+    return '$feet feet';
+  }
+
+  @override
+  String spokenMiles(String miles) {
+    String _temp0 = intl.Intl.selectLogic(miles, {
+      '1': '1 mile',
+      'other': '$miles miles',
+    });
+    return '$_temp0';
+  }
 }

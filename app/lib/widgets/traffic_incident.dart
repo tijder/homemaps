@@ -26,7 +26,7 @@ class TrafficIncident extends StatelessWidget {
             'section_start' ||
             'section_end') {
       if ((info['maxspeed'] as num?)?.toInt() case final kmh?) {
-        lines.add(l.cameraChecks(kmh));
+        lines.add(l.cameraChecks(limitIn(kmh), speedUnit(l)));
       }
       return (
         switch (kind) {
@@ -57,7 +57,11 @@ class TrafficIncident extends StatelessWidget {
     if (kind == 'jam' || kind == 'slow') {
       final delay = (info['delay_s'] as num?)?.toDouble() ?? 0;
       lines.add(
-        l.trafficDelay(duration(delay, l), (info['kph'] as num?)?.toInt() ?? 0),
+        l.trafficDelay(
+          duration(delay, l),
+          kmhIn((info['kph'] as num?) ?? 0),
+          speedUnit(l),
+        ),
       );
       return (kind == 'jam' ? l.trafficJam : l.trafficSlow, lines);
     }

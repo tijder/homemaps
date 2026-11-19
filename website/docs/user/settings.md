@@ -10,7 +10,9 @@ description: Everything under Settings, in one list.
 
 - **Map**: the style (Map, Light, Dark), day and night, and the layers Traffic
   and Speed cameras. See [Map and search](map-and-search.md).
-- **Transport**: the means of transport a new route starts with.
+- **Transport**: the means of transport a new route starts with, and the
+  **units**: kilometres or miles, for distances and speeds on screen and in
+  the voice. A speed limit in miles is rounded to five, as on a sign.
 - **Places**: home, work and recent places.
 
 **Sharing**

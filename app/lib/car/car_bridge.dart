@@ -23,6 +23,7 @@ import '../providers/saved_places.dart';
 import '../providers/services.dart';
 import '../providers/settings.dart';
 import '../services/valhalla_service.dart';
+import '../models/units.dart';
 import '../utils/formatting.dart';
 import '../widgets/navigation_bar.dart' show CameraSign;
 import 'car_api.g.dart';
@@ -162,7 +163,7 @@ class CarBridge with WidgetsBindingObserver implements CarFlutterApi {
     'noLocation': _l.navigatingWithoutLocation,
     'openApp': _l.carOpenApp,
     'searching': _l.locationSearching,
-    'kmh': _l.kmh,
+    'kmh': speedUnit(_l),
   };
 
   // ------------------------------------------------------------ from the car
@@ -760,14 +761,25 @@ class CarBridge with WidgetsBindingObserver implements CarFlutterApi {
   /// fix on which one of them changed.
   Future<void> _pushSpeed(NavigationState nav) async {
     if (_surface == null) return;
-    final speedMs = nav.fix?.speed;
+    // The car's screen multiplies by 3.6 and prints the limit as it comes.
+    // In miles both are handed over so that this still gives the right
+    // numbers (the label next to them comes from the texts).
+    final imperial = displayUnits == Units.imperial;
+    final speedMs = switch (nav.fix?.speed) {
+      final speed? when imperial => speed / 1.609344,
+      final speed => speed,
+    };
+    final limit = switch (nav.limit) {
+      final kmh? => limitIn(kmh),
+      null => null,
+    };
     final kmh = speedMs == null ? null : (speedMs * 3.6).round();
     final camera = CameraSign.describe(_l, nav.camera, nav.section);
     final cameraKey = camera == null ? null : 'camera-${camera.kind.name}';
     final matrix = nav.matrix?.perLane;
     final matrixKey = matrix == null ? null : matrixIconKey(matrix);
     final signature =
-        '$kmh:${nav.limit}:${nav.limitSource}:$cameraKey:${camera?.text}:'
+        '$kmh:$limit:${nav.limitSource}:$cameraKey:${camera?.text}:'
         '${camera?.detail}:${camera?.over}:$matrixKey';
     if (signature == _pushedSpeed) return;
     _pushedSpeed = signature;
@@ -785,7 +797,7 @@ class CarBridge with WidgetsBindingObserver implements CarFlutterApi {
     await _send(
       _host.setSpeed(
         CarSpeed(
-          limitKmh: nav.limit,
+          limitKmh: limit,
           limitSource: nav.limitSource.name,
           speedMs: speedMs,
           cameraIconKey: cameraKey,

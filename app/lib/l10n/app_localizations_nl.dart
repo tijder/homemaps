@@ -280,8 +280,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get trafficSlow => 'Langzaam verkeer';
 
   @override
-  String trafficDelay(String duration, int kmh) {
-    return '+$duration vertraging · $kmh km/u';
+  String trafficDelay(String duration, int kmh, String unit) {
+    return '+$duration vertraging · $kmh $unit';
   }
 
   @override
@@ -529,18 +529,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get kmh => 'km/u';
 
   @override
-  String speedLimit(int kmh) {
-    return 'Maximumsnelheid $kmh km/u';
+  String speedLimit(int kmh, String unit) {
+    return 'Maximumsnelheid $kmh $unit';
   }
 
   @override
-  String speedLimitTemporary(int kmh) {
-    return 'Tijdelijke maximumsnelheid $kmh km/u';
+  String speedLimitTemporary(int kmh, String unit) {
+    return 'Tijdelijke maximumsnelheid $kmh $unit';
   }
 
   @override
-  String speedLimitMatrix(int kmh) {
-    return 'Maximumsnelheid $kmh km/u op de matrixborden';
+  String speedLimitMatrix(int kmh, String unit) {
+    return 'Maximumsnelheid $kmh $unit op de matrixborden';
   }
 
   @override
@@ -1141,8 +1141,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get cameraSectionEnd => 'Einde trajectcontrole';
 
   @override
-  String cameraChecks(int kmh) {
-    return 'Controleert op $kmh km/u';
+  String cameraChecks(int kmh, String unit) {
+    return 'Controleert op $kmh $unit';
   }
 
   @override
@@ -1151,8 +1151,8 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String sectionAverage(int kmh) {
-    return 'Gemiddeld $kmh km/u';
+  String sectionAverage(int kmh, String unit) {
+    return 'Gemiddeld $kmh $unit';
   }
 
   @override
@@ -1241,4 +1241,30 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get sheetHandle => 'Meer of minder van het routepaneel tonen';
+
+  @override
+  String get mph => 'mph';
+
+  @override
+  String get units => 'Eenheden';
+
+  @override
+  String get unitsHelp =>
+      'Voor afstanden en snelheden, op het scherm en in de stem.';
+
+  @override
+  String get unitsMetric => 'Kilometers';
+
+  @override
+  String get unitsImperial => 'Mijlen';
+
+  @override
+  String spokenFeet(int feet) {
+    return '$feet voet';
+  }
+
+  @override
+  String spokenMiles(String miles) {
+    return '$miles mijl';
+  }
 }

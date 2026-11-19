@@ -1,8 +1,12 @@
+import 'dart:ui';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/profile.dart';
+import '../models/units.dart';
+import '../utils/formatting.dart';
 import 'storage_migration.dart';
 
 /// The tileserver's map styles, with their id in the style URL.
@@ -54,6 +58,7 @@ class Settings {
     this.speedCameras = true,
     this.locationEnabled = false,
     this.setupDone = true,
+    this.units = Units.metric,
   });
 
   /// Only needed on Android: on the web the server is the app's own origin.
@@ -82,6 +87,9 @@ class Settings {
   /// The first start is behind us: server set, the optional parts seen.
   final bool setupDone;
 
+  /// Kilometres or miles, on screen and in the voice.
+  final Units units;
+
   Settings copyWith({
     String? server,
     String? style,
@@ -95,6 +103,7 @@ class Settings {
     bool? speedCameras,
     bool? locationEnabled,
     bool? setupDone,
+    Units? units,
   }) => Settings(
     server: server ?? this.server,
     style: style ?? this.style,
@@ -108,10 +117,16 @@ class Settings {
     speedCameras: speedCameras ?? this.speedCameras,
     locationEnabled: locationEnabled ?? this.locationEnabled,
     setupDone: setupDone ?? this.setupDone,
+    units: units ?? this.units,
   );
 }
 
 const _box = 'settings';
+
+/// Where the road signs are in miles.
+const _milesCountries = {'US', 'GB', 'LR', 'MM'};
+
+String? _country() => PlatformDispatcher.instance.locale.countryCode;
 
 /// Opens the storage; call before runApp.
 Future<Box<dynamic>> openSettings() async {
@@ -127,8 +142,19 @@ class SettingsNotifier extends Notifier<Settings> {
   @override
   Settings build() {
     final box = ref.watch(settingsBoxProvider);
-    if (box == null) return const Settings();
+    if (box == null) {
+      displayUnits = Units.metric;
+      return const Settings();
+    }
+    final units = Units.values.firstWhere(
+      (u) => u.name == box.get('units'),
+      // Never chosen: miles where the roads are signed in them.
+      orElse: () =>
+          _milesCountries.contains(_country()) ? Units.imperial : Units.metric,
+    );
+    displayUnits = units;
     return Settings(
+      units: units,
       server: box.get('server', defaultValue: '') as String,
       style: box.get('style', defaultValue: 'osm-bright') as String,
       theme: MapTheme.values.firstWhere(
@@ -153,6 +179,7 @@ class SettingsNotifier extends Notifier<Settings> {
   }
 
   void modify(Settings newValue) {
+    displayUnits = newValue.units;
     state = newValue;
     ref.read(settingsBoxProvider)?.putAll({
       'server': newValue.server,
@@ -167,6 +194,7 @@ class SettingsNotifier extends Notifier<Settings> {
       'speedCameras': newValue.speedCameras,
       'locationOn': newValue.locationEnabled,
       'setupDone': newValue.setupDone,
+      'units': newValue.units.name,
     });
   }
 }
