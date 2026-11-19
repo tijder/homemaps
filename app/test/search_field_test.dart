@@ -1,9 +1,10 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:homemaps/l10n/app_localizations.dart';
+import 'package:homemaps/l10n/delegates.dart';
 import 'package:homemaps/models/place.dart';
 import 'package:homemaps/providers/saved_places.dart';
 import 'package:homemaps/providers/services.dart';
@@ -34,7 +35,7 @@ void main() {
       overrides: [photonProvider.overrideWithValue(_FakePhoton())],
       child: MaterialApp(
         locale: const Locale('nl'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: SearchField(
@@ -81,7 +82,7 @@ void main() {
       ProviderScope(
         child: MaterialApp(
           locale: const Locale('nl'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: SearchField(
@@ -121,7 +122,7 @@ void main() {
       ProviderScope(
         child: MaterialApp(
           locale: const Locale('nl'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: SearchField(
@@ -149,7 +150,7 @@ void main() {
           overrides: [photonProvider.overrideWithValue(photon)],
           child: MaterialApp(
             locale: const Locale('en'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: SearchField(
@@ -256,7 +257,7 @@ void main() {
       ProviderScope(
         overrides: [photonProvider.overrideWithValue(photon)],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             // What is left above an on-screen keyboard on a phone.

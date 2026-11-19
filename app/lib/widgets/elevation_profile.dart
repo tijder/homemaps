@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The elevation profile of a route: one line, filled, with min and max.
 class ElevationProfile extends StatelessWidget {

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
@@ -16,6 +16,7 @@ import 'package:homemaps/screens/settings/settings_screen.dart';
 import 'package:homemaps/screens/settings/location_sharing.dart';
 import 'package:homemaps/services/location_sharer.dart';
 import 'package:homemaps/l10n/app_localizations.dart';
+import 'package:homemaps/l10n/delegates.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import 'helpers/fake_source.dart';
@@ -460,7 +461,7 @@ void main() {
           ],
           child: MaterialApp(
             locale: const Locale('nl'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: const SettingsScreen(category: 'location-sharing'),
           ),

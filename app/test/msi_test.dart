@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:homemaps/l10n/app_localizations.dart';
+import 'package:homemaps/l10n/delegates.dart';
 import 'package:homemaps/navigation/route_tracker.dart';
 import 'package:homemaps/utils/msi.dart';
 import 'package:homemaps/widgets/navigation_bar.dart';
@@ -113,7 +114,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('nl'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: const Scaffold(
           body: MatrixBar(['80r', '70', 'x', '<', 'open', 'end', '']),

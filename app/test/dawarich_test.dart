@@ -2,10 +2,11 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:homemaps/l10n/app_localizations.dart';
+import 'package:homemaps/l10n/delegates.dart';
 import 'package:homemaps/models/dawarich.dart';
 import 'package:homemaps/models/location_sharing.dart';
 import 'package:homemaps/providers/dawarich.dart';
@@ -440,7 +441,7 @@ void main() {
           container: c,
           child: MaterialApp(
             locale: const Locale('nl'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: const SettingsScreen(category: 'dawarich'),
           ),

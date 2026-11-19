@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:homemaps/l10n/app_localizations.dart';
+import 'package:homemaps/l10n/delegates.dart';
 import 'package:homemaps/models/route.dart';
 import 'package:homemaps/navigation/turn_arrow.dart';
 import 'package:homemaps/utils/distance.dart';
@@ -154,7 +155,7 @@ void main() {
 
   Widget app(Widget child) => MaterialApp(
     locale: const Locale('nl'),
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: appLocalizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     home: Scaffold(body: child),
   );

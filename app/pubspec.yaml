@@ -21,7 +21,7 @@ version: 2.3.5+138
 environment:
   sdk: ^3.13.4
   # Pinned exactly so subosito/flutter-action can read it with flutter-version-file.
-  flutter: 3.47.9
+  flutter: 3.50.0
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -58,6 +58,8 @@ dependencies:
   webview_flutter: ^4.14.1
   path_provider: ^2.1.6
   file_picker: ^13.1.0
+  # Material left the Flutter SDK for a package of its own (Flutter 3.50).
+  material_ui: ^1.9.0
 
 dev_dependencies:
   flutter_test:

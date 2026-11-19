@@ -4,3 +4,7 @@ output-localization-file: app_localizations.dart
 output-class: AppLocalizations
 output-dir: lib/l10n
 nullable-getter: false
+# The generator of Flutter 3.50 still takes the Material and Cupertino
+# delegates from flutter_localizations, which deprecates them in favour of
+# material_ui; nothing to change in a generated file.
+header: "// ignore_for_file: deprecated_member_use"

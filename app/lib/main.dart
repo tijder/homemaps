@@ -3,13 +3,14 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import 'car/car_bridge.dart';
 import 'l10n/app_localizations.dart';
+import 'l10n/delegates.dart';
 import 'navigation/simulation.dart';
 import 'providers/services.dart';
 import 'providers/settings.dart';
@@ -109,7 +110,7 @@ class _HomeMapsAppState extends ConsumerState<HomeMapsApp> {
   Widget build(BuildContext context) => MaterialApp.router(
     onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
     routerConfig: _config,
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: appLocalizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     theme: ThemeData(
       colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1565C0)),
