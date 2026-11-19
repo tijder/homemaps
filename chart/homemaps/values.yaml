@@ -23,6 +23,8 @@ region:
 # can be rebuilt.
 storage:
   storageClassName: ""
+  # -- ReadWriteOnce or ReadWriteMany. Not ReadWriteOncePod: the build jobs
+  # mount the volume of the pod they build for, while that pod runs.
   accessMode: ReadWriteOnce
 
 # Pods run as this user, non-root, without capabilities.
@@ -213,6 +215,8 @@ ingress:
 networkPolicy:
   enabled: true
   # -- Namespaces allowed to reach the web service (the ingress controller or gateway).
+  # With `ingress.enabled` this is the namespace of your ingress controller. An
+  # empty list allows every namespace.
   ingressNamespaces: [envoy-gateway-system]
   # -- Namespace of Prometheus, for scraping the traffic importer.
   monitoringNamespace: monitoring

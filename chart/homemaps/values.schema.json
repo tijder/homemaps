@@ -17,7 +17,7 @@
       "type": "object",
       "properties": {
         "storageClassName": { "type": "string" },
-        "accessMode": { "enum": ["ReadWriteOnce", "ReadWriteMany", "ReadWriteOncePod"] }
+        "accessMode": { "enum": ["ReadWriteOnce", "ReadWriteMany"] }
       }
     },
     "web": { "type": "object", "required": ["enabled"], "properties": { "enabled": { "type": "boolean" }, "config": { "type": "object" } } },

@@ -8,8 +8,16 @@ map $http_x_forwarded_proto $hm_scheme {
     "~^http"  http;
 }
 
+# The host goes into every page: only what a host name can consist of, so a
+# made-up Host header can't put markup into a response that a cache then
+# serves to others.
+map $http_host $hm_host {
+    default                    "homemaps.invalid";
+    "~^[A-Za-z0-9.:\[\]-]+$"   $http_host;
+}
+
 map "${SITE_URL}" $hm_site_url {
-    ""      "$hm_scheme://$http_host";
+    ""      "$hm_scheme://$hm_host";
     default "${SITE_URL}";
 }
 

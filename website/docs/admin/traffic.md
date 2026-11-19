@@ -42,8 +42,26 @@ valhalla:
     intervalSeconds: 300     # a cycle; the first takes about a minute at full scale
     closures: true
     msiSeconds: 60           # the overhead signs; 0 turns them off
+    incidents: true          # accidents, breakdowns, objects on the road
+    bridges: true            # bridges that are open right now
+    speedLimits: true        # temporary maximum speeds at road works
+    planningSeconds: 3600    # closures in the coming days; 0 turns them off
     ndwUrl: https://opendata.ndw.nu
 ```
+
+## When a feed fails
+
+NDW renames a feed now and then, and is sometimes down. The importer goes on
+with what it has:
+
+- Without the travel times a cycle fails. The traffic of the last good cycle
+  stays for three cycles (at least 15 minutes) and is then cleared, in
+  Valhalla and on the map: Valhalla has no expiry of its own, and an old jam
+  would otherwise stay in every route.
+- Without the closures feed the closures of the last good fetch stay for the
+  same time.
+- Every other feed only costs its own part of the map. Turn one off with its
+  value above when it stays broken.
 
 ## How well does it match
 
@@ -62,5 +80,12 @@ NDW's open data under NDW's terms
 ## Metrics
 
 The importer exposes Prometheus metrics on port 9100 (cycle time, matched
-segments, closures, feed errors); `monitoring.serviceMonitor.enabled` scrapes
-them and `monitoring.prometheusRule.enabled` alerts when a feed goes stale.
+segments, closures, and per feed when it last arrived and how often it
+failed); `monitoring.serviceMonitor.enabled` scrapes them.
+`monitoring.prometheusRule.enabled` alerts when no cycle has finished for
+half an hour (`maxAgeSeconds`) and when a single feed has not arrived for
+three hours (`feedMaxAgeSeconds`). The latter is the only sign of a feed NDW
+renamed, because the importer runs on without it.
+
+The sidecar has a liveness probe on `/healthz`: it restarts when its loop
+has stopped running, not when NDW is down.

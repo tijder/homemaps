@@ -27,6 +27,34 @@ app.kubernetes.io/version: {{ .root.Chart.AppVersion | quote }}
 {{- end }}
 {{- end }}
 
+{{/*
+The labels of a pod: without the chart and app version. With those in the pod
+template every release -- there is one most nights -- replaced the pods of
+components that had not changed at all, and Photon and the tileserver each
+take a while to come back.
+*/}}
+{{- define "homemaps.podLabels" -}}
+{{ include "homemaps.selector" . }}
+{{- with .root.Values.commonLabels }}
+{{ toYaml . }}
+{{- end }}
+{{- end }}
+
+{{/*
+For a build job: preferably on the node where the component's pod runs. They
+share a ReadWriteOnce volume, which only attaches to one node; elsewhere the
+job waits on a Multi-Attach error until its deadline.
+*/}}
+{{- define "homemaps.nextTo" -}}
+podAffinity:
+  preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        topologyKey: kubernetes.io/hostname
+        labelSelector:
+          matchLabels: {{- include "homemaps.selector" . | nindent 12 }}
+{{- end }}
+
 {{- define "homemaps.selector" -}}
 app.kubernetes.io/name: {{ include "homemaps.name" .root }}
 app.kubernetes.io/instance: {{ .root.Release.Name }}

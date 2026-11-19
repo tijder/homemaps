@@ -24,6 +24,10 @@ server {
     add_header_inherit merge;
     add_header Cross-Origin-Opener-Policy "same-origin" always;
     add_header Cross-Origin-Embedder-Policy "require-corp" always;
+    # A file is what its Content-Type says, and the address of a route (with
+    # where you're going in it) is not passed on to another site.
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "no-referrer" always;
 
     # maplibre-gl-js is loaded as an ES module; with another MIME type the
     # browser refuses it. Older mime.types do not know .mjs.
@@ -118,6 +122,17 @@ server {
     # bootstrap with an old build. An unchanged file costs a 304.
     location / {
         add_header Cache-Control "no-cache";
-        try_files $uri $uri/ /index.html;
+        try_files $uri $uri/ @app;
+    }
+
+    # An address inside the app (/settings/map) is the app itself. A file of
+    # the build that is not there is a 404: answering main.dart.wasm with the
+    # start page and a 200 hides a broken deploy behind a parse error.
+    location @app {
+        add_header Cache-Control "no-cache";
+        if ($uri ~* "\.(js|mjs|wasm|json|css|map|png|jpe?g|svg|ico|ttf|otf|woff2?|bin|symbols|frag)$") {
+            return 404;
+        }
+        rewrite ^ /index.html break;
     }
 }

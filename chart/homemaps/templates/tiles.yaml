@@ -66,7 +66,7 @@ spec:
     matchLabels: {{- include "homemaps.selector" $t | nindent 6 }}
   template:
     metadata:
-      labels: {{- include "homemaps.labels" $t | nindent 8 }}
+      labels: {{- include "homemaps.podLabels" $t | nindent 8 }}
       annotations:
         checksum/config: {{ .Files.Get "files/bootstrap.sh" | sha256sum | trunc 16 }}-{{ toJson .Values.tiles.styles | sha256sum | trunc 16 }}
     spec:
@@ -125,6 +125,13 @@ spec:
           readinessProbe:
             httpGet: { path: /health, port: http }
             periodSeconds: 30
+          # A process that hangs stays "not ready" forever otherwise. Generous:
+          # a busy server that answers slowly is not a hung one.
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 6
           resources: {{- toYaml .Values.tiles.resources | nindent 12 }}
           volumeMounts:
             - { name: data, mountPath: /data }
@@ -163,6 +170,7 @@ spec:
         spec:
           restartPolicy: Never
           serviceAccountName: {{ include "homemaps.fullname" . }}-refresher
+          affinity: {{- include "homemaps.nextTo" $t | nindent 12 }}
           securityContext: {{- include "homemaps.podSecurity" (dict "root" .) | nindent 12 }}
           initContainers:
             - name: prepare

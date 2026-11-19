@@ -31,7 +31,7 @@ spec:
     matchLabels: {{- include "homemaps.selector" $p | nindent 6 }}
   template:
     metadata:
-      labels: {{- include "homemaps.labels" $p | nindent 8 }}
+      labels: {{- include "homemaps.podLabels" $p | nindent 8 }}
     spec:
       automountServiceAccountToken: false
       {{- with .Values.imagePullSecrets }}
@@ -66,6 +66,13 @@ spec:
           readinessProbe:
             httpGet: { path: /status, port: http }
             periodSeconds: 30
+          # A process that hangs stays "not ready" forever otherwise. Generous:
+          # a busy server that answers slowly is not a hung one.
+          livenessProbe:
+            httpGet: { path: /status, port: http }
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 6
           resources: {{- toYaml .Values.photon.resources | nindent 12 }}
           volumeMounts:
             - { name: data, mountPath: /photon/data }

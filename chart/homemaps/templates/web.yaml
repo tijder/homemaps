@@ -35,7 +35,7 @@ spec:
     matchLabels: {{- include "homemaps.selector" $w | nindent 6 }}
   template:
     metadata:
-      labels: {{- include "homemaps.labels" $w | nindent 8 }}
+      labels: {{- include "homemaps.podLabels" $w | nindent 8 }}
       annotations:
         checksum/config: {{ .Values.web.config | toJson | sha256sum | trunc 16 }}
     spec:

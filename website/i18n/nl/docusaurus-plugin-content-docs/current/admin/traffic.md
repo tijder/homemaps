@@ -41,8 +41,26 @@ valhalla:
     intervalSeconds: 300     # een cyclus; de eerste duurt op volle schaal ongeveer een minuut
     closures: true
     msiSeconds: 60           # de matrixborden; 0 zet ze uit
+    incidents: true          # ongevallen, pech, voorwerpen op de weg
+    bridges: true            # bruggen die nu open staan
+    speedLimits: true        # tijdelijke maximumsnelheden bij werkzaamheden
+    planningSeconds: 3600    # afsluitingen in de komende dagen; 0 zet ze uit
     ndwUrl: https://opendata.ndw.nu
 ```
+
+## Als een feed uitvalt
+
+NDW hernoemt af en toe een feed, en ligt er soms uit. De importer gaat door
+met wat hij heeft:
+
+- Zonder de reistijden mislukt een cyclus. Het verkeer van de laatste goede
+  cyclus blijft drie cycli staan (minstens 15 minuten) en wordt dan gewist, in
+  Valhalla en op de kaart: Valhalla kent zelf geen houdbaarheid, en een oude
+  file zou anders in elke route blijven zitten.
+- Zonder de afsluitingenfeed blijven de afsluitingen van de laatste goede keer
+  even lang staan.
+- Elke andere feed kost alleen zijn eigen deel van de kaart. Zet er een uit met
+  de waarde hierboven als hij kapot blijft.
 
 ## Hoe goed matcht het
 
@@ -62,6 +80,12 @@ de open data van NDW onder de voorwaarden van NDW
 ## Metrics
 
 De importer biedt Prometheus-metrics op poort 9100 (cyclustijd, gematchte
-segmenten, afsluitingen, feedfouten); `monitoring.serviceMonitor.enabled`
-scrapet ze en `monitoring.prometheusRule.enabled` alarmeert als een feed
-verouderd raakt.
+segmenten, afsluitingen, en per feed wanneer hij voor het laatst binnenkwam en
+hoe vaak hij mislukte); `monitoring.serviceMonitor.enabled` scrapet ze.
+`monitoring.prometheusRule.enabled` alarmeert als er een half uur geen cyclus
+is afgerond (`maxAgeSeconds`) en als één feed drie uur niet is binnengekomen
+(`feedMaxAgeSeconds`). Dat laatste is het enige teken van een feed die NDW
+heeft hernoemd, want de importer draait zonder die feed door.
+
+De sidecar heeft een liveness-probe op `/healthz`: hij herstart als zijn lus
+is gestopt, niet als NDW eruit ligt.

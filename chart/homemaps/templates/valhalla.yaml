@@ -55,7 +55,7 @@ spec:
     matchLabels: {{- include "homemaps.selector" $v | nindent 6 }}
   template:
     metadata:
-      labels: {{- include "homemaps.labels" $v | nindent 8 }}
+      labels: {{- include "homemaps.podLabels" $v | nindent 8 }}
       annotations:
         # start.sh is only read at start: a new thread count needs a new pod.
         checksum/config: {{ .Values.valhalla.threads | toString | sha256sum | trunc 16 }}
@@ -102,6 +102,13 @@ spec:
           readinessProbe:
             httpGet: { path: /status, port: http }
             periodSeconds: 30
+          # A process that hangs stays "not ready" forever otherwise. Generous:
+          # a busy server that answers slowly is not a hung one.
+          livenessProbe:
+            httpGet: { path: /status, port: http }
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 6
           resources: {{- toYaml .Values.valhalla.resources | nindent 12 }}
           volumeMounts:
             - { name: data, mountPath: /data }
@@ -178,6 +185,7 @@ spec:
         spec:
           restartPolicy: Never
           serviceAccountName: {{ include "homemaps.fullname" . }}-refresher
+          affinity: {{- include "homemaps.nextTo" $v | nindent 12 }}
           securityContext: {{- include "homemaps.podSecurity" (dict "root" .) | nindent 12 }}
           initContainers:
             - name: build
