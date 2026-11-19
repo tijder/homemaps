@@ -126,6 +126,8 @@ class NavigationState {
     this.fix,
     this.muted = false,
     this.recalculating = false,
+    this.rerouteFailed = false,
+    this.gpsLost = false,
     this.arrived = false,
     this.suggestion,
     this.limit,
@@ -144,6 +146,14 @@ class NavigationState {
   final LocationFix? fix;
   final bool muted;
   final bool recalculating;
+
+  /// Off the route and no new one could be fetched (no connection, or no way
+  /// from here): the old route is still what's shown.
+  final bool rerouteFailed;
+
+  /// No fix for a while (a tunnel, a parking garage): what's on screen is
+  /// where you were, not where you are.
+  final bool gpsLost;
   final bool arrived;
   final Suggestion? suggestion;
 
@@ -176,6 +186,8 @@ class NavigationState {
     LocationFix? fix,
     bool? muted,
     bool? recalculating,
+    bool? rerouteFailed,
+    bool? gpsLost,
     bool? arrived,
     Suggestion? Function()? suggestion,
     int? Function()? limit,
@@ -191,6 +203,8 @@ class NavigationState {
     fix: fix ?? this.fix,
     muted: muted ?? this.muted,
     recalculating: recalculating ?? this.recalculating,
+    rerouteFailed: rerouteFailed ?? this.rerouteFailed,
+    gpsLost: gpsLost ?? this.gpsLost,
     arrived: arrived ?? this.arrived,
     suggestion: suggestion != null ? suggestion() : this.suggestion,
     limit: limit != null ? limit() : this.limit,
@@ -271,9 +285,26 @@ class NavigationNotifier extends Notifier<NavigationState?> {
   /// How long a suggestion stays up without a choice.
   static const suggestionDuration = Duration(seconds: 45);
 
-  /// Waypoints on the current route already passed (and removed from the
-  /// destinations).
-  int _viasPassed = 0;
+  /// How far along the current route each waypoint lies (every destination
+  /// but the last), in order. Valhalla gets them as `through`, which has no
+  /// arrival maneuver, so this is how a passed one is recognised.
+  List<double> _viaAlong = const [];
+
+  /// "Recalculating route." is said once per time you leave the route, not on
+  /// every attempt while there's no connection.
+  bool _saidRecalculating = false;
+
+  /// Fires when no fix has come in for [gpsLostAfter].
+  Timer? _gpsWatch;
+
+  /// Without a fix for this long, the screen says so. A phone gives one per
+  /// second; in a tunnel there are none.
+  @visibleForTesting
+  static Duration gpsLostAfter = const Duration(seconds: 10);
+
+  /// Counts the starts: whatever is still waiting from an earlier one sees
+  /// that it has been overtaken.
+  int _run = 0;
   late NavTexts _texts;
   late Profile _profile;
 
@@ -306,6 +337,7 @@ class NavigationNotifier extends Notifier<NavigationState?> {
     required NavTexts texts,
   }) async {
     _cleanUp();
+    final run = ++_run;
     _rejected.clear();
     _active = true;
     _voiceAtStart = ref.read(voiceProvider);
@@ -313,7 +345,15 @@ class NavigationNotifier extends Notifier<NavigationState?> {
     _profile = ref.read(settingsProvider).profile;
     _newRoute(route, destinations);
     await WakelockPlus.enable().catchError((Object _) {});
-    await _voice.begin(texts.language).catchError((Object _) {});
+    // A speech engine that doesn't answer must not hold up the navigation.
+    await _voice
+        .begin(texts.language)
+        .timeout(const Duration(seconds: 5))
+        .catchError((Object _) {});
+    // Stopped (or started again) while the voice was getting ready: turning
+    // on the background location and the traffic polling now would leave them
+    // on with nothing to turn them off.
+    if (run != _run || !_active) return;
     ref.read(locationProvider.notifier).navigation((
       title: texts.notificationHeading,
       text: texts.notificationBody,
@@ -369,6 +409,8 @@ class NavigationNotifier extends Notifier<NavigationState?> {
     _fasterTimer = null;
     _suggestionExpiry?.cancel();
     _suggestionExpiry = null;
+    _gpsWatch?.cancel();
+    _gpsWatch = null;
     _inFlight?.cancel();
     if (!_active) return;
     _active = false;
@@ -381,7 +423,7 @@ class NavigationNotifier extends Notifier<NavigationState?> {
   }
 
   void _newRoute(RouteOption route, List<Place> destinations) {
-    _viasPassed = 0;
+    _saidRecalculating = false;
     _limits = const [];
     _temporary = const [];
     _gantries = const [];
@@ -392,7 +434,17 @@ class NavigationNotifier extends Notifier<NavigationState?> {
     _incidents = const [];
     _cameras = CamerasOnRoute.empty;
     _sectionEntry = null;
-    _tracker = RouteTracker(route);
+    final tracker = _tracker = RouteTracker(route);
+    // A place may lie well off the road Valhalla snapped it to (a shop behind
+    // its car park), so any distance counts. One that isn't found at all
+    // counts as the end of the route: it's never passed before that.
+    _viaAlong = [
+      for (final along in tracker.alongOf([
+        for (final via in destinations.take(max(0, destinations.length - 1)))
+          via.point,
+      ], within: double.infinity))
+        along ?? tracker.length,
+    ];
     _announcer = Announcer(route, _profile, withDistance: _texts.withDistance);
     final source = ref.read(locationSourceProvider);
     if (source is SimulationSource) source.drive(route);
@@ -625,13 +677,15 @@ class NavigationNotifier extends Notifier<NavigationState?> {
       return;
     }
     final status = tracker.track(fix);
+    _gpsWatch?.cancel();
+    _gpsWatch = Timer(gpsLostAfter, _noFix);
     // The first fix is far from the start ("from" was another address): don't
     // read out that route first, get a new one from here right away.
     if (now.status == null &&
         status.deviation > _farFromStart &&
         DateTime.now().difference(_lastRecalculation) >
             _pauseBetweenRecalculations) {
-      state = now.copyWith(status: status, fix: fix);
+      state = now.copyWith(status: status, fix: fix, gpsLost: false);
       _recalculate(fix);
       return;
     }
@@ -651,22 +705,29 @@ class NavigationNotifier extends Notifier<NavigationState?> {
     }
     // Past a waypoint: it no longer belongs in the next recalculation. The
     // destination itself always stays.
-    final passed = [
-      for (var i = 0; i < status.next; i++)
-        if (now.route.maneuvers[i].isDestination) i,
-    ].length;
     var destinations = now.destinations;
-    if (passed > _viasPassed && destinations.length > 1) {
-      final drop = (passed - _viasPassed).clamp(0, destinations.length - 1);
-      destinations = destinations.sublist(drop);
-      _viasPassed = passed;
+    if (!status.offRoute && status.deviation < RouteTracker.maxDeviation) {
+      var passed = 0;
+      while (passed < _viaAlong.length &&
+          passed < destinations.length - 1 &&
+          status.along >= _viaAlong[passed] - RouteTracker.arrivalRadius) {
+        passed++;
+      }
+      if (passed > 0) {
+        destinations = destinations.sublist(passed);
+        _viaAlong = _viaAlong.sublist(passed);
+      }
     }
+    if (!status.offRoute) _saidRecalculating = false;
     final limit = _limit(status);
     final cameras = _camerasAt(status, fix);
     state = now.copyWith(
       status: status,
       fix: fix,
       arrived: status.arrived,
+      gpsLost: false,
+      // Back on the route: the old one is the right one again.
+      rerouteFailed: status.offRoute && now.rerouteFailed,
       destinations: destinations,
       limit: () => limit.kmh,
       limitSource: limit.source,
@@ -686,6 +747,7 @@ class NavigationNotifier extends Notifier<NavigationState?> {
       _fixes?.close();
       _fixes = null;
       _fasterTimer?.cancel();
+      _gpsWatch?.cancel();
       WakelockPlus.disable().catchError((Object _) {});
       ref.read(locationProvider.notifier).navigation(null);
       return;
@@ -694,9 +756,18 @@ class NavigationNotifier extends Notifier<NavigationState?> {
         !now.recalculating &&
         DateTime.now().difference(_lastRecalculation) >
             _pauseBetweenRecalculations) {
-      if (!now.muted) _voice.say(_texts.recalculating);
+      if (!now.muted && !_saidRecalculating) {
+        _saidRecalculating = true;
+        _voice.say(_texts.recalculating);
+      }
       _recalculate(fix);
     }
+  }
+
+  void _noFix() {
+    final now = state;
+    if (now == null || now.arrived || now.gpsLost) return;
+    state = now.copyWith(gpsLost: true);
   }
 
   /// Every few minutes, for the car: is there a clearly faster way from here
@@ -777,6 +848,8 @@ class NavigationNotifier extends Notifier<NavigationState?> {
       // No network: try again next time.
     } on RouteError {
       // No route from here: the current one stays.
+    } on ParallelWaitError {
+      // One of the two travel times failed (or navigation stopped meanwhile).
     }
   }
 
@@ -790,12 +863,20 @@ class NavigationNotifier extends Notifier<NavigationState?> {
   }
 
   /// A stop en route (fuel, groceries): before the rest of the destinations,
-  /// and a new route from here right away.
-  void addStop(Place stop) {
+  /// with a new route from here. False if that route couldn't be fetched; the
+  /// stop is then not added, so what's on screen stays what you drive.
+  Future<bool> addStop(Place stop) async {
     final now = state, fix = now?.fix;
-    if (now == null || fix == null || now.arrived) return;
-    state = now.copyWith(destinations: [stop, ...now.destinations]);
-    _recalculate(fix);
+    if (now == null || fix == null || now.arrived) return false;
+    return _recalculate(fix, stop: stop);
+  }
+
+  /// The next waypoint is dropped: straight on to what comes after it.
+  Future<bool> skipStop() async {
+    final now = state, fix = now?.fix;
+    if (now == null || fix == null || now.arrived) return false;
+    if (now.destinations.length < 2) return false;
+    return _recalculate(fix, skip: true);
   }
 
   /// "Ignore", or nothing chosen for 45 seconds: the current route stays, and
@@ -812,17 +893,31 @@ class NavigationNotifier extends Notifier<NavigationState?> {
   /// the same way for this purpose.
   static int _key(RouteOption route) => (route.meters / 100).round();
 
-  Future<void> _recalculate(LocationFix fix) async {
+  /// A new route from [fix] to what's still ahead; with [stop] first, or
+  /// with [skip] without the next waypoint. True if the new route is in.
+  Future<bool> _recalculate(
+    LocationFix fix, {
+    Place? stop,
+    bool skip = false,
+  }) async {
     final now = state;
     final valhalla = ref.read(valhallaProvider);
-    if (now == null || valhalla == null) return;
+    if (now == null || valhalla == null) return false;
     _lastRecalculation = DateTime.now();
+    // Whatever was still under way (a search for a faster route, an earlier
+    // recalculation) is about the old route.
+    _inFlight?.cancel();
     final cancel = _inFlight = CancelToken();
     state = now.copyWith(recalculating: true);
     final settings = ref.read(settingsProvider);
+    List<Place> ahead(List<Place> destinations) => [
+      ?stop,
+      ...destinations.skip(skip && destinations.length > 1 ? 1 : 0),
+    ];
+    var done = false;
     try {
       final routes = await valhalla.route(
-        [fix.point, for (final target in now.destinations) target.point],
+        [fix.point, for (final target in ahead(now.destinations)) target.point],
         _profile,
         language: _texts.language,
         liveTraffic: settings.liveTraffic,
@@ -834,16 +929,34 @@ class NavigationNotifier extends Notifier<NavigationState?> {
         cancel: cancel,
       );
       final current = state;
-      if (cancel.isCancelled || current == null || routes.isEmpty) return;
+      if (cancel.isCancelled || current == null || routes.isEmpty) {
+        return false;
+      }
       _suggestionExpiry?.cancel();
-      _newRoute(routes.first, current.destinations);
+      _newRoute(routes.first, ahead(current.destinations));
+      done = true;
       // Apply the latest fix right away, otherwise nothing shows until the next.
       if (state?.fix case final latest?) _onFix(latest);
+      return true;
     } on DioException {
       // No network: the old route stays, try again in ten seconds.
-      state = state?.copyWith(recalculating: false);
+      return false;
     } on RouteError {
-      state = state?.copyWith(recalculating: false);
+      return false;
+    } catch (error, stack) {
+      // An answer that isn't a route: the same as no answer.
+      debugPrint('recalculation failed: $error\n$stack');
+      return false;
+    } finally {
+      // Whatever went wrong, "recalculating" must not stay on: nothing is
+      // recalculated while it is. Unless a newer one took over meanwhile.
+      if (!done && identical(_inFlight, cancel)) {
+        state = state?.copyWith(
+          recalculating: false,
+          // A stop that couldn't be added is reported where it was asked.
+          rerouteFailed: stop == null && !skip,
+        );
+      }
     }
   }
 }

@@ -227,7 +227,7 @@ abstract class AppLocalizations {
   /// No description provided for @serverUnreachable.
   ///
   /// In en, this message translates to:
-  /// **'No HomeMaps server found at this address'**
+  /// **'The server cannot be reached.'**
   String get serverUnreachable;
 
   /// No description provided for @fastest.
@@ -1055,7 +1055,7 @@ abstract class AppLocalizations {
   /// No description provided for @stopAdded.
   ///
   /// In en, this message translates to:
-  /// **'Stop: {label}'**
+  /// **'Stop added: {label}'**
   String stopAdded(String label);
 
   /// No description provided for @locationSharing.
@@ -1927,6 +1927,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{distance} to go'**
   String sectionRemaining(String distance);
+
+  /// No description provided for @gpsLost.
+  ///
+  /// In en, this message translates to:
+  /// **'No GPS signal'**
+  String get gpsLost;
+
+  /// No description provided for @rerouteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'No new route yet. This is still the old one.'**
+  String get rerouteFailed;
+
+  /// No description provided for @stopNotAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop not added: no route could be fetched.'**
+  String get stopNotAdded;
+
+  /// No description provided for @serverNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No HomeMaps server found at this address'**
+  String get serverNotFound;
 }
 
 class _AppLocalizationsDelegate

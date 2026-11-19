@@ -1296,10 +1296,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       ),
     );
     if (chosen == null || !mounted) return;
-    ref.read(navigationProvider.notifier).addStop(chosen);
+    // Only say it's added once the route through it is there.
+    final added = await ref.read(navigationProvider.notifier).addStop(chosen);
+    if (!mounted) return;
+    final l = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(AppLocalizations.of(context).stopAdded(chosen.label)),
+        content: Text(added ? l.stopAdded(chosen.label) : l.stopNotAdded),
       ),
     );
   }

@@ -75,7 +75,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Bij een van de punten ligt geen weg die je met dit vervoermiddel kunt gebruiken.';
 
   @override
-  String get serverUnreachable => 'Geen HomeMaps-server gevonden op dit adres';
+  String get serverUnreachable => 'De server is niet bereikbaar.';
 
   @override
   String get fastest => 'Snelste';
@@ -612,7 +612,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String stopAdded(String label) {
-    return 'Tussenstop: $label';
+    return 'Tussenstop toegevoegd: $label';
   }
 
   @override
@@ -1162,4 +1162,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String sectionRemaining(String distance) {
     return 'Nog $distance';
   }
+
+  @override
+  String get gpsLost => 'Geen GPS-signaal';
+
+  @override
+  String get rerouteFailed => 'Nog geen nieuwe route. Dit is nog de oude.';
+
+  @override
+  String get stopNotAdded =>
+      'Tussenstop niet toegevoegd: er kon geen route worden opgehaald.';
+
+  @override
+  String get serverNotFound => 'Geen HomeMaps-server gevonden op dit adres';
 }

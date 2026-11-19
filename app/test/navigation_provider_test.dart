@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,8 +25,11 @@ import 'navigation_test.dart' show fix, along, east, stroe;
 class FakeVoice implements Voice {
   final sentences = <String>[];
 
+  /// If set, [begin] only returns once this completes: a slow speech engine.
+  Future<void>? ready;
+
   @override
-  Future<void> begin(String language) async {}
+  Future<void> begin(String language) async => ready;
 
   @override
   void say(String sentence) => sentences.add(sentence);
@@ -69,6 +74,9 @@ class FakeValhalla extends ValhallaService {
     CancelToken? cancel,
   }) async => time(line);
 
+  /// If set, every route request fails with this.
+  Object? failure;
+
   /// Called on every request, to capture the state at that moment.
   void Function()? onRequest;
   final requests =
@@ -94,6 +102,7 @@ class FakeValhalla extends ValhallaService {
       heading: heading,
       alternatives: alternatives,
     ));
+    if (failure case final failure?) throw failure;
     return [response];
   }
 }
@@ -189,6 +198,129 @@ void main() {
     }
     expect(valhalla.requests, hasLength(1));
   });
+
+  /// Four fixes 200 m east of the route, from the 30th point on: off route.
+  Future<void> leaveRoute() async {
+    final points = along(route.points, 20);
+    for (final point in points.take(30)) {
+      await driveTo(point);
+    }
+    for (var i = 30; i < 34; i++) {
+      // The road runs east here, so north is off it.
+      await driveTo(
+        LatLng(points[i].latitude + 300 / 110574, points[i].longitude),
+      );
+    }
+  }
+
+  test('a waypoint you have passed is not in the recalculation', () async {
+    final points = along(route.points, 20);
+    // Beside the road, as a shop is: Valhalla snaps it to the route.
+    final via = Place(label: 'Fuel', point: east(points[10], 60));
+    await c
+        .read(navigationProvider.notifier)
+        .start(route: route, destinations: [via, target], texts: texts);
+    for (final point in points.take(5)) {
+      await driveTo(point);
+    }
+    expect(c.read(navigationProvider)!.destinations, [via, target]);
+    await leaveRoute();
+    expect(c.read(navigationProvider)!.destinations, [target]);
+    expect(valhalla.requests.single.points, hasLength(2));
+    expect(valhalla.requests.single.points.last, target.point);
+  });
+
+  test('a waypoint still ahead stays in the recalculation', () async {
+    final points = along(route.points, 20);
+    final via = Place(label: 'Fuel', point: points[60]);
+    await c
+        .read(navigationProvider.notifier)
+        .start(route: route, destinations: [via, target], texts: texts);
+    await leaveRoute();
+    expect(valhalla.requests.single.points, hasLength(3));
+    expect(valhalla.requests.single.points[1], via.point);
+  });
+
+  test('stopped while the voice was getting ready: nothing stays on', () async {
+    final ready = Completer<void>();
+    voice.ready = ready.future;
+    final notifier = c.read(navigationProvider.notifier);
+    final starting = notifier.start(
+      route: route,
+      destinations: [target],
+      texts: texts,
+    );
+    await Future<void>.delayed(Duration.zero);
+    notifier.stop();
+    ready.complete();
+    await starting;
+    expect(c.read(navigationProvider), isNull);
+    expect(source.lastNotification, isNull);
+    expect(c.read(enRouteProvider), isFalse);
+  });
+
+  test(
+    'a recalculation that fails: said once, and it can be tried again',
+    () async {
+      valhalla.failure = StateError('not a route');
+      await start();
+      await leaveRoute();
+      await Future<void>.delayed(Duration.zero);
+      final nav = c.read(navigationProvider)!;
+      expect(nav.recalculating, isFalse);
+      expect(nav.rerouteFailed, isTrue);
+      expect(
+        voice.sentences.where((s) => s == 'Recalculating route.'),
+        hasLength(1),
+      );
+      // Back on the route: the old one is right again.
+      await driveTo(along(route.points, 20)[34]);
+      await driveTo(along(route.points, 20)[35]);
+      expect(c.read(navigationProvider)!.rerouteFailed, isFalse);
+    },
+  );
+
+  test('no fix for a while: the state says so, until one comes', () async {
+    NavigationNotifier.gpsLostAfter = const Duration(milliseconds: 30);
+    addTearDown(
+      () => NavigationNotifier.gpsLostAfter = const Duration(seconds: 10),
+    );
+    await start();
+    final points = along(route.points, 20);
+    await driveTo(points[1]);
+    expect(c.read(navigationProvider)!.gpsLost, isFalse);
+    await Future<void>.delayed(const Duration(milliseconds: 80));
+    expect(c.read(navigationProvider)!.gpsLost, isTrue);
+    await driveTo(points[2]);
+    expect(c.read(navigationProvider)!.gpsLost, isFalse);
+  });
+
+  test(
+    'a stop en route: first in line, or not added if no route comes',
+    () async {
+      await start();
+      final points = along(route.points, 20);
+      await driveTo(points[2]);
+      final notifier = c.read(navigationProvider.notifier);
+      final stop = Place(label: 'Fuel', point: points[40]);
+
+      valhalla.failure = DioException(requestOptions: RequestOptions());
+      expect(await notifier.addStop(stop), isFalse);
+      expect(c.read(navigationProvider)!.destinations, [target]);
+      expect(c.read(navigationProvider)!.recalculating, isFalse);
+
+      valhalla.failure = null;
+      expect(await notifier.addStop(stop), isTrue);
+      expect(c.read(navigationProvider)!.destinations, [stop, target]);
+      expect(valhalla.requests.last.points, hasLength(3));
+
+      expect(await notifier.skipStop(), isTrue);
+      expect(c.read(navigationProvider)!.destinations, [target]);
+      expect(valhalla.requests.last.points, hasLength(2));
+      // Nothing left to skip: the destination stays.
+      expect(await notifier.skipStop(), isFalse);
+    },
+  );
 
   test('started far from the start: immediately a route from here', () async {
     // You're 2 km beside the start of the planned route.

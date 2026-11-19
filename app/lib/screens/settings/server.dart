@@ -177,7 +177,7 @@ class _CheckStatus extends StatelessWidget {
       ),
       ServerCheck(unreachable: true) => (
         Icon(Icons.error, color: colors.error),
-        l.serverUnreachable,
+        l.serverNotFound,
       ),
       _ => (
         Icon(Icons.warning_amber, color: colors.error),

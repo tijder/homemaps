@@ -74,7 +74,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'There is no road near one of the points that this mode of travel can use.';
 
   @override
-  String get serverUnreachable => 'No HomeMaps server found at this address';
+  String get serverUnreachable => 'The server cannot be reached.';
 
   @override
   String get fastest => 'Fastest';
@@ -609,7 +609,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String stopAdded(String label) {
-    return 'Stop: $label';
+    return 'Stop added: $label';
   }
 
   @override
@@ -1157,4 +1157,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String sectionRemaining(String distance) {
     return '$distance to go';
   }
+
+  @override
+  String get gpsLost => 'No GPS signal';
+
+  @override
+  String get rerouteFailed => 'No new route yet. This is still the old one.';
+
+  @override
+  String get stopNotAdded => 'Stop not added: no route could be fetched.';
+
+  @override
+  String get serverNotFound => 'No HomeMaps server found at this address';
 }

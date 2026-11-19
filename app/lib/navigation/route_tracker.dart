@@ -196,14 +196,14 @@ class RouteTracker {
   /// How far along the route each of [places] lies, given in order along the
   /// route: each place is only searched for *after* the previous one, so a road
   /// that comes back right next to itself (a cloverleaf) doesn't jump. Null for
-  /// a place more than [maxDeviation] from the route.
-  List<double?> alongOf(List<LatLng> places) {
+  /// a place more than [within] meters from the route.
+  List<double?> alongOf(List<LatLng> places, {double within = maxDeviation}) {
     var from = 0;
     return [
       for (final position in places)
         () {
           final best = _find(position, from, route.points.length - 2);
-          if (best.distance > maxDeviation) return null;
+          if (best.distance > within) return null;
           from = best.segment;
           final i = best.segment;
           return _distanceTo[i] +

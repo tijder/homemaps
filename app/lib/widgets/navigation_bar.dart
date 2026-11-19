@@ -86,6 +86,10 @@ class NavigationHeader extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (!nav.arrived && nav.gpsLost)
+            _Notice(Icons.gps_off, l.gpsLost)
+          else if (!nav.arrived && nav.rerouteFailed && !nav.recalculating)
+            _Notice(Icons.cloud_off, l.rerouteFailed),
           InkWell(
             onTap: onTap,
             child: Padding(
@@ -521,6 +525,42 @@ class NavigationFooter extends StatelessWidget {
               label: Text(nav.arrived ? l.done : l.stopNavigation),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A strip across the top of the header: what's below it can't be trusted
+/// right now (no fix, or a route that should have been replaced).
+class _Notice extends StatelessWidget {
+  const _Notice(this.icon, this.text);
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Semantics(
+      liveRegion: true,
+      child: ColoredBox(
+        color: colors.errorContainer,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: colors.onErrorContainer),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  text,
+                  style: Theme.of(context).textTheme.titleSmall
+                      ?.copyWith(color: colors.onErrorContainer),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

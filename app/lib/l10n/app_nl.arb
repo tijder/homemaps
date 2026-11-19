@@ -45,7 +45,6 @@
   "serverInvalid": "Vul een webadres in, bijvoorbeeld maps.example.org.",
   "serverChecking": "Server controleren…",
   "serverWorks": "De server werkt: kaart, zoeken en routes",
-  "serverUnreachable": "Geen HomeMaps-server gevonden op dit adres",
   "serverPartlyWorks": "De server antwoordt, maar niet alles werkt: {parts}",
   "serverPartMap": "kaart",
   "serverPartSearch": "zoeken",
@@ -160,7 +159,7 @@
   "alongFood": "Eten",
   "alongNothing": "Niets gevonden binnen een kilometer van de route.",
   "alongDistance": "{distance} van de route",
-  "stopAdded": "Tussenstop: {label}",
+  "stopAdded": "Tussenstop toegevoegd: {label}",
   "locationSharing": "Locatie delen",
   "locationSharingHelp": "Stuur je positie naar je eigen server, zoals Colota dat doet. Alleen tijdens het navigeren.",
   "locationSharingEnabled": "Delen tijdens navigeren",
@@ -305,5 +304,9 @@
   "cameraAhead": "{camera} over {distance}",
   "sectionAverage": "Gemiddeld {kmh} km/u",
   "sectionAverageShort": "gem. {kmh}",
-  "sectionRemaining": "Nog {distance}"
+  "sectionRemaining": "Nog {distance}",
+  "gpsLost": "Geen GPS-signaal",
+  "rerouteFailed": "Nog geen nieuwe route. Dit is nog de oude.",
+  "stopNotAdded": "Tussenstop niet toegevoegd: er kon geen route worden opgehaald.",
+  "serverNotFound": "Geen HomeMaps-server gevonden op dit adres"
 }

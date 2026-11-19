@@ -62,7 +62,6 @@
   "serverInvalid": "Enter a web address, for example maps.example.org.",
   "serverChecking": "Checking the server…",
   "serverWorks": "The server works: map, search and routes",
-  "serverUnreachable": "No HomeMaps server found at this address",
   "serverPartlyWorks": "The server answers, but not everything works: {parts}",
   "@serverPartlyWorks": {
     "placeholders": {
@@ -395,7 +394,7 @@
       }
     }
   },
-  "stopAdded": "Stop: {label}",
+  "stopAdded": "Stop added: {label}",
   "@stopAdded": {
     "placeholders": {
       "label": {
@@ -723,5 +722,9 @@
         "type": "String"
       }
     }
-  }
+  },
+  "gpsLost": "No GPS signal",
+  "rerouteFailed": "No new route yet. This is still the old one.",
+  "stopNotAdded": "Stop not added: no route could be fetched.",
+  "serverNotFound": "No HomeMaps server found at this address"
 }
