@@ -1,7 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    "helpers:pinGitHubActionDigests"
   ],
   "customManagers": [
     {
@@ -14,6 +15,28 @@
         "repository: (?<depName>[^\\s]+)\\n\\s+tag: \"?(?<currentValue>[^\\s\"]+)\"?"
       ],
       "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Images written out in the chart templates (init containers, the build jobs, the test)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^chart/homemaps/templates/.+\\.yaml$/"
+      ],
+      "matchStrings": [
+        "image: (?<depName>[a-z][^\\s:{]+):(?<currentValue>[^\\s@]+)"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Playwright for the browser test, pinned in the workflow",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/.+\\.yml$/"
+      ],
+      "matchStrings": [
+        "pip install (?<depName>playwright)==(?<currentValue>[^\\s]+)"
+      ],
+      "datasourceTemplate": "pypi"
     }
   ],
   "packageRules": [

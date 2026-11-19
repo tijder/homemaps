@@ -18,6 +18,11 @@ concurrency:
   group: release
   cancel-in-progress: false
 
+# The jobs that need more (the run of HEAD, pushing, releasing) ask for it
+# themselves; the builds that hold the signing keys get nothing beyond this.
+permissions:
+  contents: read
+
 env:
   IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/homemaps
 
@@ -59,7 +64,7 @@ jobs:
             echo "release=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
           if [ "$BUMP" = auto ]; then
-            if echo "$commits" | grep -qE '^[a-z]+(\(.+\))?!:|BREAKING CHANGE'; then BUMP="major"
+            if echo "$commits" | grep -qE '^[a-z]+(\(.+\))?!:|^BREAKING[ -]CHANGE:'; then BUMP="major"
             elif echo "$commits" | grep -qE '^feat(\(.+\))?:'; then BUMP="minor"
             else BUMP="patch"; fi
           fi

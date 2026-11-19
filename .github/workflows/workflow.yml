@@ -6,6 +6,16 @@ on:
   pull_request:
     branches: ["main"]
 
+# The jobs that push images or the chart ask for more themselves.
+permissions:
+  contents: read
+
+# A newer push to a pull request makes the run of the previous one pointless.
+# On main every commit keeps its own run: release.yml needs the run of HEAD.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   # One place for the name: ghcr.io/<owner>/homemaps-web, -traffic and charts/homemaps.
@@ -245,7 +255,7 @@ jobs:
           python-version: "3.13"
       - name: Install Playwright
         run: |
-          pip install playwright
+          pip install playwright==1.65.2
           playwright install --with-deps chromium
       - name: Bring up the cluster and test it
         # On main also the screenshots for the App Store: release.yml takes them along.
