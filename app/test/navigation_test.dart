@@ -274,4 +274,25 @@ void main() {
       expect(status!.arrived, isTrue);
     });
   });
+
+  test('locate: the same answer as comparing with the whole route', () {
+    final route = stroe();
+    final tracker = RouteTracker(route);
+    final random = Random(1);
+    for (final point in along(route.points, 137)) {
+      // Up to some 100 m beside the road, in any direction.
+      final beside = LatLng(
+        point.latitude + (random.nextDouble() - 0.5) * 0.0018,
+        point.longitude + (random.nextDouble() - 0.5) * 0.003,
+      );
+      final near = tracker.locate(beside);
+      // alongOf compares with every piece of the shape.
+      final whole = tracker.alongOf([beside], within: double.infinity).single!;
+      expect(near.along, closeTo(whole, 0.01));
+      expect(near.distance, lessThan(150));
+    }
+    // Far from the route: no match, not a wrong one.
+    final far = tracker.locate(east(route.points.first, 5000));
+    expect(far.distance, double.infinity);
+  });
 }

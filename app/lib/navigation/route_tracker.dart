@@ -178,11 +178,51 @@ class RouteTracker {
     );
   }
 
+  /// The size of a cell of [_cells] in degrees: some 330 m north-south and,
+  /// in the Netherlands, 200 m east-west.
+  static const _cell = 0.003;
+
+  static int _cellKey(int x, int y) => y * 400000 + x;
+
+  /// Which pieces of the shape pass through (the bounding box of) each cell.
+  /// The traffic layer holds thousands of signs, cameras and incidents, and
+  /// each is looked up on the route once a minute: without this every one of
+  /// them is compared with every piece of the route.
+  late final Map<int, List<int>> _cells = () {
+    final cells = <int, List<int>>{};
+    final points = route.points;
+    for (var i = 0; i < points.length - 1; i++) {
+      final a = points[i], b = points[i + 1];
+      final x0 = (min(a.longitude, b.longitude) / _cell).floor();
+      final x1 = (max(a.longitude, b.longitude) / _cell).floor();
+      final y0 = (min(a.latitude, b.latitude) / _cell).floor();
+      final y1 = (max(a.latitude, b.latitude) / _cell).floor();
+      for (var y = y0; y <= y1; y++) {
+        for (var x = x0; x <= x1; x++) {
+          (cells[_cellKey(x, y)] ??= []).add(i);
+        }
+      }
+    }
+    return cells;
+  }();
+
   /// Where a single point (an accident) lies on the route: how far along the
   /// route, how far off it, and the route's heading there. Independent of where
   /// you're driving.
+  ///
+  /// Only for a point near the route: one that is more than a cell (some
+  /// 200 m) away may come back as infinitely far.
   ({double along, double distance, double heading}) locate(LatLng point) {
-    final best = _find(point, 0, route.points.length - 2);
+    final x = (point.longitude / _cell).floor();
+    final y = (point.latitude / _cell).floor();
+    final near = <int>{
+      for (var dy = -1; dy <= 1; dy++)
+        for (var dx = -1; dx <= 1; dx++) ...?_cells[_cellKey(x + dx, y + dy)],
+    };
+    if (near.isEmpty) {
+      return (along: 0, distance: double.infinity, heading: 0);
+    }
+    final best = _find(point, 0, 0, only: near);
     final i = best.segment;
     return (
       along:
@@ -244,12 +284,14 @@ class RouteTracker {
   }
 
   /// [maxAlong]: don't search further along the route than this (not even
-  /// halfway through a long stretch).
+  /// halfway through a long stretch). [only]: these pieces of the shape
+  /// instead of [from] to [to].
   ({int segment, double fraction, double distance, LatLng point}) _find(
     LatLng p,
     int from,
     int to, {
     double maxAlong = double.infinity,
+    Iterable<int>? only,
   }) {
     final points = route.points;
     var best = (
@@ -265,7 +307,10 @@ class RouteTracker {
       x: (q.longitude - p.longitude) * cosLat * 111320,
       y: (q.latitude - p.latitude) * 110574,
     );
-    for (var i = from; i <= to && i < points.length - 1; i++) {
+    final segments =
+        only ?? Iterable<int>.generate(max(0, to - from + 1), (n) => from + n);
+    for (final i in segments) {
+      if (i >= points.length - 1) continue;
       final a = project(points[i]), b = project(points[i + 1]);
       final dx = b.x - a.x, dy = b.y - a.y;
       final squared = dx * dx + dy * dy;

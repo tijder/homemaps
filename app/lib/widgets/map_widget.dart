@@ -123,6 +123,22 @@ class _MapWidgetState extends State<MapWidget> {
   static const _trafficSource = 'traffic';
   static const _enforcementSource = 'enforcement';
   static const _drivenSource = 'driven';
+
+  /// The part of the driven line that no longer changes: see [_drawDriven].
+  static const _drivenDoneSource = 'driven-done';
+  static const _drivenChunk = 250;
+
+  /// Which line the settled part was last drawn for: its first point (a new
+  /// route has a new one) and how many points it holds.
+  ({LatLng first, int count})? _drivenDone;
+
+  /// Counts the style loads, so one that is overtaken by the next (the night
+  /// style replacing the day style) doesn't declare the map ready.
+  int _styleGeneration = 0;
+
+  /// Draws wait for each other: two at once placed circles twice, or left the
+  /// index of a circle pointing at another point.
+  Future<void> _drawQueue = Future.value();
   static const _arrowSource = 'arrow';
   static const _familySource = 'family';
 
@@ -155,6 +171,7 @@ class _MapWidgetState extends State<MapWidget> {
       // A new style throws away all sources and layers; onStyleLoaded puts
       // them back.
       _styleReady = false;
+      _styleGeneration++;
       return;
     }
     if (!_styleReady) return;
@@ -181,6 +198,7 @@ class _MapWidgetState extends State<MapWidget> {
 
   Future<void> _styleLoaded() async {
     final c = _controller!;
+    final generation = ++_styleGeneration;
     // The circles of the points are annotations; their layer already exists. The
     // route lines have to go below it, otherwise a point hides behind its own
     // route.
@@ -239,18 +257,23 @@ class _MapWidgetState extends State<MapWidget> {
         true,
       ],
     );
-    await c.addGeoJsonSource(_drivenSource, _empty);
-    await c.addLineLayer(
-      _drivenSource,
-      'driven',
-      const LineLayerProperties(
-        lineColor: '#9e9e9e',
-        lineWidth: 6,
-        lineCap: 'round',
-        lineJoin: 'round',
-      ),
-      enableInteraction: false,
-    );
+    for (final (source, layer) in [
+      (_drivenDoneSource, 'driven-done'),
+      (_drivenSource, 'driven'),
+    ]) {
+      await c.addGeoJsonSource(source, _empty);
+      await c.addLineLayer(
+        source,
+        layer,
+        const LineLayerProperties(
+          lineColor: '#9e9e9e',
+          lineWidth: 6,
+          lineCap: 'round',
+          lineJoin: 'round',
+        ),
+        enableInteraction: false,
+      );
+    }
     // The arrow at the next turn: white with a dark casing over the route,
     // with a head at the end, as in Google and Apple Maps.
     await c.addGeoJsonSource(_arrowSource, _empty);
@@ -326,8 +349,12 @@ class _MapWidgetState extends State<MapWidget> {
         iconIgnorePlacement: true,
       ),
     );
+    // Another style was asked for (or has loaded) meanwhile: its own load
+    // sets things up, on the style that is actually there.
+    if (generation != _styleGeneration || !mounted) return;
     _familyImages.clear();
     _styleReady = true;
+    _drivenDone = null;
     _circleIndex.clear();
     _fittedVersion = 0;
     await _drawTraffic();
@@ -339,12 +366,36 @@ class _MapWidgetState extends State<MapWidget> {
     await _draw();
   }
 
+  /// The driven line grows by a few meters per fix. Sending all of it each
+  /// time means thousands of points a second late in a long trip, so it is
+  /// drawn in two parts: the settled part, which only gets longer once every
+  /// [_drivenChunk] points, and the short piece from there to where you are.
   Future<void> _drawDriven() async {
     final c = _controller;
     if (c == null || !_styleReady) return;
+    final line = widget.driven;
+    if (line == null || line.length < 2) {
+      final had = _drivenDone != null;
+      _drivenDone = null;
+      if (had) await c.setGeoJsonSource(_drivenDoneSource, _empty);
+      await c.setGeoJsonSource(_drivenSource, _empty);
+      return;
+    }
+    // The last point is where you are; everything before it lies fixed.
+    final settled = (line.length - 2) ~/ _drivenChunk * _drivenChunk;
+    final done = _drivenDone;
+    if (done == null ||
+        done.count != settled ||
+        !identical(done.first, line.first)) {
+      _drivenDone = (first: line.first, count: settled);
+      await c.setGeoJsonSource(
+        _drivenDoneSource,
+        lineFeatureCollection(line.sublist(0, settled + 1)),
+      );
+    }
     await c.setGeoJsonSource(
       _drivenSource,
-      lineFeatureCollection(widget.driven),
+      lineFeatureCollection(line.sublist(settled)),
     );
   }
 
@@ -764,12 +815,20 @@ class _MapWidgetState extends State<MapWidget> {
 
   static const _empty = emptyFeatureCollection;
 
-  Future<void> _draw() async {
+  /// Draws the routes and the points as they are now. Dragging a point asks
+  /// three times in a row (the point, the route, its address): each waits for
+  /// the one before, and one that has been overtaken by then is skipped.
+  Future<void> _draw() {
+    final sequence = ++_drawSequence;
+    return _drawQueue = _drawQueue.catchError((Object _) {}).then((_) async {
+      if (sequence != _drawSequence) return;
+      await _drawNow();
+    });
+  }
+
+  Future<void> _drawNow() async {
     final c = _controller;
     if (c == null || !_styleReady) return;
-    // Two updates shortly after each other: only the last may place circles,
-    // otherwise they show up twice.
-    final sequence = ++_drawSequence;
     await c.setGeoJsonSource(
       _routeSource,
       routesFeatureCollection(widget.routes, widget.chosen),
@@ -802,7 +861,6 @@ class _MapWidgetState extends State<MapWidget> {
     });
     await c.clearCircles();
     _circleIndex.clear();
-    if (sequence != _drawSequence) return;
     final latest = widget.points.length - 1;
     for (final (i, place) in widget.points.indexed) {
       if (place == null) continue;
