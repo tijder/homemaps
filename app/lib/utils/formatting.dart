@@ -21,11 +21,25 @@ double roundDistance(double meters) => meters < 100
     ? (meters / 50).round() * 50
     : (meters / 100).round() * 100;
 
-/// "12 min", "1 u 05".
-String duration(double seconds) {
+/// "12 min"; "1 h 05 min" in English, "1 u 05" in Dutch.
+String duration(double seconds, AppLocalizations l) {
   final minutes = (seconds / 60).round();
-  if (minutes < 60) return '$minutes min';
-  return '${minutes ~/ 60} u ${(minutes % 60).toString().padLeft(2, '0')}';
+  if (minutes < 60) return l.durationMinutes(minutes);
+  return l.durationHours(
+    minutes ~/ 60,
+    (minutes % 60).toString().padLeft(2, '0'),
+  );
+}
+
+/// The time of day at [time]; with the day in front when that isn't today
+/// ("Fri 08:15"), so a trip planned for tomorrow doesn't read as today.
+String timeOfDay(DateTime time, String language, {DateTime? now}) {
+  final today = now ?? DateTime.now();
+  final sameDay =
+      time.year == today.year &&
+      time.month == today.month &&
+      time.day == today.day;
+  return DateFormat(sameDay ? 'HH:mm' : 'EEE HH:mm', language).format(time);
 }
 
 /// How long ago something was, in the largest unit that fits: "just now",

@@ -1169,4 +1169,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serverNotFound => 'No HomeMaps server found at this address';
+
+  @override
+  String durationMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String durationHours(int hours, String minutes) {
+    return '$hours h $minutes min';
+  }
 }

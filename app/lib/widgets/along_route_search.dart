@@ -130,7 +130,7 @@ class _AlongRouteSearchState extends ConsumerState<AlongRouteSearch> {
                       trailing: t.detourSeconds == null
                           ? null
                           : Text(
-                              '+${duration(t.detourSeconds!)}',
+                              '+${duration(t.detourSeconds!, l)}',
                               style: text.titleSmall,
                             ),
                       onTap: () => widget.onChosen(t.place),

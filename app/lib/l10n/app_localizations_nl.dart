@@ -1175,4 +1175,14 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get serverNotFound => 'Geen HomeMaps-server gevonden op dit adres';
+
+  @override
+  String durationMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String durationHours(int hours, String minutes) {
+    return '$hours u $minutes';
+  }
 }

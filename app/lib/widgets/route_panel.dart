@@ -342,7 +342,7 @@ class _RoutePanelState extends ConsumerState<RoutePanel> {
           ],
         ),
       ),
-      error: (error, _) => _ErrorMessage(error: error),
+      error: (error, _) => _ErrorMessage(error: error, onRetry: actions.retry),
       data: (routes) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -352,6 +352,7 @@ class _RoutePanelState extends ConsumerState<RoutePanel> {
               title: i == 0 ? l.fastest : l.alternative(i),
               chosen: i == planner.chosen,
               onTap: () => actions.choose(i, moveView: true),
+              departure: planner.departure,
               closures: closures != null && i < closures.length
                   ? closures[i]
                   : const [],
@@ -410,10 +411,14 @@ class _RouteCard extends StatelessWidget {
     required this.title,
     required this.chosen,
     required this.onTap,
+    this.departure,
     this.closures = const [],
   });
 
   final RouteOption route;
+
+  /// When you leave, if not now: the arrival time counts from then.
+  final DateTime? departure;
 
   /// Planned closures on this route (only when leaving later).
   final List<ClosureOnRoute> closures;
@@ -425,14 +430,14 @@ class _RouteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final colors = Theme.of(context).colorScheme;
-    final arrival = DateTime.now().add(
+    final arrival = (departure ?? DateTime.now()).add(
       Duration(seconds: route.seconds.round()),
     );
     final language = Localizations.localeOf(context).languageCode;
     final via = mainRoads(route);
     final extra = [
       if (via.isNotEmpty) l.suggestionVia(via.join(', ')),
-      l.arrivalAt(DateFormat.Hm(language).format(arrival)),
+      l.arrivalAt(timeOfDay(arrival, language)),
       if (route.elevations.length > 1)
         l.ascentDescent(route.ascent.round(), route.descent.round()),
       if (route.hasToll) l.withToll,
@@ -447,7 +452,7 @@ class _RouteCard extends StatelessWidget {
           ListTile(
             onTap: onTap,
             title: Text(
-              '${duration(route.seconds)} · ${distance(route.meters, l.localeName)}',
+              '${duration(route.seconds, l)} · ${distance(route.meters, l.localeName)}',
             ),
             subtitle: Text([title, ...extra].join(' · ')),
             selected: chosen,
@@ -506,7 +511,7 @@ Widget? _delay(BuildContext context, RouteOption route) {
     crossAxisAlignment: CrossAxisAlignment.end,
     children: [
       Text(
-        '+${duration(seconds)}',
+        '+${duration(seconds, l)}',
         style: text.titleSmall?.copyWith(
           color: color,
           fontWeight: FontWeight.w600,
@@ -518,9 +523,10 @@ Widget? _delay(BuildContext context, RouteOption route) {
 }
 
 class _ErrorMessage extends StatelessWidget {
-  const _ErrorMessage({required this.error});
+  const _ErrorMessage({required this.error, required this.onRetry});
 
   final Object error;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -531,6 +537,9 @@ class _ErrorMessage extends StatelessWidget {
       RouteError() => l.noRoute,
       _ => l.serverUnreachable,
     };
+    // The same question can get an answer a moment later when it was the
+    // connection; "no route between these points" stays no route.
+    final transient = error is! RouteError || (error as RouteError).code == 0;
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Row(
@@ -538,6 +547,8 @@ class _ErrorMessage extends StatelessWidget {
           Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error),
           const SizedBox(width: 12),
           Expanded(child: Text(text)),
+          if (transient)
+            TextButton(onPressed: onRetry, child: Text(l.tryAgain)),
         ],
       ),
     );

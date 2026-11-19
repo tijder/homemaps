@@ -57,7 +57,7 @@ class TrafficIncident extends StatelessWidget {
     if (kind == 'jam' || kind == 'slow') {
       final delay = (info['delay_s'] as num?)?.toDouble() ?? 0;
       lines.add(
-        l.trafficDelay(duration(delay), (info['kph'] as num?)?.toInt() ?? 0),
+        l.trafficDelay(duration(delay, l), (info['kph'] as num?)?.toInt() ?? 0),
       );
       return (kind == 'jam' ? l.trafficJam : l.trafficSlow, lines);
     }

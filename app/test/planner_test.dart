@@ -1,11 +1,41 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:homemaps/models/place.dart';
 import 'package:homemaps/providers/location.dart';
+import 'package:homemaps/models/profile.dart';
+import 'package:homemaps/models/route.dart';
 import 'package:homemaps/providers/planner.dart';
+import 'package:homemaps/providers/services.dart';
+import 'package:homemaps/services/valhalla_service.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import 'helpers/fake_source.dart';
+
+/// Answers every route request with something that is not a route.
+class _Valhalla extends ValhallaService {
+  _Valhalla() : super(Dio(), 'http://fake');
+
+  int asked = 0;
+
+  @override
+  Future<List<RouteOption>> route(
+    List<LatLng> points,
+    Profile profile, {
+    required String language,
+    bool liveTraffic = true,
+    bool avoidMotorways = false,
+    bool avoidTolls = false,
+    bool avoidFerries = false,
+    bool alternatives = true,
+    double? heading,
+    DateTime? departure,
+    CancelToken? cancel,
+  }) async {
+    asked++;
+    throw const FormatException('not a route');
+  }
+}
 
 Place place(String label, double lat) =>
     Place(label: label, point: LatLng(lat, 5));
@@ -140,6 +170,28 @@ void main() {
       p.showPlace(Place.here(const LatLng(52.19, 5.7)));
       p.startRoute();
       expect(withLocation.read(plannerProvider).points.first.place, isNull);
+    },
+  );
+
+  test(
+    'an answer that is not a route: an error, and retry asks again',
+    () async {
+      final valhalla = _Valhalla();
+      final c = ProviderContainer(
+        overrides: [valhallaProvider.overrideWithValue(valhalla)],
+      );
+      addTearDown(c.dispose);
+      final p = c.read(plannerProvider.notifier);
+      p.setFrom(place('A', 52));
+      p.setTo(place('B', 53));
+      await Future<void>.delayed(Duration.zero);
+      // Not loading forever.
+      expect(c.read(plannerProvider).routes.hasError, isTrue);
+      expect(c.read(plannerProvider).routes.isLoading, isFalse);
+      final asked = valhalla.asked;
+      p.retry();
+      await Future<void>.delayed(Duration.zero);
+      expect(valhalla.asked, asked + 1);
     },
   );
 

@@ -485,7 +485,7 @@ class NavigationFooter extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '${duration(seconds)} · ${distance(meters, l.localeName)}',
+                          '${duration(seconds, l)} · ${distance(meters, l.localeName)}',
                           style: text.bodyMedium,
                         ),
                       ],

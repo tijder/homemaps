@@ -1951,6 +1951,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No HomeMaps server found at this address'**
   String get serverNotFound;
+
+  /// No description provided for @durationMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String durationMinutes(int minutes);
+
+  /// No description provided for @durationHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h {minutes} min'**
+  String durationHours(int hours, String minutes);
 }
 
 class _AppLocalizationsDelegate

@@ -308,5 +308,7 @@
   "gpsLost": "Geen GPS-signaal",
   "rerouteFailed": "Nog geen nieuwe route. Dit is nog de oude.",
   "stopNotAdded": "Tussenstop niet toegevoegd: er kon geen route worden opgehaald.",
-  "serverNotFound": "Geen HomeMaps-server gevonden op dit adres"
+  "serverNotFound": "Geen HomeMaps-server gevonden op dit adres",
+  "durationMinutes": "{minutes} min",
+  "durationHours": "{hours} u {minutes}"
 }

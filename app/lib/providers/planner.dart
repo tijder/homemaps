@@ -294,8 +294,16 @@ class PlannerNotifier extends Notifier<PlannerState> {
       if (!cancel.isCancelled) {
         state = state.copyWith(routes: AsyncError(error, stackTrace));
       }
+    } catch (error, stackTrace) {
+      // An answer that isn't a route. Without this the spinner would stay.
+      if (!cancel.isCancelled) {
+        state = state.copyWith(routes: AsyncError(error, stackTrace));
+      }
     }
   }
+
+  /// The same route once more, after an error.
+  void retry() => _calculate(moveView: false);
 }
 
 final plannerProvider = NotifierProvider<PlannerNotifier, PlannerState>(
