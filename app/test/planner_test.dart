@@ -195,6 +195,37 @@ void main() {
     },
   );
 
+  test('a route thrown away comes back with restore', () {
+    planner.setFrom(place('A', 52));
+    planner.setTo(place('C', 54));
+    planner.addVia(place('B', 53));
+    planner.toSearch();
+    expect(state().routeMode, isFalse);
+    expect(planner.canRestore, isTrue);
+    planner.restore();
+    expect(state().routeMode, isTrue);
+    expect(names(), ['A', 'B', 'C']);
+    expect(planner.canRestore, isFalse);
+  });
+
+  test('nothing to restore: half a route, or after arrival', () {
+    planner.setTo(place('C', 54));
+    planner.toSearch();
+    expect(planner.canRestore, isFalse);
+
+    planner.setFrom(place('A', 52));
+    planner.setTo(place('C', 54));
+    planner.clear();
+    expect(planner.canRestore, isFalse);
+
+    // A new route has begun since: the old one is not what undo means.
+    planner.setFrom(place('A', 52));
+    planner.setTo(place('C', 54));
+    planner.toSearch();
+    planner.setTo(place('D', 55));
+    expect(planner.canRestore, isFalse);
+  });
+
   group('an empty from becomes "My location"', () {
     late FakeSource source;
     late ProviderContainer c;

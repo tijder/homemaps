@@ -1194,4 +1194,18 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get searchFailed =>
       'Zoeken lukt nu niet. Tik om het opnieuw te proberen.';
+
+  @override
+  String get undo => 'Ongedaan maken';
+
+  @override
+  String get routeCleared => 'Route gewist';
+
+  @override
+  String placeRemoved(String label) {
+    return '$label verwijderd';
+  }
+
+  @override
+  String get recentCleared => 'Recente plaatsen gewist';
 }

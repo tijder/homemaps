@@ -21,19 +21,9 @@ class SavedPlacesSettings extends ConsumerWidget {
           title: l.savedPlaces,
           help: l.savedPlacesHelp,
           children: [
-            for (final (icon, label, place, clear) in [
-              (
-                Icons.home_outlined,
-                l.home,
-                savedPlaces.home,
-                () => actions.setHome(null),
-              ),
-              (
-                Icons.work_outline,
-                l.work,
-                savedPlaces.work,
-                () => actions.setWork(null),
-              ),
+            for (final (icon, label, place, set) in [
+              (Icons.home_outlined, l.home, savedPlaces.home, actions.setHome),
+              (Icons.work_outline, l.work, savedPlaces.work, actions.setWork),
             ])
               ListTile(
                 leading: Icon(icon),
@@ -44,7 +34,14 @@ class SavedPlacesSettings extends ConsumerWidget {
                     : IconButton(
                         tooltip: l.removeLabel,
                         icon: const Icon(Icons.delete_outline),
-                        onPressed: clear,
+                        onPressed: () {
+                          set(null);
+                          _removed(
+                            context,
+                            l.placeRemoved(label),
+                            () => set(place),
+                          );
+                        },
                       ),
               ),
           ],
@@ -58,7 +55,15 @@ class SavedPlacesSettings extends ConsumerWidget {
               trailing: savedPlaces.recent.isEmpty
                   ? null
                   : TextButton(
-                      onPressed: actions.clearRecent,
+                      onPressed: () {
+                        final recent = savedPlaces.recent;
+                        actions.clearRecent();
+                        _removed(
+                          context,
+                          l.recentCleared,
+                          () => actions.setRecent(recent),
+                        );
+                      },
                       child: Text(l.clearLabel),
                     ),
             ),
@@ -66,5 +71,21 @@ class SavedPlacesSettings extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  /// Says what went, with a way back: one tap removes, and a home address is
+  /// more work to set again than to remove.
+  static void _removed(BuildContext context, String text, VoidCallback undo) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(text),
+          action: SnackBarAction(
+            label: AppLocalizations.of(context).undo,
+            onPressed: undo,
+          ),
+        ),
+      );
   }
 }

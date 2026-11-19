@@ -312,5 +312,9 @@
   "durationMinutes": "{minutes} min",
   "durationHours": "{hours} u {minutes}",
   "searchNoResults": "Niets gevonden voor “{query}”",
-  "searchFailed": "Zoeken lukt nu niet. Tik om het opnieuw te proberen."
+  "searchFailed": "Zoeken lukt nu niet. Tik om het opnieuw te proberen.",
+  "undo": "Ongedaan maken",
+  "routeCleared": "Route gewist",
+  "placeRemoved": "{label} verwijderd",
+  "recentCleared": "Recente plaatsen gewist"
 }

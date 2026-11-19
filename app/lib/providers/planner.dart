@@ -164,16 +164,38 @@ class PlannerNotifier extends Notifier<PlannerState> {
     ];
   }
 
+  /// The route [toSearch] last threw away, for [restore].
+  PlannerState? _discarded;
+
+  /// Whether [restore] has something to bring back: a route with both ends
+  /// was thrown away since the last route began.
+  bool get canRestore => _discarded != null;
+
   /// Back to the search screen; the route is gone, the found place stays.
+  /// A back arrow, the bin, Android's back and swiping the sheet down all end
+  /// up here, so a route with stops is one slip away from gone: it is kept
+  /// for [restore].
   void toSearch() {
     _inFlight?.cancel();
+    _discarded = state.routeMode && state.complete ? state : null;
     state = PlannerState(found: state.found, viewVersion: state.viewVersion);
+  }
+
+  /// Brings back the route [toSearch] threw away.
+  void restore() {
+    final old = _discarded;
+    if (old == null) return;
+    _discarded = null;
+    state = old.copyWith(viewVersion: state.viewVersion + 1);
+    // An answer that was still on its way when it was thrown away never came.
+    if (!old.routes.hasValue) _calculate(moveView: true);
   }
 
   /// After arrival: back to an empty search screen, without a route or found
   /// place.
   void clear() {
     _inFlight?.cancel();
+    _discarded = null;
     state = PlannerState(viewVersion: state.viewVersion);
   }
 
@@ -182,6 +204,8 @@ class PlannerNotifier extends Notifier<PlannerState> {
   /// [moveView]: bring the result into view. Not when dragging on the map --
   /// then the map jumps away from under your hand.
   void setPoint(int index, Place? place, {bool moveView = true}) {
+    // A new route has begun: the old one is no longer what "undo" means.
+    _discarded = null;
     var points = [...state.points];
     points[index] = Waypoint(points[index].id, place);
     // Choosing where to go is enough when your location is known.

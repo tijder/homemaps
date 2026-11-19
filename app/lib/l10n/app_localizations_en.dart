@@ -1188,4 +1188,18 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get searchFailed =>
       'Search is not available right now. Tap to try again.';
+
+  @override
+  String get undo => 'Undo';
+
+  @override
+  String get routeCleared => 'Route cleared';
+
+  @override
+  String placeRemoved(String label) {
+    return '$label removed';
+  }
+
+  @override
+  String get recentCleared => 'Recent places cleared';
 }

@@ -754,5 +754,16 @@
       }
     }
   },
-  "searchFailed": "Search is not available right now. Tap to try again."
+  "searchFailed": "Search is not available right now. Tap to try again.",
+  "undo": "Undo",
+  "routeCleared": "Route cleared",
+  "placeRemoved": "{label} removed",
+  "@placeRemoved": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "recentCleared": "Recent places cleared"
 }

@@ -46,8 +46,11 @@ class SavedPlacesNotifier extends Notifier<SavedPlaces> {
     _save();
   }
 
-  void clearRecent() {
-    state = SavedPlaces(home: state.home, work: state.work);
+  void clearRecent() => setRecent(const []);
+
+  /// Puts back a list of recent places (after "undo").
+  void setRecent(List<Place> recent) {
+    state = SavedPlaces(home: state.home, work: state.work, recent: recent);
     _save();
   }
 

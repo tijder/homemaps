@@ -1975,6 +1975,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search is not available right now. Tap to try again.'**
   String get searchFailed;
+
+  /// No description provided for @undo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get undo;
+
+  /// No description provided for @routeCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Route cleared'**
+  String get routeCleared;
+
+  /// No description provided for @placeRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} removed'**
+  String placeRemoved(String label);
+
+  /// No description provided for @recentCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent places cleared'**
+  String get recentCleared;
 }
 
 class _AppLocalizationsDelegate

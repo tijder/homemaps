@@ -476,6 +476,39 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       _familyUpdated(family);
     });
     // Another card, or a route: stop following.
+    // A route thrown away (back, the bin, the sheet swiped down): say so, with
+    // a way back.
+    ref.listen(plannerProvider.select((p) => p.routeMode), (was, now) {
+      final planner = ref.read(plannerProvider.notifier);
+      if (was != true || now || !planner.canRestore) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            // The interceptor: on the web the bar lies over the map, which
+            // would otherwise get the click on "Undo".
+            content: PointerInterceptor(
+              child: Row(
+                children: [
+                  Expanded(child: Text(l.routeCleared)),
+                  TextButton(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                      planner.restore();
+                    },
+                    child: Text(
+                      l.undo,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.inversePrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+    });
     ref.listen(plannerProvider, (_, p) {
       if (_familyPlace != null &&
           (p.routeMode || !identical(p.found, _familyPlace))) {
