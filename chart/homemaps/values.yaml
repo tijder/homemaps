@@ -48,6 +48,20 @@ web:
   # -- Contents of /config.json, the app's runtime config. Leaving it empty is fine:
   # the app derives everything from its own origin (/valhalla, /geocode, /tiles).
   config: {}
+  # -- A limit on route requests per client, so one client can't keep
+  # Valhalla's few threads to itself. Off by default: behind a gateway every
+  # request comes from the gateway's address, and only you know which
+  # addresses to trust for the real one.
+  rateLimit:
+    enabled: false
+    # -- Where X-Forwarded-For may be believed: the pod network of your
+    # gateway or ingress controller, for example ["10.244.0.0/16"]. Without
+    # any, the limit counts per connecting address -- behind a gateway that
+    # is everyone together.
+    trustedProxies: []
+    # The app asks a handful of things per route; this leaves room for that.
+    requestsPerSecond: 10
+    burst: 30
 
 # The documentation site (ghcr.io/tijder/homemaps-website), off by default.
 # It gets its own hostname next to the app's; with httpRoute/ingress enabled

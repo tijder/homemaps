@@ -339,6 +339,16 @@ jobs:
           file: importer/Dockerfile
           push: true
           tags: ${{ env.IMAGE_PREFIX }}-traffic:main
+      # Without the screenshots of a release (those only exist then), but
+      # there: the -main chart points at this tag when website.enabled is set,
+      # and a tag that does not exist is a pod that never starts.
+      - name: Build and push the website image
+        uses: docker/build-push-action@v7
+        with:
+          context: website
+          file: website/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}-website:main
 
   chart-push:
     name: Chart (OCI)

@@ -8,6 +8,22 @@ metadata:
   labels: {{- include "homemaps.labels" $w | nindent 4 }}
 data:
   config.json: {{ .Values.web.config | toJson | quote }}
+  {{- with .Values.web.rateLimit }}
+  {{- if .enabled }}
+  http-ratelimit.conf: |
+    {{- range .trustedProxies }}
+    set_real_ip_from {{ . }};
+    {{- end }}
+    {{- if .trustedProxies }}
+    real_ip_header X-Forwarded-For;
+    real_ip_recursive on;
+    {{- end }}
+    limit_req_zone $binary_remote_addr zone=valhalla:10m rate={{ .requestsPerSecond }}r/s;
+    limit_req_status 429;
+  valhalla-ratelimit.conf: |
+    limit_req zone=valhalla burst={{ .burst }} nodelay;
+  {{- end }}
+  {{- end }}
 ---
 apiVersion: v1
 kind: Service
@@ -37,7 +53,7 @@ spec:
     metadata:
       labels: {{- include "homemaps.podLabels" $w | nindent 8 }}
       annotations:
-        checksum/config: {{ .Values.web.config | toJson | sha256sum | trunc 16 }}
+        checksum/config: {{ dict "config" .Values.web.config "rateLimit" .Values.web.rateLimit | toJson | sha256sum | trunc 16 }}
     spec:
       automountServiceAccountToken: false
       {{- with .Values.imagePullSecrets }}
@@ -70,7 +86,21 @@ spec:
           resources: {{- toYaml .Values.web.resources | nindent 12 }}
           volumeMounts:
             - { name: config, mountPath: /usr/share/nginx/html/config }
+            {{- if .Values.web.rateLimit.enabled }}
+            - { name: nginx, mountPath: /etc/nginx/homemaps }
+            {{- end }}
       volumes:
+        # Only config.json: this directory is served.
         - name: config
-          configMap: { name: {{ $name }} }
+          configMap:
+            name: {{ $name }}
+            items: [{ key: config.json, path: config.json }]
+        {{- if .Values.web.rateLimit.enabled }}
+        - name: nginx
+          configMap:
+            name: {{ $name }}
+            items:
+              - { key: http-ratelimit.conf, path: http-ratelimit.conf }
+              - { key: valhalla-ratelimit.conf, path: valhalla-ratelimit.conf }
+        {{- end }}
 {{- end }}

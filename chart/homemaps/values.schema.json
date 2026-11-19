@@ -83,6 +83,30 @@
         },
         "resources": {
           "type": "object"
+        },
+        "rateLimit": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "trustedProxies": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[0-9A-Fa-f:.]+(/[0-9]+)?$"
+              }
+            },
+            "requestsPerSecond": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "burst": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
         }
       },
       "additionalProperties": false

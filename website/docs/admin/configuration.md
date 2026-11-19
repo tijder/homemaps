@@ -81,6 +81,23 @@ jobs have low CPU requests on purpose: the request is only the threshold for
 getting scheduled, without a CPU limit they use whatever is free.
 `valhalla.build.threads` and `tiles.planetiler.javaOpts` are the knobs for speed.
 
+## Rate limit on routing
+
+Valhalla answers with a few threads (`valhalla.threads`), so one client with a
+script can keep everyone else waiting. `web.rateLimit.enabled` limits route
+requests per client (10 per second with a burst of 30 by default; the app asks
+a handful of things per route). Behind a gateway or ingress controller every
+request comes from that controller's address: list its pod network in
+`web.rateLimit.trustedProxies` so the limit counts per real client, otherwise
+it counts for everyone together.
+
+```yaml
+web:
+  rateLimit:
+    enabled: true
+    trustedProxies: ["10.244.0.0/16"]
+```
+
 ## Monitoring
 
 `monitoring.serviceMonitor.enabled` and `monitoring.prometheusRule.enabled`

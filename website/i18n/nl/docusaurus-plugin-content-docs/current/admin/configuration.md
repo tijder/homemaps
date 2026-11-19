@@ -80,6 +80,23 @@ hebben met opzet lage CPU-requests: de request is alleen de drempel om
 ingepland te worden, zonder CPU-limiet gebruiken ze wat vrij is.
 `valhalla.build.threads` en `tiles.planetiler.javaOpts` zijn de knoppen voor snelheid.
 
+## Limiet op routeverzoeken
+
+Valhalla antwoordt met een paar threads (`valhalla.threads`), dus één client
+met een script kan alle anderen laten wachten. `web.rateLimit.enabled` beperkt
+routeverzoeken per client (standaard 10 per seconde met een uitloop van 30; de
+app vraagt een handvol dingen per route). Achter een gateway of
+ingress-controller komt elk verzoek van het adres van die controller: zet zijn
+pod-netwerk in `web.rateLimit.trustedProxies` zodat de limiet per echte client
+telt, anders telt hij voor iedereen samen.
+
+```yaml
+web:
+  rateLimit:
+    enabled: true
+    trustedProxies: ["10.244.0.0/16"]
+```
+
 ## Monitoring
 
 `monitoring.serviceMonitor.enabled` en `monitoring.prometheusRule.enabled`

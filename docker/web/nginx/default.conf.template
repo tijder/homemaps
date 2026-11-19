@@ -8,6 +8,11 @@ resolver ${NGINX_LOCAL_RESOLVERS} valid=30s;
 
 map $http_upgrade $connection_upgrade { default upgrade; "" close; }
 
+# Optional pieces the chart mounts (web.rateLimit): who the client is behind
+# the gateway, and the zone the limit below counts in. Nothing there: nothing
+# included.
+include /etc/nginx/homemaps/http-*.conf;
+
 server {
     # Dual-stack: probes and the gateway come in here over IPv6.
     listen 8080;
@@ -47,6 +52,9 @@ server {
         rewrite ^/valhalla/(.*)$ /$1 break;
         proxy_pass $valhalla;
         proxy_read_timeout 60s;
+        # Valhalla answers with a few threads: without a limit one client
+        # with a script keeps everyone else waiting (web.rateLimit).
+        include /etc/nginx/homemaps/valhalla-*.conf;
     }
 
     # Photon: /geocode -> /api, /geocode/structured -> /structured, /geocode/reverse -> /reverse
