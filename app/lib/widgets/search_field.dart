@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:ui' show FlutterView;
 
 import 'package:dio/dio.dart';
@@ -74,6 +75,11 @@ class _SearchFieldState extends ConsumerState<SearchField>
   /// as soon as they are.
   bool _submitted = false;
 
+  /// The suggestion the arrow keys are on (-1: none), and what picking each
+  /// of the suggestions shown does.
+  int _highlight = -1;
+  List<VoidCallback> _choices = const [];
+
   /// The suggestions are open: the field has focus, or just had it (see the
   /// focus listener).
   bool _open = false;
@@ -123,6 +129,7 @@ class _SearchFieldState extends ConsumerState<SearchField>
   }
 
   void _clearOutcome() {
+    _highlight = -1;
     _searching = false;
     _nothingFor = null;
     _failed = false;
@@ -203,6 +210,7 @@ class _SearchFieldState extends ConsumerState<SearchField>
       }
       setState(() {
         _results = found;
+        _highlight = -1;
         _searching = false;
         _submitted = false;
         _nothingFor = found.isEmpty && text.trim().length >= 2
@@ -293,7 +301,9 @@ class _SearchFieldState extends ConsumerState<SearchField>
       focusNode: _focus,
       onChanged: _typed,
       onSubmitted: (text) {
-        if (_results.isNotEmpty) {
+        if (_highlight >= 0 && _highlight < _choices.length) {
+          _choices[_highlight]();
+        } else if (_results.isNotEmpty) {
           _choose(_results.first, remember: true);
         } else if (text.trim().length >= 2) {
           // Enter before the results are in (or after a failure): search now
@@ -336,10 +346,35 @@ class _SearchFieldState extends ConsumerState<SearchField>
               ),
       ),
     );
+    // What the arrow keys walk through and Enter picks: every suggestion, in
+    // the order it is shown.
+    final choices = <VoidCallback>[];
+    Widget choice({
+      Key? key,
+      required Widget leading,
+      required Widget title,
+      Widget? subtitle,
+      required VoidCallback onTap,
+    }) {
+      final index = choices.length;
+      choices.add(onTap);
+      return ListTile(
+        key: key,
+        dense: true,
+        selected: index == _highlight,
+        selectedTileColor: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest,
+        leading: leading,
+        title: title,
+        subtitle: subtitle,
+        onTap: onTap,
+      );
+    }
+
     final tiles = [
       if (withMyLocation)
-        ListTile(
-          dense: true,
+        choice(
           leading: Icon(
             Icons.my_location,
             color: Theme.of(context).colorScheme.primary,
@@ -348,9 +383,8 @@ class _SearchFieldState extends ConsumerState<SearchField>
           onTap: _chooseMyLocation,
         ),
       for (final (icon, label, place) in fixed)
-        ListTile(
+        choice(
           key: ValueKey('fixed:$label'),
-          dense: true,
           leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
           title: Text(label),
           subtitle: Text(
@@ -366,9 +400,8 @@ class _SearchFieldState extends ConsumerState<SearchField>
           ),
         ),
       for (final place in recent)
-        ListTile(
+        choice(
           key: ValueKey('recent:${place.label}:${place.point}'),
-          dense: true,
           leading: const Icon(Icons.history),
           title: Text(
             place.label,
@@ -385,9 +418,8 @@ class _SearchFieldState extends ConsumerState<SearchField>
           onTap: () => _choose(place, remember: true),
         ),
       for (final place in _results)
-        ListTile(
+        choice(
           key: ValueKey('result:${place.label}:${place.point}'),
-          dense: true,
           leading: const Icon(Icons.place_outlined),
           title: Text(
             _display(place),
@@ -426,14 +458,21 @@ class _SearchFieldState extends ConsumerState<SearchField>
           },
         ),
     ];
+    _choices = choices;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Escape leaves the field, as it does everywhere else on a computer.
+        // With a keyboard: the arrows walk through the suggestions, Enter
+        // takes the one that is lit, Escape leaves the field.
         CallbackShortcuts(
           bindings: {
             const SingleActivator(LogicalKeyboardKey.escape): _focus.unfocus,
+            const SingleActivator(LogicalKeyboardKey.arrowDown): () => setState(
+              () => _highlight = min(_highlight + 1, _choices.length - 1),
+            ),
+            const SingleActivator(LogicalKeyboardKey.arrowUp): () =>
+                setState(() => _highlight = max(_highlight - 1, -1)),
           },
           child: widget.before == null
               ? field

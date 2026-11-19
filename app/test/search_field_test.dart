@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:homemaps/l10n/app_localizations.dart';
@@ -194,6 +195,31 @@ void main() {
       await tester.pump();
       expect(find.textContaining('Search is not available'), findsNothing);
       expect(find.widgetWithText(ListTile, 'ede'), findsOneWidget);
+    });
+
+    testWidgets('arrow keys walk the suggestions, Enter takes the lit one', (
+      tester,
+    ) async {
+      Place? chosen;
+      final photon = _ScriptedPhoton(
+        (text) => [
+          for (var i = 0; i < 3; i++)
+            Place(label: '$text $i', point: LatLng(52.0 + i, 5)),
+        ],
+      );
+      await tester.pumpWidget(app(photon, onChosen: (p) => chosen = p));
+      await tester.enterText(find.byType(TextField), 'ede');
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pump();
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pump();
+      expect(chosen?.label, 'ede 1');
+      await tester.pump(const Duration(milliseconds: 300));
     });
 
     testWidgets('Enter before the results are in takes the first one', (

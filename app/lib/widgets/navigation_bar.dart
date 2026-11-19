@@ -411,6 +411,8 @@ class MatrixBar extends StatelessWidget {
     final numberFormat = mandatory ? lane.substring(0, lane.length - 1) : lane;
     final text = Text(
       numberFormat,
+      // A sign, not text: a larger system font would push "100" out of it.
+      textScaler: TextScaler.noScaling,
       style: const TextStyle(
         color: Colors.white,
         fontSize: 15,
@@ -722,6 +724,7 @@ class SpeedLimitSign extends StatelessWidget {
                   ),
                   child: Text(
                     '$limit',
+                    textScaler: TextScaler.noScaling,
                     style: TextStyle(
                       color: source == LimitSource.msi
                           ? Colors.white

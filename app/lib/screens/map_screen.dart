@@ -638,7 +638,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 PopupMenuButton<String>(
-                  tooltip: l.mapStyle,
+                  // Not only the style: traffic, cameras and your location too.
+                  tooltip: l.layers,
                   icon: const _RoundIcon(Icons.layers_outlined),
                   initialValue: settings.style,
                   onSelected: (choice) {
