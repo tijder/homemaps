@@ -1963,6 +1963,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{hours} h {minutes} min'**
   String durationHours(int hours, String minutes);
+
+  /// No description provided for @searchNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing found for “{query}”'**
+  String searchNoResults(String query);
+
+  /// No description provided for @searchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Search is not available right now. Tap to try again.'**
+  String get searchFailed;
 }
 
 class _AppLocalizationsDelegate

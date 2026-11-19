@@ -942,7 +942,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [bar, const SizedBox(height: 12), ?card],
+                    children: [
+                      Flexible(child: bar),
+                      const SizedBox(height: 12),
+                      ?card,
+                    ],
                   ),
                 ),
               )
@@ -950,7 +954,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             // stays clear.
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [bar, const Spacer(), ?card],
+                children: [
+                  // The bar takes what its suggestions need, up to what's
+                  // left above the card (and the keyboard); then they scroll.
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [Flexible(child: bar)],
+                    ),
+                  ),
+                  ?card,
+                ],
               ),
       ),
     );

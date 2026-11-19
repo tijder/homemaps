@@ -1185,4 +1185,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String durationHours(int hours, String minutes) {
     return '$hours u $minutes';
   }
+
+  @override
+  String searchNoResults(String query) {
+    return 'Niets gevonden voor “$query”';
+  }
+
+  @override
+  String get searchFailed =>
+      'Zoeken lukt nu niet. Tik om het opnieuw te proberen.';
 }

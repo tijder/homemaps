@@ -745,5 +745,14 @@
         "type": "String"
       }
     }
-  }
+  },
+  "searchNoResults": "Nothing found for “{query}”",
+  "@searchNoResults": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchFailed": "Search is not available right now. Tap to try again."
 }

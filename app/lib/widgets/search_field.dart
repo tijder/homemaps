@@ -3,6 +3,7 @@ import 'dart:ui' show FlutterView;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
@@ -60,6 +61,19 @@ class _SearchFieldState extends ConsumerState<SearchField>
   CancelToken? _inFlight;
   List<Place> _results = const [];
 
+  /// A search is under way (typed, not answered yet).
+  bool _searching = false;
+
+  /// How the last search ended, if not with results: the text nothing was
+  /// found for, or that it failed. So "still searching", "nothing there" and
+  /// "the server is down" don't all look like an empty list.
+  String? _nothingFor;
+  bool _failed = false;
+
+  /// Enter was pressed before the results were in: the first one is chosen
+  /// as soon as they are.
+  bool _submitted = false;
+
   /// The suggestions are open: the field has focus, or just had it (see the
   /// focus listener).
   bool _open = false;
@@ -96,13 +110,23 @@ class _SearchFieldState extends ConsumerState<SearchField>
       _close = Timer(const Duration(milliseconds: 250), () {
         if (mounted && !_focus.hasFocus) {
           _text.text = _label;
+          _debounce?.cancel();
+          _inFlight?.cancel();
           setState(() {
             _results = const [];
+            _clearOutcome();
             _open = false;
           });
         }
       });
     });
+  }
+
+  void _clearOutcome() {
+    _searching = false;
+    _nothingFor = null;
+    _failed = false;
+    _submitted = false;
   }
 
   @override
@@ -149,7 +173,10 @@ class _SearchFieldState extends ConsumerState<SearchField>
 
   void _typed(String text) {
     // "My location" depends on what has been typed.
-    setState(() {});
+    setState(() {
+      _clearOutcome();
+      _searching = text.trim().length >= 2;
+    });
     _debounce?.cancel();
     // Not a request on every key: only after a short pause.
     _debounce = Timer(const Duration(milliseconds: 250), () => _find(text));
@@ -158,7 +185,10 @@ class _SearchFieldState extends ConsumerState<SearchField>
   Future<void> _find(String text) async {
     _inFlight?.cancel();
     final photon = ref.read(photonProvider);
-    if (photon == null) return;
+    if (photon == null) {
+      setState(() => _searching = false);
+      return;
+    }
     final cancel = _inFlight = CancelToken();
     try {
       final found = await photon.search(
@@ -166,13 +196,29 @@ class _SearchFieldState extends ConsumerState<SearchField>
         near: widget.near?.call(),
         cancel: cancel,
       );
-      if (mounted && !cancel.isCancelled) {
-        setState(() => _results = found);
+      if (!mounted || cancel.isCancelled) return;
+      if (_submitted && found.isNotEmpty) {
+        _choose(found.first, remember: true);
+        return;
       }
-    } on DioException {
-      // A failed suggestion isn't worth a message; the list stays empty.
+      setState(() {
+        _results = found;
+        _searching = false;
+        _submitted = false;
+        _nothingFor = found.isEmpty && text.trim().length >= 2
+            ? text.trim()
+            : null;
+      });
+    } catch (_) {
+      // No connection, or an answer that isn't one. Not a dialog: a line in
+      // the list, where the results would have been.
       if (mounted && !cancel.isCancelled) {
-        setState(() => _results = const []);
+        setState(() {
+          _results = const [];
+          _searching = false;
+          _submitted = false;
+          _failed = true;
+        });
       }
     }
   }
@@ -183,8 +229,11 @@ class _SearchFieldState extends ConsumerState<SearchField>
     if (remember) ref.read(savedPlacesProvider.notifier).remember(place);
     _close?.cancel();
     _text.text = _label = _display(place);
+    _debounce?.cancel();
+    _inFlight?.cancel();
     setState(() {
       _results = const [];
+      _clearOutcome();
       _open = false;
     });
     widget.onChosen(place);
@@ -230,17 +279,33 @@ class _SearchFieldState extends ConsumerState<SearchField>
               .where((p) => p.label.toLowerCase().contains(typed))
               .take(3)
               .toList();
+    final nothing = _open && !_searching ? _nothingFor : null;
+    final failed = _open && !_searching && _failed;
     final suggestions =
         _results.isNotEmpty ||
         withMyLocation ||
         fixed.isNotEmpty ||
-        recent.isNotEmpty;
+        recent.isNotEmpty ||
+        nothing != null ||
+        failed;
     final field = TextField(
       controller: _text,
       focusNode: _focus,
       onChanged: _typed,
-      onSubmitted: (_) {
-        if (_results.isNotEmpty) _choose(_results.first, remember: true);
+      onSubmitted: (text) {
+        if (_results.isNotEmpty) {
+          _choose(_results.first, remember: true);
+        } else if (text.trim().length >= 2) {
+          // Enter before the results are in (or after a failure): search now
+          // and take the first.
+          _debounce?.cancel();
+          setState(() {
+            _clearOutcome();
+            _searching = true;
+            _submitted = true;
+          });
+          _find(text);
+        }
       },
       textInputAction: TextInputAction.search,
       decoration: InputDecoration(
@@ -260,92 +325,144 @@ class _SearchFieldState extends ConsumerState<SearchField>
                 onPressed: () {
                   _text.clear();
                   _label = '';
-                  setState(() => _results = const []);
+                  _debounce?.cancel();
+                  _inFlight?.cancel();
+                  setState(() {
+                    _results = const [];
+                    _clearOutcome();
+                  });
                   widget.onCleared();
                 },
               ),
       ),
     );
+    final tiles = [
+      if (withMyLocation)
+        ListTile(
+          dense: true,
+          leading: Icon(
+            Icons.my_location,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          title: Text(l.myLocation),
+          onTap: _chooseMyLocation,
+        ),
+      for (final (icon, label, place) in fixed)
+        ListTile(
+          key: ValueKey('fixed:$label'),
+          dense: true,
+          leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+          title: Text(label),
+          subtitle: Text(
+            [
+              place.label,
+              place.description,
+            ].where((t) => t.isNotEmpty).join(', '),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          onTap: () => _choose(
+            Place(label: label, description: place.label, point: place.point),
+          ),
+        ),
+      for (final place in recent)
+        ListTile(
+          key: ValueKey('recent:${place.label}:${place.point}'),
+          dense: true,
+          leading: const Icon(Icons.history),
+          title: Text(
+            place.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: place.description.isEmpty
+              ? null
+              : Text(
+                  place.description,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+          onTap: () => _choose(place, remember: true),
+        ),
+      for (final place in _results)
+        ListTile(
+          key: ValueKey('result:${place.label}:${place.point}'),
+          dense: true,
+          leading: const Icon(Icons.place_outlined),
+          title: Text(
+            _display(place),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: place.description.isEmpty
+              ? null
+              : Text(
+                  place.description,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+          onTap: () => _choose(place, remember: true),
+        ),
+      if (nothing != null)
+        ListTile(
+          dense: true,
+          leading: const Icon(Icons.search_off),
+          title: Text(l.searchNoResults(nothing)),
+        ),
+      if (failed)
+        ListTile(
+          dense: true,
+          leading: Icon(
+            Icons.cloud_off,
+            color: Theme.of(context).colorScheme.error,
+          ),
+          title: Text(l.searchFailed),
+          onTap: () {
+            setState(() {
+              _clearOutcome();
+              _searching = true;
+            });
+            _find(_text.text);
+          },
+        ),
+    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (widget.before == null)
-          field
+        // Escape leaves the field, as it does everywhere else on a computer.
+        CallbackShortcuts(
+          bindings: {
+            const SingleActivator(LogicalKeyboardKey.escape): _focus.unfocus,
+          },
+          child: widget.before == null
+              ? field
+              : Row(
+                  children: [
+                    widget.before!,
+                    Expanded(child: field),
+                  ],
+                ),
+        ),
+        if (_open && _searching)
+          const LinearProgressIndicator(minHeight: 2)
+        else if (widget.floating && suggestions)
+          const Divider(height: 1),
+        // The floating bar lies over the map and has the height that's left
+        // above the keyboard: more suggestions than fit there scroll. In the
+        // route panel the panel itself scrolls.
+        if (widget.floating)
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: tiles,
+              ),
+            ),
+          )
         else
-          Row(
-            children: [
-              widget.before!,
-              Expanded(child: field),
-            ],
-          ),
-        if (widget.floating && suggestions) const Divider(height: 1),
-        if (withMyLocation)
-          ListTile(
-            dense: true,
-            leading: Icon(
-              Icons.my_location,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            title: Text(l.myLocation),
-            onTap: _chooseMyLocation,
-          ),
-        for (final (icon, label, place) in fixed)
-          ListTile(
-            key: ValueKey('fixed:$label'),
-            dense: true,
-            leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-            title: Text(label),
-            subtitle: Text(
-              [
-                place.label,
-                place.description,
-              ].where((t) => t.isNotEmpty).join(', '),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            onTap: () => _choose(
-              Place(label: label, description: place.label, point: place.point),
-            ),
-          ),
-        for (final place in recent)
-          ListTile(
-            key: ValueKey('recent:${place.label}:${place.point}'),
-            dense: true,
-            leading: const Icon(Icons.history),
-            title: Text(
-              place.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: place.description.isEmpty
-                ? null
-                : Text(
-                    place.description,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-            onTap: () => _choose(place, remember: true),
-          ),
-        for (final place in _results)
-          ListTile(
-            key: ValueKey('result:${place.label}:${place.point}'),
-            dense: true,
-            leading: const Icon(Icons.place_outlined),
-            title: Text(
-              _display(place),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: place.description.isEmpty
-                ? null
-                : Text(
-                    place.description,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-            onTap: () => _choose(place, remember: true),
-          ),
+          ...tiles,
       ],
     );
   }

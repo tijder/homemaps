@@ -141,4 +141,141 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Mijn locatie'), findsOneWidget);
   });
+
+  group('what a search ends in', () {
+    Widget app(PhotonService photon, {ValueChanged<Place>? onChosen}) =>
+        ProviderScope(
+          overrides: [photonProvider.overrideWithValue(photon)],
+          child: MaterialApp(
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SearchField(
+                label: 'Search',
+                place: null,
+                onChosen: onChosen ?? (_) {},
+                onCleared: () {},
+              ),
+            ),
+          ),
+        );
+
+    testWidgets('nothing found says so, with what was searched for', (
+      tester,
+    ) async {
+      await tester.pumpWidget(app(_ScriptedPhoton((_) => const [])));
+      await tester.enterText(find.byType(TextField), 'qqqq');
+      await tester.pump();
+      // Typed, not answered yet: busy.
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      expect(find.byType(LinearProgressIndicator), findsNothing);
+      expect(find.textContaining('Nothing found for “qqqq”'), findsOneWidget);
+    });
+
+    testWidgets('a failed search says so, and a tap tries again', (
+      tester,
+    ) async {
+      var fail = true;
+      final photon = _ScriptedPhoton((text) {
+        if (fail) throw DioException(requestOptions: RequestOptions());
+        return [Place(label: text, point: const LatLng(52, 5))];
+      });
+      await tester.pumpWidget(app(photon));
+      await tester.enterText(find.byType(TextField), 'ede');
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      expect(find.textContaining('Search is not available'), findsOneWidget);
+      fail = false;
+      await tester.tap(find.textContaining('Search is not available'));
+      await tester.pump();
+      await tester.pump();
+      expect(find.textContaining('Search is not available'), findsNothing);
+      expect(find.widgetWithText(ListTile, 'ede'), findsOneWidget);
+    });
+
+    testWidgets('Enter before the results are in takes the first one', (
+      tester,
+    ) async {
+      Place? chosen;
+      final photon = _ScriptedPhoton(
+        (text) => [Place(label: 'Ede', point: const LatLng(52, 5))],
+      );
+      await tester.pumpWidget(app(photon, onChosen: (p) => chosen = p));
+      await tester.enterText(find.byType(TextField), 'ede');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pump();
+      await tester.pump();
+      expect(chosen?.label, 'Ede');
+      await tester.pump(const Duration(milliseconds: 300));
+    });
+  });
+
+  testWidgets('the floating bar scrolls when the suggestions do not fit', (
+    tester,
+  ) async {
+    final photon = _ScriptedPhoton(
+      (text) => [
+        for (var i = 0; i < 10; i++)
+          Place(
+            label: '$text $i',
+            description: 'Somewhere',
+            point: LatLng(52.0 + i, 5.0),
+          ),
+      ],
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [photonProvider.overrideWithValue(photon)],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            // What is left above an on-screen keyboard on a phone.
+            body: SizedBox(
+              height: 300,
+              child: Column(
+                children: [
+                  Flexible(
+                    child: SearchField(
+                      floating: true,
+                      label: 'Search',
+                      place: null,
+                      onChosen: (_) {},
+                      onCleared: () {},
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.enterText(find.byType(TextField), 'ede');
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+    // No overflow (that would fail the test), and the last one is reachable.
+    await tester.scrollUntilVisible(
+      find.text('ede 9'),
+      100,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('ede 9'), findsOneWidget);
+  });
+}
+
+class _ScriptedPhoton extends PhotonService {
+  _ScriptedPhoton(this.answer) : super(Dio(), 'http://photon.test');
+
+  final List<Place> Function(String text) answer;
+
+  @override
+  Future<List<Place>> search(
+    String text, {
+    LatLng? near,
+    CancelToken? cancel,
+  }) async => answer(text);
 }

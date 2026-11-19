@@ -310,5 +310,7 @@
   "stopNotAdded": "Tussenstop niet toegevoegd: er kon geen route worden opgehaald.",
   "serverNotFound": "Geen HomeMaps-server gevonden op dit adres",
   "durationMinutes": "{minutes} min",
-  "durationHours": "{hours} u {minutes}"
+  "durationHours": "{hours} u {minutes}",
+  "searchNoResults": "Niets gevonden voor “{query}”",
+  "searchFailed": "Zoeken lukt nu niet. Tik om het opnieuw te proberen."
 }
