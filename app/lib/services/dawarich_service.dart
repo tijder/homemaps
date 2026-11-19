@@ -170,14 +170,18 @@ class DawarichService {
     return (version: _version(response));
   }
 
-  static Never _error(Response<dynamic> response) {
+  /// [family]: the request was about the family; only there does "not found"
+  /// mean that you aren't in one. Elsewhere it means this isn't the API the
+  /// app expects.
+  static Never _error(Response<dynamic> response, {bool family = false}) {
     final status = response.statusCode ?? 0;
     final data = response.data;
     final text = data is Map ? '${data['message'] ?? data['error'] ?? ''}' : '';
     throw DawarichError(switch (status) {
       401 => DawarichErrorKind.auth,
       423 => DawarichErrorKind.blocked,
-      404 => DawarichErrorKind.noFamily,
+      404 when family => DawarichErrorKind.noFamily,
+      404 => DawarichErrorKind.notDawarich,
       403 when data is Map && data['error'] == 'family_plan_required' =>
         DawarichErrorKind.noSubscription,
       403 => DawarichErrorKind.passwordDisabled,
@@ -251,7 +255,7 @@ class DawarichService {
   /// `GET /families/mine`.
   Future<FamilyStatus> family(String server, String key) async {
     final response = await _request('GET', server, 'families/mine', key: key);
-    if (response.statusCode != 200) _error(response);
+    if (response.statusCode != 200) _error(response, family: true);
     return FamilyStatus.fromJson(_json(response));
   }
 
@@ -270,7 +274,7 @@ class DawarichService {
       key: key,
       data: {'enabled': enabled, 'duration': ?duration?.value},
     );
-    if (response.statusCode != 200) _error(response);
+    if (response.statusCode != 200) _error(response, family: true);
   }
 
   /// `GET /families/locations`: the last position of everyone who shares,
@@ -282,7 +286,7 @@ class DawarichService {
       'families/locations',
       key: key,
     );
-    if (response.statusCode != 200) _error(response);
+    if (response.statusCode != 200) _error(response, family: true);
     return [
       for (final row in (_json(response)['locations'] as List? ?? const []))
         if (row is Map) ?FamilyLocation.fromJson(row.cast<String, dynamic>()),

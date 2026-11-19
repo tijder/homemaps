@@ -220,7 +220,6 @@ def main(dir_, version_string, dry_run=False):
     print(f"version {version['attributes']['versionString']} ({state(version)})")
 
     localizations = api.all(f"/appStoreVersions/{version['id']}/appStoreVersionLocalizations")
-    new = []
     for localization in localizations:
         locale = localization["attributes"]["locale"]
         own = files.get(locale.split("-")[0].lower(), files["en"])
@@ -249,11 +248,12 @@ def main(dir_, version_string, dry_run=False):
                         }
                     },
                 )["data"]["id"]
+            # Set by set: remove the old ones and put the new ones in place
+            # before touching the next set. All removals first would leave
+            # every language without screenshots if an upload then fails.
             for old in api.all(f"/appScreenshotSets/{set_id}/appScreenshots"):
                 api.request("DELETE", f"/appScreenshots/{old['id']}")
-            new += [(set_id, file) for file in own[kind]]
-    if new:
-        upload_all(api, new)
+            upload_all(api, [(set_id, file) for file in own[kind]])
     print("done" if not dry_run else "dry run: nothing changed")
 
 

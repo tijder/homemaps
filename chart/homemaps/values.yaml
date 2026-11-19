@@ -18,6 +18,9 @@ region:
   # is no elevation profile and cycling ignores slopes), and the boundaries come
   # from the extract: the build fails if that leaves no complete country.
   bbox: "3.3,50.7,7.3,53.6"
+  # -- The Overpass instance the boundaries come from. Empty = the public one
+  # (overpass-api.de), which is regularly busy; the build retries for a while.
+  overpassUrl: ""
 
 # All volumes. `longhorn-no-backup` or similar fits here: everything on them
 # can be rebuilt.

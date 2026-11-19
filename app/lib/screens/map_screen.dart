@@ -1613,31 +1613,50 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     Offset position,
     Map<String, dynamic> info,
   ) {
-    final screen = MediaQuery.sizeOf(context);
-    const width = 260.0, height = 140.0;
     return Positioned.fill(
       child: PointerInterceptor(
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => setState(() => _incident = null),
-          child: Stack(
-            children: [
-              Positioned(
-                left: min(position.dx + 8, screen.width - width - 8),
-                top: min(position.dy + 8, screen.height - height - 8),
-                width: width,
-                child: Material(
-                  elevation: 8,
-                  borderRadius: BorderRadius.circular(8),
-                  child: TrafficIncident(info),
-                ),
+          // Next to where you tapped, and on the screen whatever its size:
+          // roadworks with three lines at a large font are taller than any
+          // height guessed here.
+          child: CustomSingleChildLayout(
+            delegate: _NearPoint(position),
+            child: SizedBox(
+              width: 260,
+              child: Material(
+                elevation: 8,
+                borderRadius: BorderRadius.circular(8),
+                child: TrafficIncident(info),
               ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+/// Places its child just below and right of [point], moved back onto the
+/// screen where it would stick out.
+class _NearPoint extends SingleChildLayoutDelegate {
+  const _NearPoint(this.point);
+
+  final Offset point;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
+      constraints.loosen().deflate(const EdgeInsets.all(8));
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) => Offset(
+    max(8, min(point.dx + 8, size.width - childSize.width - 8)),
+    max(8, min(point.dy + 8, size.height - childSize.height - 8)),
+  );
+
+  @override
+  bool shouldRelayout(_NearPoint old) => old.point != point;
 }
 
 /// "As home" on the card of a found place, as long as there's no home yet. If

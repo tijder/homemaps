@@ -195,6 +195,7 @@ spec:
               env:
                 - { name: PBF_URL, value: {{ .Values.region.pbfUrl | quote }} }
                 - { name: REGION_BBOX, value: {{ .Values.region.bbox | quote }} }
+                - { name: OVERPASS_URL, value: {{ .Values.region.overpassUrl | default "" | quote }} }
                 - { name: BUILD_THREADS, value: {{ .Values.valhalla.build.threads | quote }} }
               securityContext: {{- include "homemaps.containerSecurity" . | nindent 16 }}
               resources: {{- toYaml .Values.valhalla.build.resources | nindent 16 }}

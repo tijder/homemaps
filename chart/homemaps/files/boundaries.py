@@ -15,13 +15,16 @@ Usage: boundaries.py <minlon,minlat,maxlon,maxlat> <output .osm>
 """
 
 import http.client
+import os
 import sys
 import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
 
-OVERPASS = "https://overpass-api.de/api/interpreter"
+# Another instance (your own, or a mirror) when the public one is busy or
+# limits you: `region.overpassUrl` in the chart.
+OVERPASS = os.environ.get("OVERPASS_URL") or "https://overpass-api.de/api/interpreter"
 
 
 def query(minlon, minlat, maxlon, maxlat):
