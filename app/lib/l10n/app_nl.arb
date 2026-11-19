@@ -321,5 +321,7 @@
   "routeOverview": "Routeoverzicht",
   "skipStop": "{label} overslaan",
   "stopSkipped": "{label} overgeslagen",
-  "stopNotSkipped": "Er kon geen route zonder deze stop worden opgehaald."
+  "stopNotSkipped": "Er kon geen route zonder deze stop worden opgehaald.",
+  "alongFailed": "Zoeken langs de route lukte niet: de server gaf geen antwoord.",
+  "serverNeedsHttps": "Dit adres gebruikt http://. Android verbindt alleen via https, en iOS staat http:// alleen binnen je eigen netwerk toe."
 }

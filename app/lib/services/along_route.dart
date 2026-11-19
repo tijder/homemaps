@@ -36,6 +36,12 @@ class AlongRouteHit {
   final double? detourSeconds;
 }
 
+/// The tiles with the places could not be fetched: it is unknown what lies
+/// along the route, which is not the same as nothing.
+class AlongRouteUnavailable implements Exception {
+  const AlongRouteUnavailable();
+}
+
 /// Searches our own vector tiles for places right along a route, and has
 /// Valhalla work out how much of a detour each stop costs.
 class AlongRouteService {
@@ -84,6 +90,7 @@ class AlongRouteService {
     }
 
     final seen = <String>{};
+    var failed = 0;
     final candidates = <(TilePoint, double)>[];
     final list = tiles.toList();
     // In groups of eight at a time: enough to be fast, not so many that the
@@ -93,7 +100,8 @@ class AlongRouteService {
       final results = await Future.wait([
         for (final (x, y) in group) _poi(x, y, cancel),
       ]);
-      for (final poi in results.expand((r) => r)) {
+      failed += results.where((r) => r == null).length;
+      for (final poi in results.expand((r) => r ?? const <TilePoint>[])) {
         if (!category.matches(poi.properties)) continue;
         // A point close to the edge is in several tiles.
         final key =
@@ -106,7 +114,12 @@ class AlongRouteService {
     }
     candidates.sort((a, b) => a.$2.compareTo(b.$2));
     final best = candidates.take(maxCandidates).toList();
-    if (best.isEmpty) return const [];
+    if (best.isEmpty) {
+      // "Nothing along the route" is only true if the tiles were there to
+      // look in.
+      if (failed > 0) throw const AlongRouteUnavailable();
+      return const [];
+    }
 
     final detours = await _detours(
       stretch.first,
@@ -137,7 +150,8 @@ class AlongRouteService {
     return out;
   }
 
-  Future<List<TilePoint>> _poi(int x, int y, CancelToken? cancel) async {
+  /// The points in one tile; null if the tile could not be fetched.
+  Future<List<TilePoint>?> _poi(int x, int y, CancelToken? cancel) async {
     try {
       final response = await _dio.get<List<int>>(
         '$tilesUrl/data/v3/$_zoom/$x/$y.pbf',
@@ -161,7 +175,9 @@ class AlongRouteService {
       );
     } on DioException catch (error) {
       if (CancelToken.isCancel(error)) rethrow;
-      return const [];
+      // A tile that doesn't exist (outside the region) is simply empty.
+      final status = error.response?.statusCode;
+      return status == 404 || status == 204 ? const [] : null;
     } on FormatException {
       return const [];
     }

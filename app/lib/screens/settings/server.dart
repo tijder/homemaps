@@ -116,6 +116,9 @@ class _ServerState extends ConsumerState<ServerSettings> {
                 children: [
                   TextField(
                     controller: _server,
+                    // Nothing filled in yet (the first start): this is the
+                    // one thing to do on this screen.
+                    autofocus: _server.text.isEmpty,
                     keyboardType: TextInputType.url,
                     autocorrect: false,
                     onChanged: _typed,
@@ -131,6 +134,16 @@ class _ServerState extends ConsumerState<ServerSettings> {
                   if (_checking != null) ...[
                     const SizedBox(height: 12),
                     _CheckStatus(_check),
+                    // The usual reason an http:// address finds nothing: the
+                    // phone refuses the connection before it is made.
+                    if ((_check?.unreachable ?? false) &&
+                        _checking!.startsWith('http://')) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        l.serverNeedsHttps,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
                   ],
                   const SizedBox(height: 12),
                   Align(

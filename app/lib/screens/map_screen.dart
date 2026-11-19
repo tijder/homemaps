@@ -75,6 +75,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// During navigation: does the camera follow along? Not for a while when you
   /// touch the map yourself; again after [_resumeAfter] without a touch.
   bool _following = true;
+
+  /// Raised when the server answers again after not answering: the map is
+  /// built anew, because a style that failed to load is not fetched again.
+  int _mapEpoch = 0;
   Timer? _resume;
   static const _resumeAfter = Duration(seconds: 10);
 
@@ -509,6 +513,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
         );
     });
+    ref.listen(mapServerProvider, (was, now) {
+      if (was?.hasError == true && now.hasValue && !now.isLoading) {
+        setState(() => _mapEpoch++);
+      }
+    });
     ref.listen(plannerProvider, (_, p) {
       if (_familyPlace != null &&
           (p.routeMode || !identical(p.found, _familyPlace))) {
@@ -559,6 +568,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ? ref.watch(nightStyleProvider(styleUrl)).value
         : null;
     final map = MapWidget(
+      key: ValueKey(_mapEpoch),
       styleUrl: night ?? styleUrl,
       start: start,
       points: nav != null
@@ -722,6 +732,71 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
 
     final menu = _menu == null ? null : _menuOverlay(context, _menu!);
+    final server = ref.watch(mapServerProvider);
+    // The server doesn't answer: say so, where an empty map would otherwise
+    // be all there is to see.
+    final serverDown = !server.hasError || planner.routeMode || _typing
+        ? null
+        : SafeArea(
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: wide ? _panelWidth + 12 : 12,
+                  top: wide ? 12 : 84,
+                  right: 72,
+                ),
+                child: PointerInterceptor(
+                  child: Material(
+                    elevation: 4,
+                    color: Theme.of(context).colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.cloud_off,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onErrorContainer,
+                          ),
+                          const SizedBox(width: 12),
+                          Flexible(
+                            child: Text(
+                              l.serverUnreachable,
+                              style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onErrorContainer,
+                              ),
+                            ),
+                          ),
+                          if (server.isLoading)
+                            const Padding(
+                              padding: EdgeInsets.all(14),
+                              child: SizedBox.square(
+                                dimension: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            )
+                          else
+                            TextButton(
+                              onPressed: () =>
+                                  ref.invalidate(mapServerProvider),
+                              child: Text(l.tryAgain),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
     final notification = _incident == null
         ? null
         : _incidentOverlay(context, _incident!.position, _incident!.info);
@@ -847,6 +922,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   ),
                 ),
               ),
+            ?serverDown,
             ?notification,
             ?menu,
           ],

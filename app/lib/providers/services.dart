@@ -60,6 +60,34 @@ final alongRouteProvider = Provider<AlongRouteService?>((ref) {
   );
 });
 
+/// The TileJSON of the own tileserver. An error means the server doesn't
+/// answer: the map then has nothing to draw, and the screen says so instead
+/// of showing an empty map without a word.
+///
+/// Not Riverpod's own retries: those keep whoever waits for the first answer
+/// (the map, for where to open) waiting through all of them. One attempt, and
+/// after an error another one every quarter of a minute.
+final mapServerProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  final config = ref.watch(appConfigProvider);
+  if (config == null) throw StateError('no server set');
+  try {
+    final response = await ref
+        .watch(dioProvider)
+        .get<Map<String, dynamic>>(
+          '${config.tilesUrl}/data/v3.json',
+          options: Options(
+            sendTimeout: const Duration(seconds: 5),
+            receiveTimeout: const Duration(seconds: 5),
+          ),
+        );
+    return response.data ?? const {};
+  } on Object {
+    final again = Timer(const Duration(seconds: 15), ref.invalidateSelf);
+    ref.onDispose(again.cancel);
+    rethrow;
+  }
+}, retry: (_, _) => null);
+
 /// Where the map opens: the `center` from the TileJSON of the own tileserver, so
 /// that an installation for another region doesn't start on the Netherlands. If
 /// that fails, the Netherlands is the fallback.
@@ -68,13 +96,10 @@ final mapStartProvider = FutureProvider<CameraPosition>((ref) async {
   final config = ref.watch(appConfigProvider);
   if (config == null) return fallbackPosition;
   try {
-    final response = await ref
-        .watch(dioProvider)
-        .get<Map<String, dynamic>>(
-          '${config.tilesUrl}/data/v3.json',
-          options: Options(receiveTimeout: const Duration(seconds: 5)),
-        );
-    final center = (response.data?['center'] as List?)?.cast<num>();
+    // Only the first answer: a retry after an error must not move a map that
+    // is already open.
+    final json = await ref.read(mapServerProvider.future);
+    final center = (json['center'] as List?)?.cast<num>();
     if (center == null || center.length < 2) return fallbackPosition;
     return CameraPosition(
       target: LatLng(center[1].toDouble(), center[0].toDouble()),

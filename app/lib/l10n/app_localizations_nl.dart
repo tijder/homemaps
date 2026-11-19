@@ -1228,4 +1228,12 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get stopNotSkipped =>
       'Er kon geen route zonder deze stop worden opgehaald.';
+
+  @override
+  String get alongFailed =>
+      'Zoeken langs de route lukte niet: de server gaf geen antwoord.';
+
+  @override
+  String get serverNeedsHttps =>
+      'Dit adres gebruikt http://. Android verbindt alleen via https, en iOS staat http:// alleen binnen je eigen netwerk toe.';
 }

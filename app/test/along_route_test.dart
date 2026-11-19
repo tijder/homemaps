@@ -15,6 +15,9 @@ class FakeServer implements HttpClientAdapter {
   final requests = <String>[];
   Map<String, dynamic>? matrixRequest;
 
+  /// The tileserver answers 503 to everything.
+  bool down = false;
+
   @override
   Future<ResponseBody> fetch(
     RequestOptions options,
@@ -22,6 +25,7 @@ class FakeServer implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     requests.add(options.path);
+    if (down) return ResponseBody.fromString('', 503);
     if (options.path.endsWith('.pbf')) {
       // Only the tile itself; the neighbours are empty.
       final bytes = options.path.endsWith('/14/8446/5405.pbf')
@@ -111,5 +115,24 @@ void main() {
     );
     expect(hits, isEmpty);
     expect(server.matrixRequest, isNull);
+  });
+
+  test('the tileserver is down: an error, not "nothing found"', () async {
+    final server = FakeServer()..down = true;
+    final dio = Dio()..httpClientAdapter = server;
+    final service = AlongRouteService(
+      dio,
+      'http://fake/tiles',
+      'http://fake/valhalla',
+    );
+    expect(
+      () => service.search(
+        [const LatLng(52.0854, 5.585), const LatLng(52.0854, 5.615)],
+        PoiCategory.fuel,
+        profile: Profile.car,
+        unnamedLabel: 'Tankstation',
+      ),
+      throwsA(isA<AlongRouteUnavailable>()),
+    );
   });
 }

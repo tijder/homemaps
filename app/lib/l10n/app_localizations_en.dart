@@ -1221,4 +1221,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get stopNotSkipped => 'Could not fetch a route without this stop.';
+
+  @override
+  String get alongFailed =>
+      'Could not search along the route: the server did not answer.';
+
+  @override
+  String get serverNeedsHttps =>
+      'This address uses http://. Android only connects over https, and iOS allows http:// only inside your own network.';
 }

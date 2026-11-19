@@ -103,6 +103,22 @@ class _AlongRouteSearchState extends ConsumerState<AlongRouteSearch> {
                   ),
                 );
               }
+              if (status.hasError) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(l.alongFailed, style: text.bodyMedium),
+                      ),
+                      TextButton(
+                        onPressed: () => _choose(_category!),
+                        child: Text(l.tryAgain),
+                      ),
+                    ],
+                  ),
+                );
+              }
               final list = status.data ?? const [];
               if (list.isEmpty) {
                 return Padding(

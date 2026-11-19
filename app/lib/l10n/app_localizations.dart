@@ -2029,6 +2029,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not fetch a route without this stop.'**
   String get stopNotSkipped;
+
+  /// No description provided for @alongFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not search along the route: the server did not answer.'**
+  String get alongFailed;
+
+  /// No description provided for @serverNeedsHttps.
+  ///
+  /// In en, this message translates to:
+  /// **'This address uses http://. Android only connects over https, and iOS allows http:// only inside your own network.'**
+  String get serverNeedsHttps;
 }
 
 class _AppLocalizationsDelegate
