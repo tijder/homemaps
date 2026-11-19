@@ -507,7 +507,16 @@ class Importer:
         self._osm()
         try:
             feed = datex3.open_feed(fetch(f"{self.ndw}/reistijden_meetgegevens.xml.gz"))
-            travel_times = list(datex3.read_travel_times(feed))
+            header: dict[str, str] = {}
+            travel_times = list(datex3.read_travel_times(feed, header))
+            published = datex3.published(header)
+            if published is not None:
+                self.state.set(travel_times_published_timestamp_seconds=published.timestamp())
+                age = (datetime.now(UTC) - published).total_seconds()
+                # NDW makes this feed every minute. An old file served with a
+                # 200 is not live traffic, whatever the fetch says.
+                if age > self.stale_seconds:
+                    raise ValueError(f"the travel times were published {age:.0f} s ago")
         except FEED_ERRORS:
             self.state.feed("travel_times", False)
             raise

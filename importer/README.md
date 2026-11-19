@@ -81,6 +81,9 @@ simply down. What happens then:
   after that they are cleared from `traffic.tar` and the map layer answers 503.
   Valhalla has no expiry of its own, so without this an old jam would stay in
   every route.
+  The same goes for a file that arrives but was published longer ago than
+  that: NDW makes this feed every minute, and an old file served with a 200
+  is not live traffic.
 - **Closures** keep the measures of the last good fetch for the same time; the
   speeds are written either way.
 - **Everything else** (incidents, bridges, maximum speeds, the planning feed, the

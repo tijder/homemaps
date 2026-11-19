@@ -37,14 +37,20 @@ def _points(poslist: str) -> list[Point]:
     return list(zip(numbers[0::2], numbers[1::2], strict=True))
 
 
-def _records(stream: BinaryIO, name: str) -> Iterator[Element]:
-    """Yields every element `name` as soon as it is complete, and clears it afterwards."""
+def _records(
+    stream: BinaryIO, name: str, header: dict[str, str] | None = None
+) -> Iterator[Element]:
+    """Yields every element `name` as soon as it is complete, and clears it afterwards.
+    With `header`, the feed's `publicationTime` (it comes before the records)
+    is put in it."""
     root = None
     for event, element in iterparse(stream, events=("start", "end")):
         if event == "start":
             if root is None:
                 root = element
             continue
+        if header is not None and _name(element) == "publicationTime" and element.text:
+            header.setdefault("publicationTime", element.text)
         if _name(element) == name:
             yield element
             element.clear()
@@ -52,12 +58,17 @@ def _records(stream: BinaryIO, name: str) -> Iterator[Element]:
             root.clear()
 
 
-def _each[T](stream: BinaryIO, name: str, read: Callable[[Element], T | None]) -> Iterator[T]:
+def _each[T](
+    stream: BinaryIO,
+    name: str,
+    read: Callable[[Element], T | None],
+    header: dict[str, str] | None = None,
+) -> Iterator[T]:
     """What `read` makes of every element `name`. A record that cannot be read
     (a number that is not one, a missing id) is skipped: one bad record must
     not cost the whole feed."""
     bad = 0
-    for record in _records(stream, name):
+    for record in _records(stream, name, header):
         try:
             item = read(record)
         except (ValueError, KeyError) as error:
@@ -122,7 +133,19 @@ def _duration(base: Element, name: str) -> float | None:
     return value if value > 0 else None
 
 
-def read_travel_times(stream: BinaryIO) -> Iterator[TravelTime]:
+def published(header: dict[str, str]) -> datetime | None:
+    """When NDW made the feed, from what a reader put in `header`."""
+    try:
+        return _time(header.get("publicationTime"))
+    except ValueError:
+        return None
+
+
+def read_travel_times(
+    stream: BinaryIO, header: dict[str, str] | None = None
+) -> Iterator[TravelTime]:
+    """With `header`: see `published`."""
+
     def read(measurement: Element):
         reference = _first(measurement, "measurementSiteReference")
         seconds = _duration(measurement, "travelTime")
@@ -135,7 +158,7 @@ def read_travel_times(stream: BinaryIO) -> Iterator[TravelTime]:
             _duration(measurement, "normallyExpectedTravelTime"),
         )
 
-    return _each(stream, "siteMeasurements", read)
+    return _each(stream, "siteMeasurements", read, header)
 
 
 @dataclass(frozen=True)

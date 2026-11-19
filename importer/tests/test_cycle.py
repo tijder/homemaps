@@ -219,3 +219,24 @@ def test_healthz_reports_a_stalled_loop():
         assert b"cycle" in caught.value.read()
     finally:
         server.shutdown()
+
+
+def test_an_old_feed_served_as_new_is_not_live_traffic(tmp_path, feeds):
+    xml = (FIXTURES / "travel_times.xml").read_text()
+    first = xml.index("<", xml.index("?>") + 2)
+    end_of_root = xml.index(">", first) + 1
+
+    def with_time(time: str) -> bytes:
+        stamped = f"{xml[:end_of_root]}<publicationTime>{time}</publicationTime>{xml[end_of_root:]}"
+        return gzip.compress(stamped.encode())
+
+    state = main.State()
+    importer, tar = _importer(tmp_path, state, closures=False)
+    feeds.files[TRAVEL_TIMES] = with_time(main.datetime.now(main.UTC).isoformat())
+    importer.cycle()
+    assert "travel_times_published_timestamp_seconds" in state.values
+
+    feeds.files[TRAVEL_TIMES] = with_time("2026-01-01T00:00:00.123456789Z")
+    with pytest.raises(ValueError, match="published"):
+        importer.cycle()
+    assert state.values['feed_failures_total{feed="travel_times"}'] == 1
