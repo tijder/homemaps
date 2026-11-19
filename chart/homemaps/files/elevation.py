@@ -8,6 +8,7 @@ and Valhalla reads the .gz directly.
 Usage: elevation.py <minlon,minlat,maxlon,maxlat> <output dir>
 """
 
+import http.client
 import math
 import sys
 import time
@@ -40,7 +41,8 @@ def fetch(url, target):
             if error.code in (403, 404):
                 return False
             print(f"  attempt {attempt + 1}: {error}", flush=True)
-        except OSError as error:
+        # A connection that drops halfway is an HTTPException, not an OSError.
+        except (OSError, http.client.HTTPException) as error:
             print(f"  attempt {attempt + 1}: {error}", flush=True)
         time.sleep(5 * (attempt + 1))
     sys.exit(f"fetch failed: {url}")

@@ -34,7 +34,8 @@ Met een ingress controller in plaats van de Gateway API:
 
 ```bash
   --set ingress.enabled=true --set 'ingress.hosts={maps.example.org}' \
-  --set ingress.className=nginx
+  --set ingress.className=nginx \
+  --set 'networkPolicy.ingressNamespaces={ingress-nginx}'
 ```
 
 De NOTES van de chart geven je dan twee commando's. Op een verse installatie
@@ -65,7 +66,7 @@ bereikbaar, of gebruik de web-app.
 ## Upgraden
 
 ```bash
-helm upgrade homemaps oci://ghcr.io/tijder/charts/homemaps -n homemaps --reuse-values
+helm upgrade homemaps oci://ghcr.io/tijder/charts/homemaps -n homemaps --reset-then-reuse-values
 ```
 
 Elke release publiceert de chart en de images met dezelfde versie. De volumes

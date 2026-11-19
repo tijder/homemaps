@@ -240,3 +240,33 @@ def test_an_old_feed_served_as_new_is_not_live_traffic(tmp_path, feeds):
     with pytest.raises(ValueError, match="published"):
         importer.cycle()
     assert state.values['feed_failures_total{feed="travel_times"}'] == 1
+
+
+def test_a_site_valhalla_did_not_answer_for_is_matched_next_cycle(tmp_path, feeds):
+    state = main.State()
+    importer, tar = _importer(tmp_path, state, closures=False)
+    answer = importer.valhalla.match
+
+    def busy(points, covered_only=False):
+        raise OSError("timed out")
+
+    # Valhalla has just started on a new tileset.
+    importer.valhalla.match = busy
+    importer.cycle()
+    assert not tar.records
+    assert importer.sites_pending
+
+    importer.valhalla.match = answer
+    importer.cycle()
+    assert tar.records
+    assert importer.sites_pending == {}
+    # Without the 100 MB configuration a second time.
+    assert feeds.fetched.count(SITES) == 1
+
+
+def test_empty_settings_count_as_not_set():
+    # `helm upgrade --reuse-values` with a chart that gained a value.
+    assert main._number({"PLANNING_SECONDS": ""}, "PLANNING_SECONDS", 3600) == 3600
+    assert main._number({"PLANNING_SECONDS": "0"}, "PLANNING_SECONDS", 3600) == 0
+    assert main._switch({"BRIDGES": ""}, "BRIDGES") is True
+    assert main._switch({"BRIDGES": "false"}, "BRIDGES") is False

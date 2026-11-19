@@ -5,6 +5,7 @@ the file, via a shared mmap: putting a new file next to it and renaming it
 would leave Valhalla looking at the old inode until the next restart.
 """
 
+import logging
 import mmap
 import tarfile
 import time
@@ -12,6 +13,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import traffictile as tt
+
+log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -24,6 +27,8 @@ class TrafficTar:
     def __init__(self, path: str | Path):
         self.path = Path(path)
         self.tiles: dict[int, Tile] = {}
+        # The version in the file as it was found (0: never written).
+        self.version = 0
         with tarfile.open(self.path, "r:") as tar:
             # Only the tiles: valhalla_build_extract also adds an index.bin
             # (112 bytes), and reading that as a header yields nonsense.
@@ -42,6 +47,16 @@ class TrafficTar:
             if size < expected:
                 raise ValueError(f"tile {header.tile_id}: {size} bytes, expected {expected}")
             self.tiles[header.tile_id] = Tile(start, header.directed_edge_count)
+            self.version = header.version
+        if self.version not in (0, tt.TILE_VERSION):
+            # Valhalla ignores a tile whose version is not its own, silently;
+            # the importer writes its own over it on every update.
+            log.error(
+                "traffic.tar was built with tile version %d, this importer writes %d: "
+                "live traffic will probably be ignored (see TILE_VERSION)",
+                self.version,
+                tt.TILE_VERSION,
+            )
 
     def __enter__(self):
         return self

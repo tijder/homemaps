@@ -37,10 +37,11 @@ De verkeersimporter kent alleen NDW, dus buiten Nederland zet je hem uit:
 storage:
   storageClassName: longhorn-no-backup   # alles erop is opnieuw te bouwen
   accessMode: ReadWriteOnce
-tiles: { size: 20Gi }
+tiles:
+  size: 20Gi
+  planetiler: { scratchSize: 40Gi }
 valhalla: { size: 20Gi }
 photon: { size: 20Gi }
-tiles.planetiler.scratchSize: 40Gi
 ```
 
 ## Componenten
@@ -77,7 +78,7 @@ tegels, zodat beide hetzelfde verse OSM-extract gebruiken.
 Elke component heeft `resources.requests` en `resources.limits`. De bouwtaken
 hebben met opzet lage CPU-requests: de request is alleen de drempel om
 ingepland te worden, zonder CPU-limiet gebruiken ze wat vrij is.
-`valhalla.threads` en `tiles.planetiler.javaOpts` zijn de knoppen voor snelheid.
+`valhalla.build.threads` en `tiles.planetiler.javaOpts` zijn de knoppen voor snelheid.
 
 ## Monitoring
 

@@ -14,6 +14,7 @@ and the patient attempts.
 Usage: boundaries.py <minlon,minlat,maxlon,maxlat> <output .osm>
 """
 
+import http.client
 import sys
 import time
 import urllib.parse
@@ -58,7 +59,8 @@ def main():
                 print(f"{target}: {len(data) >> 20} MiB", flush=True)
                 return
             print(f"attempt {attempt}: no complete answer from Overpass", flush=True)
-        except OSError as error:
+        # A connection that drops halfway is an HTTPException, not an OSError.
+        except (OSError, http.client.HTTPException) as error:
             print(f"attempt {attempt}: {error}", flush=True)
         time.sleep(60 * attempt)
     sys.exit(f"boundaries failed: {OVERPASS}")

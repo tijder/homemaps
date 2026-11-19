@@ -316,6 +316,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # The builds took half an hour. If main moved meanwhile, the push of the
+      # version commit at the end is refused -- after the images and the chart
+      # of this version are already public, and the next night would publish
+      # the same version again with other content. So stop here instead.
+      - name: Main has not moved since the gate
+        run: |
+          git fetch --quiet origin main
+          if [ "$(git rev-parse origin/main)" != "$(git rev-parse HEAD)" ]; then
+            echo "::error::main moved during the release; nothing published, the next run releases it"
+            exit 1
+          fi
+
       # The images go before the tag: a tag without an image is worse than an image
       # without a tag.
       - id: meta-web

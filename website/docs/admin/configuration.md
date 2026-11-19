@@ -37,10 +37,11 @@ The traffic importer only knows NDW, so outside the Netherlands turn it off:
 storage:
   storageClassName: longhorn-no-backup   # everything on it can be rebuilt
   accessMode: ReadWriteOnce
-tiles: { size: 20Gi }
+tiles:
+  size: 20Gi
+  planetiler: { scratchSize: 40Gi }
 valhalla: { size: 20Gi }
 photon: { size: 20Gi }
-tiles.planetiler.scratchSize: 40Gi
 ```
 
 ## Components
@@ -78,7 +79,7 @@ tiles so both use the same fresh OSM extract.
 Every component has `resources.requests` and `resources.limits`. The build
 jobs have low CPU requests on purpose: the request is only the threshold for
 getting scheduled, without a CPU limit they use whatever is free.
-`valhalla.threads` and `tiles.planetiler.javaOpts` are the knobs for speed.
+`valhalla.build.threads` and `tiles.planetiler.javaOpts` are the knobs for speed.
 
 ## Monitoring
 

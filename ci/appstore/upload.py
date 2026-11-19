@@ -66,13 +66,23 @@ class Api:
     def request(self, method, path, body=None):
         url = path if path.startswith("http") else API + path
         data = json.dumps(body).encode() if body is not None else None
-        req = urllib.request.Request(url, data=data, method=method, headers=self._headers())
-        try:
-            with urllib.request.urlopen(req, timeout=60) as response:
-                text = response.read()
-        except urllib.error.HTTPError as error:
-            raise SystemExit(f"{method} {path}: {error.code} {error.read().decode(errors='replace')}") from None
-        return json.loads(text) if text else {}
+        # A hiccup at Apple halfway would leave the version with the old
+        # screenshots removed and the new ones not there: try a few times.
+        for attempt in range(1, 5):
+            req = urllib.request.Request(url, data=data, method=method, headers=self._headers())
+            try:
+                with urllib.request.urlopen(req, timeout=60) as response:
+                    text = response.read()
+                return json.loads(text) if text else {}
+            except urllib.error.HTTPError as error:
+                if attempt < 4 and (error.code == 429 or error.code >= 500):
+                    time.sleep(10 * attempt)
+                    continue
+                raise SystemExit(f"{method} {path}: {error.code} {error.read().decode(errors='replace')}") from None
+            except (urllib.error.URLError, TimeoutError) as error:
+                if attempt == 4:
+                    raise SystemExit(f"{method} {path}: {error}") from None
+                time.sleep(10 * attempt)
 
     def all(self, path):
         """All pages of a list."""

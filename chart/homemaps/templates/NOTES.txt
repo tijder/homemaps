@@ -8,6 +8,12 @@ yet; the pods wait for them. Start the two build jobs once by hand:
 {{- end }}
 
 After that they refresh themselves on their schedule. Photon fetches its own index.
+{{- if and .Values.networkPolicy.enabled .Values.networkPolicy.ingressNamespaces }}
+
+The NetworkPolicy only lets these namespaces reach the web service: {{ join ", " .Values.networkPolicy.ingressNamespaces }}.
+If your ingress controller or gateway runs elsewhere, every request times out:
+set networkPolicy.ingressNamespaces to its namespace.
+{{- end }}
 To check: helm test {{ .Release.Name }} -n {{ .Release.Namespace }}
 {{- if .Values.website.enabled }}
 

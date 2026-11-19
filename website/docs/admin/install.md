@@ -34,7 +34,8 @@ With an ingress controller instead of the Gateway API:
 
 ```bash
   --set ingress.enabled=true --set 'ingress.hosts={maps.example.org}' \
-  --set ingress.className=nginx
+  --set ingress.className=nginx \
+  --set 'networkPolicy.ingressNamespaces={ingress-nginx}'
 ```
 
 The chart's NOTES then give you two commands. On a fresh install there is no
@@ -65,7 +66,7 @@ reachable without one, or use the web app.
 ## Upgrade
 
 ```bash
-helm upgrade homemaps oci://ghcr.io/tijder/charts/homemaps -n homemaps --reuse-values
+helm upgrade homemaps oci://ghcr.io/tijder/charts/homemaps -n homemaps --reset-then-reuse-values
 ```
 
 Every release publishes the chart and the images with the same version. The

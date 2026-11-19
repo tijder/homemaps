@@ -35,7 +35,7 @@ from collections.abc import Iterable
 from datetime import UTC, datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from socket import AF_INET6
+from socket import AF_INET, AF_INET6
 from xml.etree.ElementTree import ParseError
 
 from . import datex3, enforcement, maplayer, msi, osmrules
@@ -293,7 +293,12 @@ def start_metrics(state: State, port: int) -> _Server:
         def log_message(self, *_):
             pass
 
-    server = _Server(("::", port), Handler)
+    try:
+        server = _Server(("::", port), Handler)
+    except OSError:
+        # A node without IPv6 (ipv6.disable=1): IPv4 only then.
+        _Server.address_family = AF_INET
+        server = _Server(("0.0.0.0", port), Handler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     return server
 
@@ -345,6 +350,9 @@ class Importer:
         self.measures_fetched = 0.0
         self.sites_fetched = 0.0
         self.sites_unknown: set[str] = set()
+        # Measured sites that are in the configuration but got no answer from
+        # Valhalla (a timeout), with their points.
+        self.sites_pending: dict[str, tuple] = {}
         # What a previous instance wrote is unknown, so clear everything first.
         tar.clear_all()
 
@@ -354,6 +362,18 @@ class Importer:
         unknown = needed - self.sites.matches.keys()
         if not unknown:
             return
+        # Sites Valhalla did not answer for last time (it had just started,
+        # after a new tileset): again, without fetching the configuration.
+        again = {key: points for key, points in self.sites_pending.items() if key in unknown}
+        if again:
+            if self.sites.fill(self.valhalla, again, prune=False):
+                self.sites.save()
+            self.sites_pending = {
+                key: points for key, points in again.items() if key not in self.sites.matches
+            }
+            unknown = needed - self.sites.matches.keys()
+            if not unknown:
+                return
         if unknown <= self.sites_unknown and time.time() - self.sites_fetched < SITES_RETRY_SECONDS:
             return
         log.info("fetching measurement sites (%d unknown)", len(unknown))
@@ -371,7 +391,11 @@ class Importer:
         if self.sites.fill(self.valhalla, items):
             self.sites.save()
         self.sites_fetched = time.time()
-        self.sites_unknown = needed - self.sites.matches.keys()
+        self.sites_pending = {
+            key: items[key] for key in needed if key in items and key not in self.sites.matches
+        }
+        # Only what the configuration does not have: those stay unknown.
+        self.sites_unknown = needed - self.sites.matches.keys() - self.sites_pending.keys()
 
     def _planning(self) -> None:
         """Once an hour: the planning feed (18 MB) for "leave later". It changes
@@ -453,7 +477,7 @@ class Importer:
                 ways = osmrules.conditional_speeds(stream)
                 stream.seek(0)
                 cameras = enforcement.enforcement(stream)
-        except (OSError, ValueError, KeyError, IndexError, zlib.error) as error:
+        except (OSError, ValueError, KeyError, IndexError, zlib.error, struct.error) as error:
             log.warning("OSM file not read: %s", error)
             return
         self.pbf_read = modified
@@ -659,6 +683,17 @@ class MsiSigns:
             time.sleep(self.seconds)
 
 
+def _number(env, name: str, default: int) -> int:
+    """An empty value counts as not set: `helm upgrade --reuse-values` with a
+    chart that gained a value renders it empty, and that must not keep the
+    container (and with it the Valhalla pod) from starting."""
+    return int(env.get(name) or default)
+
+
+def _switch(env, name: str) -> bool:
+    return (env.get(name) or "true").lower() != "false"
+
+
 def main() -> None:
     logging.basicConfig(
         level=os.environ.get("LOG_LEVEL", "INFO"),
@@ -666,12 +701,12 @@ def main() -> None:
         stream=sys.stdout,
     )
     env = os.environ
-    interval = int(env.get("INTERVAL_SECONDS", "300"))
+    interval = _number(env, "INTERVAL_SECONDS", 300)
     cache_dir = Path(env.get("CACHE_DIR", "/data/importer"))
     cache_dir.mkdir(parents=True, exist_ok=True)
     state = State()
     state.set(cycles_failed_total=0)
-    start_metrics(state, int(env.get("METRICS_PORT", "9100")))
+    start_metrics(state, _number(env, "METRICS_PORT", 9100))
 
     valhalla = Valhalla(env.get("VALHALLA_URL", "http://localhost:8002"))
     while True:
@@ -690,15 +725,15 @@ def main() -> None:
         cache_dir,
         env.get("NDW_URL", "https://opendata.ndw.nu"),
         state,
-        env.get("CLOSURES", "true").lower() != "false",
-        env.get("INCIDENTS", "true").lower() != "false",
-        int(env.get("PLANNING_SECONDS", "3600")),
-        env.get("SPEED_LIMITS", "true").lower() != "false",
+        _switch(env, "CLOSURES"),
+        _switch(env, "INCIDENTS"),
+        _number(env, "PLANNING_SECONDS", 3600),
+        _switch(env, "SPEED_LIMITS"),
         Path(env.get("OSM_PBF", "/data/source/region.osm.pbf")),
-        env.get("BRIDGES", "true").lower() != "false",
+        _switch(env, "BRIDGES"),
         float(env.get("STALE_SECONDS") or max(3 * interval, 900)),
     )
-    msi_seconds = int(env.get("MSI_SECONDS", "60"))
+    msi_seconds = _number(env, "MSI_SECONDS", 60)
     if msi_seconds:
         signs = MsiSigns(env.get("NDW_URL", "https://opendata.ndw.nu"), state, msi_seconds)
         threading.Thread(target=signs.loop, daemon=True).start()

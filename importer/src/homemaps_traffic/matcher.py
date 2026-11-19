@@ -322,11 +322,17 @@ class MatchCache:
         temporary.rename(self.path)
 
     def fill(
-        self, valhalla: Valhalla, items: dict[str, tuple[Point, ...]], threads: int = 8
+        self,
+        valhalla: Valhalla,
+        items: dict[str, tuple[Point, ...]],
+        threads: int = 8,
+        prune: bool = True,
     ) -> int:
-        """Matches what is still missing and removes what no longer exists."""
-        for key in self.matches.keys() - items.keys():
-            del self.matches[key]
+        """Matches what is still missing and removes what no longer exists.
+        Without `prune` nothing is removed: `items` is then only a part."""
+        if prune:
+            for key in self.matches.keys() - items.keys():
+                del self.matches[key]
         missing = [key for key in items if key not in self.matches]
         if not missing:
             return 0

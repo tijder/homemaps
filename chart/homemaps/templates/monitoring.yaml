@@ -45,13 +45,23 @@ spec:
         # The importer goes on without a feed that fails (NDW renamed one in
         # 2026): this is the only place where that shows.
         - alert: HomemapsTrafficFeedStale
-          expr: time() - homemaps_traffic_feed_last_success_timestamp_seconds > {{ .Values.monitoring.prometheusRule.feedMaxAgeSeconds }}
+          # Not the two that are only fetched now and then (the sign locations
+          # once a day, the site configuration when a new site shows up): for
+          # those a failure counts, below.
+          expr: time() - homemaps_traffic_feed_last_success_timestamp_seconds{feed!~"msi_locations|measurement_sites"} > {{ .Values.monitoring.prometheusRule.feedMaxAgeSeconds | default 10800 }}
           for: 5m
           labels:
             severity: warning
           annotations:
             summary: NDW feed {{ "{{ $labels.feed }}" }} has not arrived for {{ "{{ $value | humanizeDuration }}" }}
             description: The importer runs without it. Check the logs of container `traffic` in the valhalla pod; NDW may have renamed or stopped the feed.
+        - alert: HomemapsTrafficFeedFailing
+          expr: increase(homemaps_traffic_feed_failures_total{feed=~"msi_locations|measurement_sites"}[1d]) > 2
+          labels:
+            severity: warning
+          annotations:
+            summary: NDW feed {{ "{{ $labels.feed }}" }} failed {{ "{{ $value | printf \"%.0f\" }}" }} times in a day
+            description: It is only fetched now and then, so it has no age to alert on. Check the logs of container `traffic` in the valhalla pod.
         - alert: HomemapsTrafficAbsent
           expr: absent(homemaps_traffic_last_cycle_timestamp_seconds)
           for: 30m
