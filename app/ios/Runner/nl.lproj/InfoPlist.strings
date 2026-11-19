@@ -1,0 +1,3 @@
+/* Wat iOS toont als het om toestemming vraagt, in het Nederlands. */
+"NSLocalNetworkUsageDescription" = "HomeMaps gebruikt het lokale netwerk om een server in je eigen netwerk te bereiken, zoals de kaartserver of een server voor locatie delen.";
+"NSLocationWhenInUseUsageDescription" = "HomeMaps gebruikt je locatie om je op de kaart te tonen, te navigeren en, als je dat aanzet, je locatie te delen.";

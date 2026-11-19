@@ -1,0 +1,3 @@
+/* What iOS shows when it asks for permission, in English. */
+"NSLocalNetworkUsageDescription" = "HomeMaps uses the local network to reach a server in your own network, such as the map server or a server for location sharing.";
+"NSLocationWhenInUseUsageDescription" = "HomeMaps uses your location to show you on the map, to navigate and, if you turn it on, to share your location.";

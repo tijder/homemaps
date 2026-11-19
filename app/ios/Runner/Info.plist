@@ -46,9 +46,9 @@
 		<true/>
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>HomeMaps gebruikt het lokale netwerk om een server in je eigen netwerk te bereiken, zoals de kaartserver of een server voor locatie delen.</string>
+	<string>HomeMaps uses the local network to reach a server in your own network, such as the map server or a server for location sharing.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>HomeMaps gebruikt je locatie om je op de kaart te tonen, te navigeren en, als je dat aanzet, je locatie te delen.</string>
+	<string>HomeMaps uses your location to show you on the map, to navigate and, if you turn it on, to share your location.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
