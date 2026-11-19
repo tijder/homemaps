@@ -1,9 +1,15 @@
 # The smallest region all three sources have an extract of: PBF 3.5 MB,
 # Photon index 1.8 MB. Used by ci/up.sh (locally and in the workflow).
+#
+# The extract, the index and the boundaries come from fake-ndw, which serves
+# the copies ci/sources.sh keeps: a run then doesn't need Geofabrik,
+# GraphHopper and Overpass to be up, and the roads the fake traffic lies on
+# don't move under it.
 region:
   name: andorra
-  pbfUrl: https://download.geofabrik.de/europe/andorra-latest.osm.pbf
+  pbfUrl: http://fake-ndw:8080/andorra-latest.osm.pbf
   bbox: "1.41,42.43,1.79,42.66"
+  overpassUrl: http://fake-ndw:8080/api/interpreter
 
 storage:
   storageClassName: ""
@@ -18,7 +24,9 @@ tiles:
     javaOpts: "-Xmx1g"
     # osmdata.openstreetmap.de is down now and then; fake-ndw serves an empty
     # water polygons shapefile instead (Andorra has no coast).
-    extraArgs: ["--water_polygons_url=http://fake-ndw:8080/water-polygons-split-3857.zip"]
+    extraArgs:
+      - "--water_polygons_url=http://fake-ndw:8080/water-polygons-split-3857.zip"
+      - "--osm_url=http://fake-ndw:8080/andorra-latest.osm.pbf"
     resources:
       requests: { cpu: 100m, memory: 512Mi }
       limits: { memory: 3Gi }
@@ -50,7 +58,7 @@ valhalla:
       limits: { memory: 256Mi }
 
 photon:
-  dbUrl: https://download1.graphhopper.com/public/europe/andorra/photon-db-andorra-1.0-latest.tar.bz2
+  dbUrl: http://fake-ndw:8080/photon-db-andorra-1.0-latest.tar.bz2
   size: 1Gi
   heap: 384m
   # kind is IPv4-only; the choice doesn't exist there.

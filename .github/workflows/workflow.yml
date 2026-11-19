@@ -257,6 +257,23 @@ jobs:
         run: |
           pip install playwright==1.65.2
           playwright install --with-deps chromium
+      # The map sources (Andorra's extract, its Photon index, the boundaries
+      # from Overpass) are kept for a week: a source server that is down, or
+      # an edit to the road the fake traffic lies on, then doesn't turn main
+      # red and block the nightly release. A new week fetches them anew, and
+      # keeps last week's copy of whatever cannot be fetched.
+      - id: week
+        run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+      - id: sources
+        uses: actions/cache@v6
+        with:
+          path: ci/.work/sources
+          key: e2e-sources-${{ steps.week.outputs.week }}
+          restore-keys: e2e-sources-
+      - name: Map sources
+        env:
+          REFRESH: ${{ steps.sources.outputs.cache-hit != 'true' && '1' || '' }}
+        run: ci/sources.sh
       - name: Bring up the cluster and test it
         # On main also the screenshots for the App Store: release.yml takes them along.
         env:

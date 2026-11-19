@@ -45,13 +45,25 @@ for image in homemaps-web:ci homemaps-traffic:ci; do
   fi
 done
 
-step "fake NDW feed"
+step "map sources"
+# From ci/.work/sources if they are there; otherwise fetched now, once.
+ci/sources.sh || { echo "the map sources are not complete; see above"; exit 1; }
+
+step "fake NDW feed and map sources"
 kubectl --context "kind-$CLUSTER" create namespace "$NS" --dry-run=client -o yaml | kubectl --context "kind-$CLUSTER" apply -f -
 FEEDS=$(mktemp -d)
 python3 ci/fake-ndw/generate.py "$FEEDS" >/dev/null
+cp ci/fake-ndw/server.py "$FEEDS/"
 $K create configmap fake-ndw --from-file="$FEEDS" --dry-run=client -o yaml | $K apply -f -
 $K apply -f ci/fake-ndw/fake-ndw.yaml
 rm -rf "$FEEDS"
+# The sources live in the pod (an emptyDir): put them there before anything
+# asks for them. Again on every run; a restarted pod has lost them.
+$K rollout status deploy/fake-ndw --timeout=5m
+FAKE=$($K get pod -l app=fake-ndw --field-selector=status.phase=Running -o name | head -1)
+for file in ci/.work/sources/*; do
+  $K cp "$file" "${FAKE#pod/}:/srv/$(basename "$file")"
+done
 
 step "installing chart"
 PREFIX=$( [ "$ENGINE" = podman ] && echo localhost/ || echo "" )

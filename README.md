@@ -44,6 +44,11 @@ Testing navigation without driving: open the web app with
 then drives the route. `&to=52.17,5.60` (and `&from=`) opens a route right away;
 that also works without simulation, to share a route as a link.
 
+The test bed keeps its map sources (Andorra's extract, its Photon index and the
+country boundaries) in `ci/.work/sources` and serves them from the fake NDW
+pod, so a run doesn't depend on Geofabrik, GraphHopper and Overpass being up;
+`REFRESH=1 ci/sources.sh` fetches them anew.
+
 `ci/up.sh` also tests the app in a browser with Playwright (if available):
 `ci/e2e/app_browser.py` plans a route in Andorra, navigates with the
 fake GPS and stops. Screenshots go to `ci/e2e/output/`.
