@@ -1202,4 +1202,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get recentCleared => 'Recent places cleared';
+
+  @override
+  String get more => 'More';
+
+  @override
+  String get routeOverview => 'Route overview';
+
+  @override
+  String skipStop(String label) {
+    return 'Skip $label';
+  }
+
+  @override
+  String stopSkipped(String label) {
+    return '$label skipped';
+  }
+
+  @override
+  String get stopNotSkipped => 'Could not fetch a route without this stop.';
 }

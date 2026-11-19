@@ -8,8 +8,15 @@ description: Stap-voor-stap navigatie met stem, rijstroken, maximumsnelheden, fl
 
 Tik op **Start** bij een route en de kaart volgt je. Het paneel bovenaan toont
 de volgende manoeuvre met de afstand en, als die er is, de daaropvolgende
-(**Daarna**). Onderaan: de aankomsttijd, de resterende tijd en afstand, en
-**Stop**.
+(**Daarna**). Onderaan: de aankomsttijd, de resterende tijd en afstand,
+**Stem uit**, **Meer** en **Stop**.
+
+Met de telefoon op zijn kant staan de aanwijzingen en de onderbalk links en de
+borden rechtsonder, zodat de kaart ertussen vrij blijft.
+
+In een tunnel of parkeergarage is er geen GPS: na tien seconden zonder positie
+zegt het paneel **Geen GPS-signaal**, zodat je weet dat wat het toont is waar
+je was.
 
 ## Stem
 
@@ -28,7 +35,7 @@ hoeveel van de stroken goed zijn ("twee van de vier rijstroken").
 
 ## Snelheid
 
-Rechtsonder zie je je snelheid en de maximumsnelheid. De limiet komt uit
+Linksonder zie je je snelheid en de maximumsnelheid. De limiet komt uit
 OpenStreetMap, inclusief limieten die van het tijdstip afhangen (zoals 130 's
 nachts op de snelweg), en, waar de server actueel verkeer heeft, uit de
 tijdelijke limieten en de matrixborden. De laagste wint.
@@ -51,16 +58,35 @@ vragen. Komt er onderweg een snellere route op, bijvoorbeeld omdat een file
 oplost, dan zegt de app dat en toont hem op het scherm met **Nemen** of
 **Negeren**; hij verandert je route niet uit zichzelf.
 
+Zonder verbinding valt er geen nieuwe route op te halen. De app zegt één keer
+"Route wordt herberekend", blijft het elke tien seconden proberen, en het
+paneel zegt dat de getoonde route nog de oude is tot er een nieuwe is of je er
+weer op rijdt.
+
 ## Aankomst
 
-Op de bestemming zegt de app "Je bent er" en toont **Klaar**. Heeft de route
-tussenpunten, dan gaat hij door naar het volgende.
+Op de bestemming zegt de app "Je bent er" en toont **Klaar**. Een tussenpunt
+onderweg is geen aankomst: de route loopt er gewoon langs verder.
+
+## Meer
+
+**Meer** in de onderbalk opent wat je af en toe nodig hebt:
+
+- **Routeoverzicht** toont de rest van de route, noorden boven.
+- **Langs de route** vindt tanken, laden, eten en meer bij de route en voegt
+  je keuze toe als tussenstop. De stop wordt pas toegevoegd als de route
+  erlangs binnen is.
+- **Overslaan** laat de volgende tussenstop vervallen en brengt je meteen naar
+  wat daarna komt.
+- **Locatie delen**, als dat aan staat; een stip op **Meer** betekent dat
+  versturen mislukt.
+
+Stop eerst de navigatie als je een heel andere bestemming wilt.
 
 ## Hervatten
 
-Schuif de kaart tijdens het navigeren om rond te kijken; **Hervatten** zet je
-terug. Je kunt de route onderweg aanpassen met **Route wijzigen**; stop eerst
-de navigatie als je een heel andere bestemming wilt.
+Schuif de kaart tijdens het navigeren om rond te kijken, of open het
+overzicht; **Hervatten** zet je terug.
 
 ## Zonder auto
 

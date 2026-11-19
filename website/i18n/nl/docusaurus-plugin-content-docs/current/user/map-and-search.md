@@ -44,10 +44,14 @@ Typ in het zoekveld bovenaan:
 
 De resultaten komen van je eigen Photon-server, er gaat dus niets naar elders.
 Tik op een resultaat om het op de kaart te zien. Het kaartje van een plek heeft
-**Route hierheen**, **Route vanaf hier**, **Als tussenpunt**, en **Als thuis**
-of **Als werk**.
+**Route**, en **Als thuis** of **Als werk**.
 
-**Zoek op de kaart** verschijnt als je wegschuift: het zoekt rond wat je ziet
-in plaats van rond jou.
+Zoeken kijkt rond wat de kaart toont, niet rond waar je bent: schuif eerst naar
+een andere plaats en de straten daar komen bovenaan. Zolang er gezocht wordt
+loopt er een balk onder het veld; **Niets gevonden** en een zoekopdracht die
+mislukte krijgen elk een eigen regel, en een tik op die laatste probeert het
+opnieuw.
 
-Houd een plek op de kaart ingedrukt voor een punt dat geen adres is.
+Houd een plek op de kaart ingedrukt (rechtsklik op een computer) voor een punt
+dat geen adres is: **Route vanaf hier**, **Route hierheen** of **Als
+tussenpunt**.

@@ -1999,6 +1999,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recent places cleared'**
   String get recentCleared;
+
+  /// No description provided for @more.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get more;
+
+  /// No description provided for @routeOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Route overview'**
+  String get routeOverview;
+
+  /// No description provided for @skipStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip {label}'**
+  String skipStop(String label);
+
+  /// No description provided for @stopSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} skipped'**
+  String stopSkipped(String label);
+
+  /// No description provided for @stopNotSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not fetch a route without this stop.'**
+  String get stopNotSkipped;
 }
 
 class _AppLocalizationsDelegate

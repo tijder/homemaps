@@ -47,8 +47,11 @@ uit de planning van wegwerkzaamheden.
 ## Routebeschrijving en hoogte
 
 **Routebeschrijving** somt elke manoeuvre op met de afstand. **Hoogteprofiel**
-toont het klimmen en dalen langs de route (en het totaal als `+120 m / -80 m`);
-raak de grafiek aan om het punt op de kaart te zien.
+toont het klimmen en dalen langs de route (en het totaal als `+120 m / -80 m`).
+
+Het routescherm verlaten (terug, de prullenbak, of het paneel helemaal omlaag
+vegen) wist de route; **Ongedaan maken** in de balk die verschijnt haalt hem
+terug, met tussenpunten en vertrektijd.
 
 ## Een route delen
 

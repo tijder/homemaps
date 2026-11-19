@@ -44,8 +44,11 @@ roadworks planning feed.
 ## Directions and elevation
 
 **Directions** lists every manoeuvre with its distance. **Elevation profile**
-shows the climb and descent along the route (and the total as `+120 m / -80 m`);
-touch the graph to see the point on the map.
+shows the climb and descent along the route (and the total as `+120 m / -80 m`).
+
+Leaving the route screen (back, the bin, or swiping the panel all the way
+down) clears the route; **Undo** in the bar that appears brings it back,
+stops and departure time included.
 
 ## Share a route
 

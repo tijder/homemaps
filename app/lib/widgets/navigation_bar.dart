@@ -122,11 +122,12 @@ class NavigationHeader extends StatelessWidget {
                           const SizedBox(height: 6),
                           RoadSignPanel(roadSign),
                         ] else if (below != null)
+                          // Read at a glance from behind the wheel.
                           Text(
                             below,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: text.titleMedium?.copyWith(
+                            style: text.titleLarge?.copyWith(
                               color: colors.onPrimaryContainer,
                             ),
                           ),
@@ -437,22 +438,21 @@ class NavigationFooter extends StatelessWidget {
     super.key,
     required this.onStop,
     required this.onMute,
-    this.onSearchAlong,
-    this.isSharing,
-    this.onShare,
+    this.onMore,
+    this.attention = false,
   });
 
   final NavigationState nav;
   final VoidCallback onStop;
   final ValueChanged<bool> onMute;
 
-  /// Location sharing: null when it is off, `false` when it is running, `true`
-  /// when sending fails.
-  final bool? isSharing;
-  final VoidCallback? onShare;
+  /// "More": the overview, a stop along the route, location sharing. They
+  /// used to be buttons of their own here, which left the arrival time some
+  /// 80 pixels on a small phone.
+  final VoidCallback? onMore;
 
-  /// "Along the route" (fuel, charging, ...): add a stop.
-  final VoidCallback? onSearchAlong;
+  /// Something under "More" wants a look (sending the location fails).
+  final bool attention;
 
   @override
   Widget build(BuildContext context) {
@@ -480,37 +480,36 @@ class NavigationFooter extends StatelessWidget {
                       children: [
                         Text(
                           l.arrival(DateFormat.Hm(language).format(arrival)),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: text.titleLarge?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         Text(
                           '${duration(seconds, l)} · ${distance(meters, l.localeName)}',
-                          style: text.bodyMedium,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: text.titleMedium,
                         ),
                       ],
                     ),
             ),
-            if (!nav.arrived && onSearchAlong != null)
-              IconButton(
-                tooltip: l.alongTheRoute,
-                icon: const Icon(Icons.local_gas_station_outlined),
-                onPressed: onSearchAlong,
-              ),
-            if (!nav.arrived && isSharing != null)
-              IconButton(
-                tooltip: l.locationSharing,
-                icon: Icon(
-                  Icons.share_location,
-                  color: isSharing! ? const Color(0xFFE65100) : null,
-                ),
-                onPressed: onShare,
-              ),
             if (!nav.arrived)
               IconButton(
                 tooltip: nav.muted ? l.voiceOn : l.voiceOff,
                 icon: Icon(nav.muted ? Icons.volume_off : Icons.volume_up),
                 onPressed: () => onMute(!nav.muted),
+              ),
+            if (!nav.arrived && onMore != null)
+              IconButton(
+                tooltip: l.more,
+                icon: Badge(
+                  isLabelVisible: attention,
+                  backgroundColor: const Color(0xFFE65100),
+                  child: const Icon(Icons.more_horiz),
+                ),
+                onPressed: onMore,
               ),
             const SizedBox(width: 4),
             FilledButton.icon(
@@ -639,9 +638,25 @@ class SuggestionCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                TextButton(onPressed: onIgnore, child: Text(l.ignore)),
+                // Big enough to hit from behind the wheel; the offer is gone
+                // in 45 seconds.
+                TextButton(
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(64, 52),
+                    textStyle: text.titleMedium,
+                  ),
+                  onPressed: onIgnore,
+                  child: Text(l.ignore),
+                ),
                 const SizedBox(width: 4),
-                FilledButton(onPressed: onAccept, child: Text(l.accept)),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(88, 52),
+                    textStyle: text.titleMedium,
+                  ),
+                  onPressed: onAccept,
+                  child: Text(l.accept),
+                ),
               ],
             ),
           ),

@@ -1208,4 +1208,24 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get recentCleared => 'Recente plaatsen gewist';
+
+  @override
+  String get more => 'Meer';
+
+  @override
+  String get routeOverview => 'Routeoverzicht';
+
+  @override
+  String skipStop(String label) {
+    return '$label overslaan';
+  }
+
+  @override
+  String stopSkipped(String label) {
+    return '$label overgeslagen';
+  }
+
+  @override
+  String get stopNotSkipped =>
+      'Er kon geen route zonder deze stop worden opgehaald.';
 }

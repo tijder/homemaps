@@ -316,5 +316,10 @@
   "undo": "Ongedaan maken",
   "routeCleared": "Route gewist",
   "placeRemoved": "{label} verwijderd",
-  "recentCleared": "Recente plaatsen gewist"
+  "recentCleared": "Recente plaatsen gewist",
+  "more": "Meer",
+  "routeOverview": "Routeoverzicht",
+  "skipStop": "{label} overslaan",
+  "stopSkipped": "{label} overgeslagen",
+  "stopNotSkipped": "Er kon geen route zonder deze stop worden opgehaald."
 }

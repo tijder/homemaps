@@ -42,11 +42,14 @@ Type in the search field at the top:
 - coordinates, as `52.09, 5.12`
 
 Results come from your own Photon server, so nothing is sent elsewhere. Tap a
-result to see it on the map. The card of a place has **Directions to here**,
-**Directions from here**, **Add as stop**, and **Set as home** or **Set as
-work**.
+result to see it on the map. The card of a place has **Route**, and **Set as
+home** or **Set as work**.
 
-**Search the map** appears when you pan away: it searches around what you
-are looking at instead of around you.
+The search looks around what the map shows, not around where you are: pan to
+another town first and its streets come up on top. While a search is under
+way a bar runs below the field; **Nothing found** and a search that failed
+each get a line of their own, and a tap on the latter tries again.
 
-Long-press anywhere on the map for a point that is not an address.
+Long-press anywhere on the map (right-click on a computer) for a point that
+is not an address: **Directions from here**, **Directions to here** or **Add
+as stop**.

@@ -1172,10 +1172,126 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Widget _navigationOverlay(NavigationState nav, bool wide) {
     final l = AppLocalizations.of(context);
     final actions = ref.read(navigationProvider.notifier);
+    final size = MediaQuery.sizeOf(context);
     Widget block(Widget child) => ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 460),
       child: PointerInterceptor(child: child),
     );
+    final header = block(
+      NavigationHeader(
+        nav,
+        onTap: nav.status == null || nav.arrived ? null : () => _showSteps(nav),
+      ),
+    );
+    // Speed (car), with the camera or section sign above it.
+    final speed =
+        ref.watch(settingsProvider).profile == Profile.car && !nav.arrived
+        ? PointerInterceptor(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (nav.camera != null || nav.section != null) ...[
+                  CameraSign(camera: nav.camera, section: nav.section),
+                  const SizedBox(height: 6),
+                ],
+                SpeedLimitSign(
+                  limit: nav.limit,
+                  source: nav.limitSource,
+                  speed: nav.fix?.speed,
+                ),
+              ],
+            ),
+          )
+        : null;
+    // "Resume" when you're looking around yourself.
+    final resume = !_following && !nav.arrived
+        ? PointerInterceptor(
+            child: FloatingActionButton.extended(
+              onPressed: () {
+                _resume?.cancel();
+                setState(() => _following = true);
+              },
+              icon: const Icon(Icons.navigation),
+              label: Text(l.resume),
+            ),
+          )
+        : null;
+    final suggestion = switch (nav.suggestion) {
+      final suggestion? => block(
+        SuggestionCard(
+          suggestion,
+          onAccept: actions.acceptSuggestion,
+          onIgnore: actions.ignoreSuggestion,
+        ),
+      ),
+      null => null,
+    };
+    final sharingFails = _isSharing() ?? false;
+    final footer = block(
+      NavigationFooter(
+        nav,
+        onStop: () {
+          // After arrival the route is done: back to an empty screen.
+          // Stopping earlier keeps the route so you can resume it.
+          if (nav.arrived) {
+            ref.read(plannerProvider.notifier).clear();
+          }
+          actions.stop();
+          _resume?.cancel();
+        },
+        onMute: actions.mute,
+        onMore: _navigationMenu,
+        attention: sharingFails,
+      ),
+    );
+    // A phone on its side: header, signs and footer don't fit above each
+    // other in some 330 pixels. Instructions and footer on the left, the
+    // signs bottom right, the map in between.
+    if (size.height < 480) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                width: min(380, size.width * 0.5),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // What's left above the footer; a header with a road sign
+                    // and lanes that needs more scrolls.
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: SingleChildScrollView(child: header),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (suggestion != null) ...[
+                      suggestion,
+                      const SizedBox(height: 8),
+                    ],
+                    footer,
+                  ],
+                ),
+              ),
+              const Spacer(),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  ?resume,
+                  if (resume != null && speed != null)
+                    const SizedBox(height: 8),
+                  ?speed,
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(8),
@@ -1184,14 +1300,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               ? CrossAxisAlignment.start
               : CrossAxisAlignment.stretch,
           children: [
-            block(
-              NavigationHeader(
-                nav,
-                onTap: nav.status == null || nav.arrived
-                    ? null
-                    : () => _showSteps(nav),
-              ),
-            ),
+            header,
             const Spacer(),
             // Bottom left: speed (car), and "Resume" when you're looking
             // around yourself.
@@ -1199,76 +1308,128 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
+                children: [?speed, const SizedBox(width: 8), ?resume],
+              ),
+            ),
+            if (suggestion != null) ...[suggestion, const SizedBox(height: 8)],
+            footer,
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// "More" in the footer: what you need now and then while driving, as rows
+  /// large enough to hit.
+  void _navigationMenu() {
+    final nav = ref.read(navigationProvider);
+    if (nav == null) return;
+    final l = AppLocalizations.of(context);
+    final sharing = _isSharing();
+    final next = nav.destinations.length > 1 ? nav.destinations.first : null;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheet) {
+        Widget row(
+          IconData icon,
+          String title,
+          VoidCallback onTap, {
+          String? subtitle,
+          Color? color,
+        }) => ListTile(
+          minTileHeight: 60,
+          leading: Icon(icon, color: color),
+          title: Text(title),
+          subtitle: subtitle == null ? null : Text(subtitle),
+          onTap: () {
+            Navigator.of(sheet).pop();
+            onTap();
+          },
+        );
+        return PointerInterceptor(
+          child: SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (ref.watch(settingsProvider).profile == Profile.car &&
-                      !nav.arrived)
-                    PointerInterceptor(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (nav.camera != null || nav.section != null) ...[
-                            CameraSign(
-                              camera: nav.camera,
-                              section: nav.section,
-                            ),
-                            const SizedBox(height: 6),
-                          ],
-                          SpeedLimitSign(
-                            limit: nav.limit,
-                            source: nav.limitSource,
-                            speed: nav.fix?.speed,
-                          ),
-                        ],
-                      ),
+                  row(Icons.route, l.routeOverview, _showOverview),
+                  row(
+                    Icons.local_gas_station_outlined,
+                    l.alongTheRoute,
+                    () => _searchAlongRoute(nav),
+                  ),
+                  if (next != null)
+                    row(
+                      Icons.skip_next,
+                      l.skipStop(next.display(l)),
+                      () => _skipStop(next),
                     ),
-                  const SizedBox(width: 8),
-                  if (!_following && !nav.arrived)
-                    PointerInterceptor(
-                      child: FloatingActionButton.extended(
-                        onPressed: () {
-                          _resume?.cancel();
-                          setState(() => _following = true);
-                        },
-                        icon: const Icon(Icons.navigation),
-                        label: Text(l.resume),
+                  if (sharing != null)
+                    row(
+                      Icons.share_location,
+                      l.locationSharing,
+                      () => context.router.push(
+                        SettingsCategoryRoute(
+                          category: SettingsCategory.locationSharing.path,
+                        ),
                       ),
+                      subtitle: ref.read(locationSharerProvider).error,
+                      color: sharing ? const Color(0xFFE65100) : null,
                     ),
                 ],
               ),
             ),
-            if (nav.suggestion case final suggestion?) ...[
-              block(
-                SuggestionCard(
-                  suggestion,
-                  onAccept: actions.acceptSuggestion,
-                  onIgnore: actions.ignoreSuggestion,
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-            block(
-              NavigationFooter(
-                nav,
-                onStop: () {
-                  // After arrival the route is done: back to an empty screen.
-                  // Stopping earlier keeps the route so you can resume it.
-                  if (nav.arrived) {
-                    ref.read(plannerProvider.notifier).clear();
-                  }
-                  actions.stop();
-                  _resume?.cancel();
-                },
-                onMute: actions.mute,
-                onSearchAlong: () => _searchAlongRoute(nav),
-                isSharing: _isSharing(),
-                onShare: () => context.router.push(
-                  SettingsCategoryRoute(
-                    category: SettingsCategory.locationSharing.path,
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// The whole rest of the route in view, north up. Following stops until
+  /// "Resume".
+  void _showOverview() {
+    final nav = ref.read(navigationProvider);
+    final map = _map;
+    if (nav == null || map == null) return;
+    final status = nav.status;
+    final rest = status == null
+        ? nav.route.points
+        : [status.onRoute, ...nav.route.points.skip(status.segment + 1)];
+    if (rest.length < 2) return;
+    var south = 90.0, north = -90.0, west = 180.0, east = -180.0;
+    for (final p in rest) {
+      south = min(south, p.latitude);
+      north = max(north, p.latitude);
+      west = min(west, p.longitude);
+      east = max(east, p.longitude);
+    }
+    _resume?.cancel();
+    setState(() => _following = false);
+    final low = MediaQuery.sizeOf(context).height < 480;
+    map.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        LatLngBounds(
+          southwest: LatLng(south, west),
+          northeast: LatLng(north, east),
+        ),
+        // Clear of the header and the footer.
+        left: low ? 420 : 48,
+        top: low ? 32 : 190,
+        right: 48,
+        bottom: low ? 32 : 170,
+      ),
+    );
+  }
+
+  Future<void> _skipStop(Place stop) async {
+    final skipped = await ref.read(navigationProvider.notifier).skipStop();
+    if (!mounted) return;
+    final l = AppLocalizations.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          skipped ? l.stopSkipped(stop.display(l)) : l.stopNotSkipped,
         ),
       ),
     );

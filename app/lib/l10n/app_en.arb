@@ -765,5 +765,24 @@
       }
     }
   },
-  "recentCleared": "Recent places cleared"
+  "recentCleared": "Recent places cleared",
+  "more": "More",
+  "routeOverview": "Route overview",
+  "skipStop": "Skip {label}",
+  "@skipStop": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "stopSkipped": "{label} skipped",
+  "@stopSkipped": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "stopNotSkipped": "Could not fetch a route without this stop."
 }
