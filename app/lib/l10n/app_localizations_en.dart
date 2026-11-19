@@ -359,7 +359,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String spokenKilometers(String km) {
-    return '$km kilometers';
+    String _temp0 = intl.Intl.selectLogic(km, {
+      '1': '1 kilometer',
+      'other': '$km kilometers',
+    });
+    return '$_temp0';
   }
 
   @override
@@ -1047,7 +1051,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dawarichErrorCors =>
-      'Dawarich cannot be reached from the browser. Dawarich does not allow this itself (CORS); add CORS headers for /api/v1 in your reverse proxy, or use the Android app.';
+      'Dawarich cannot be reached from the browser. Dawarich does not allow this itself (CORS); add CORS headers for /api/v1 in your reverse proxy, or use the Android or iOS app.';
 
   @override
   String get dawarichErrorNotDawarich =>
@@ -1229,4 +1233,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get serverNeedsHttps =>
       'This address uses http://. Android only connects over https, and iOS allows http:// only inside your own network.';
+
+  @override
+  String get sheetHandle => 'Show more or less of the route panel';
 }

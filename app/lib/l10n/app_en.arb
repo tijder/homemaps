@@ -189,7 +189,7 @@
       }
     }
   },
-  "spokenKilometers": "{km} kilometers",
+  "spokenKilometers": "{km, select, 1{1 kilometer} other{{km} kilometers}}",
   "@spokenKilometers": {
     "placeholders": {
       "km": {
@@ -634,7 +634,7 @@
       }
     }
   },
-  "dawarichErrorCors": "Dawarich cannot be reached from the browser. Dawarich does not allow this itself (CORS); add CORS headers for /api/v1 in your reverse proxy, or use the Android app.",
+  "dawarichErrorCors": "Dawarich cannot be reached from the browser. Dawarich does not allow this itself (CORS); add CORS headers for /api/v1 in your reverse proxy, or use the Android or iOS app.",
   "dawarichErrorNotDawarich": "No Dawarich answers at this address. If a login proxy (such as Authelia) is in front of it, let /api/v1 through.",
   "dawarichStepServer": "Server",
   "dawarichConnect": "Connect",
@@ -786,5 +786,6 @@
   },
   "stopNotSkipped": "Could not fetch a route without this stop.",
   "alongFailed": "Could not search along the route: the server did not answer.",
-  "serverNeedsHttps": "This address uses http://. Android only connects over https, and iOS allows http:// only inside your own network."
+  "serverNeedsHttps": "This address uses http://. Android only connects over https, and iOS allows http:// only inside your own network.",
+  "sheetHandle": "Show more or less of the route panel"
 }

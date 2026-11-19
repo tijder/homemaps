@@ -337,6 +337,9 @@ class FamilyLocationsNotifier extends Notifier<List<FamilyLocation>> {
       ];
     } on DawarichError catch (error) {
       debugPrint('Could not fetch the family: $error');
+      // The same places, as a new list: the map then draws them again, and
+      // whatever has become old meanwhile turns grey.
+      if (ref.mounted) state = [...state];
     }
   }
 }

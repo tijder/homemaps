@@ -142,6 +142,9 @@ class _ConnectState extends ConsumerState<_Connect> {
 
   /// Something that asks the server, with the spinner and the error around it.
   Future<void> _run(Future<void> Function() work) async {
+    // One at a time: a second tap (on this button or the other way of
+    // signing in) would log in twice, and ask for the code twice.
+    if (_busy) return;
     final l = AppLocalizations.of(context);
     setState(() {
       _busy = true;
@@ -151,6 +154,10 @@ class _ConnectState extends ConsumerState<_Connect> {
       await work();
     } on DawarichError catch (error) {
       if (mounted) setState(() => _error = dawarichErrorText(l, error));
+    } on Object catch (error) {
+      // Not from Dawarich (the key could not be stored, say): still an
+      // answer, not a spinner that just stops.
+      if (mounted) setState(() => _error = l.dawarichErrorUnknown('$error'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

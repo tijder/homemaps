@@ -206,7 +206,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get setupDawarichIntro =>
-      'Optioneel: log in bij Dawarich om je gezin op de kaart te zien en je locatiegeschiedenis bij te houden.';
+      'Optioneel: log in bij Dawarich om je familie op de kaart te zien en je locatiegeschiedenis bij te houden.';
 
   @override
   String get setupSharingIntro =>
@@ -1052,7 +1052,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get dawarichErrorCors =>
-      'Dawarich is niet te bereiken vanuit de browser. Dawarich staat dat zelf niet toe (CORS); voeg in je reverse proxy CORS-headers toe voor /api/v1, of gebruik de Android-app.';
+      'Dawarich is niet te bereiken vanuit de browser. Dawarich staat dat zelf niet toe (CORS); voeg in je reverse proxy CORS-headers toe voor /api/v1, of gebruik de Android- of iOS-app.';
 
   @override
   String get dawarichErrorNotDawarich =>
@@ -1207,7 +1207,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get recentCleared => 'Recente plaatsen gewist';
+  String get recentCleared => 'Recente plekken gewist';
 
   @override
   String get more => 'Meer';
@@ -1227,7 +1227,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get stopNotSkipped =>
-      'Er kon geen route zonder deze stop worden opgehaald.';
+      'Er kon geen route zonder deze tussenstop worden opgehaald.';
 
   @override
   String get alongFailed =>
@@ -1236,4 +1236,7 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get serverNeedsHttps =>
       'Dit adres gebruikt http://. Android verbindt alleen via https, en iOS staat http:// alleen binnen je eigen netwerk toe.';
+
+  @override
+  String get sheetHandle => 'Meer of minder van het routepaneel tonen';
 }

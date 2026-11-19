@@ -16,12 +16,20 @@ class WebVoice implements Voice {
   var _language = 'nl-NL';
   var _queue = Future<void>.value();
 
+  /// Raised by [stop]: sentences queued before it are no longer spoken.
+  var _generation = 0;
+
   @override
   Future<void> begin(String language) async => _language = language;
 
   @override
   void say(String sentence) {
-    _queue = _queue.then((_) => _speak(sentence)).catchError((Object _) {});
+    final generation = _generation;
+    _queue = _queue
+        .then((_) async {
+          if (generation == _generation) await _speak(sentence);
+        })
+        .catchError((Object _) {});
   }
 
   Future<void> _speak(String sentence) {
@@ -40,6 +48,7 @@ class WebVoice implements Voice {
 
   @override
   Future<void> stop() async {
+    _generation++;
     _queue = Future<void>.value();
     web.window.speechSynthesis.cancel();
   }

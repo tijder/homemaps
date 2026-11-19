@@ -20,6 +20,9 @@ class TtsVoice implements Voice {
   final _tts = FlutterTts();
   var _queue = Future<void>.value();
 
+  /// Raised by [stop]: sentences queued before it are no longer spoken.
+  var _generation = 0;
+
   static final _android =
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
   static final _ios = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
@@ -45,18 +48,23 @@ class TtsVoice implements Voice {
 
   @override
   void say(String sentence) {
+    final generation = _generation;
     _queue = _queue
         // focus: on Android music is ducked while the sentence lasts.
-        .then(
-          (_) => _tts
+        .then((_) async {
+          // Muted or stopped while waiting its turn. Stopping the sentence
+          // being spoken completes it, and the rest of the queue would follow.
+          if (generation != _generation) return;
+          await _tts
               .speak(sentence, focus: _android)
-              .timeout(maxSpeakDuration(sentence), onTimeout: () {}),
-        )
+              .timeout(maxSpeakDuration(sentence), onTimeout: () {});
+        })
         .catchError((Object _) {});
   }
 
   @override
   Future<void> stop() async {
+    _generation++;
     _queue = Future<void>.value();
     await _tts.stop();
   }

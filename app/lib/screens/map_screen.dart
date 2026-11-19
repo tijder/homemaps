@@ -1194,6 +1194,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeOutCubic,
     );
+    // A name and a role: without them a screen reader finds an unnamed
+    // something, and this is the only way to make the panel larger.
+    return Semantics(
+      button: true,
+      label: AppLocalizations.of(context).sheetHandle,
+      child: _handleGestures(height, positions, to),
+    );
+  }
+
+  Widget _handleGestures(
+    double height,
+    List<double> positions,
+    void Function(double) to,
+  ) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => to(_sheet.size < 0.6 ? _sheetFull : _sheetHalf),

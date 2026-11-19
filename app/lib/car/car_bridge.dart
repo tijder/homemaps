@@ -22,6 +22,7 @@ import '../providers/planner.dart';
 import '../providers/saved_places.dart';
 import '../providers/services.dart';
 import '../providers/settings.dart';
+import '../services/valhalla_service.dart';
 import '../utils/formatting.dart';
 import '../widgets/navigation_bar.dart' show CameraSign;
 import 'car_api.g.dart';
@@ -56,6 +57,9 @@ class CarBridge with WidgetsBindingObserver implements CarFlutterApi {
   /// The car's screen; null while no car is connected.
   CarSurface? _surface;
   CarScreen _screen = CarScreen.home;
+
+  /// Counts the searches, to know which answer is the latest.
+  int _searches = 0;
   bool _following = true;
 
   /// The images the car already has, by key.
@@ -245,13 +249,19 @@ class CarBridge with WidgetsBindingObserver implements CarFlutterApi {
     final photon = _ref.read(photonProvider);
     if (photon == null) return const [];
     final near = _ref.read(locationProvider).fix?.point;
+    final search = ++_searches;
+    List<Place> found;
     try {
-      _searchResults = await photon.search(text, near: near);
+      found = await photon.search(text, near: near);
     } on Object {
-      _searchResults = const [];
+      found = const [];
     }
+    // The ids are positions in this list. An answer to an earlier, slower
+    // search must not replace the list the car is showing: a tap on the
+    // second row would then go to the second place of the other search.
+    if (search == _searches) _searchResults = found;
     return [
-      for (final (i, place) in _searchResults.indexed)
+      for (final (i, place) in found.indexed)
         _carPlace('search:$i', place, 'search'),
     ];
   }
@@ -468,7 +478,16 @@ class CarBridge with WidgetsBindingObserver implements CarFlutterApi {
         _send(_host.showLoading(true));
       case AsyncError(:final error):
         _send(_host.showLoading(false));
-        _send(_host.showMessage(_l.noRoute, '$error'));
+        // What it means, not the exception: the driver has no use for
+        // "RouteError(442)".
+        _send(
+          _host.showMessage(switch (error) {
+            RouteError(code: 171) => _l.noRoadNearby,
+            RouteError(code: 0) => _l.serverUnreachable,
+            RouteError() => _l.noRoute,
+            _ => _l.serverUnreachable,
+          }, ''),
+        );
       case AsyncData(:final value):
         _send(_host.showLoading(false));
         if (value.isEmpty) return;
@@ -528,7 +547,9 @@ class CarBridge with WidgetsBindingObserver implements CarFlutterApi {
         ),
       ),
     );
-    if (!_following) return;
+    // The preview shows the whole route: following would pull the camera
+    // back to where you are a second later.
+    if (!_following || _screen == CarScreen.preview) return;
     final navigating = nav != null && !nav.arrived;
     _send(
       _host.followCamera(

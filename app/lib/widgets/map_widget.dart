@@ -164,6 +164,20 @@ class _MapWidgetState extends State<MapWidget> {
   int _fittedVersion = 0;
   int _drawSequence = 0;
 
+  /// The screen height the padding was last set for.
+  double? _paddedFor;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // The padding is a share of the height: after turning the phone (or
+    // resizing the window) the old one puts you below the edge.
+    final height = MediaQuery.sizeOf(context).height;
+    if (_paddedFor != null && _paddedFor != height && widget.navigating) {
+      _setPadding();
+    }
+  }
+
   @override
   void didUpdateWidget(MapWidget old) {
     super.didUpdateWidget(old);
@@ -484,7 +498,7 @@ class _MapWidgetState extends State<MapWidget> {
   Future<void> _setPadding() async {
     final c = _controller;
     if (c == null) return;
-    final elevation = MediaQuery.sizeOf(context).height;
+    final elevation = _paddedFor = MediaQuery.sizeOf(context).height;
     await c.updateContentInsets(
       widget.navigating
           ? EdgeInsets.only(top: elevation * 0.35)

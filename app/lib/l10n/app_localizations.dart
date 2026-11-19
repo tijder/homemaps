@@ -701,7 +701,7 @@ abstract class AppLocalizations {
   /// No description provided for @spokenKilometers.
   ///
   /// In en, this message translates to:
-  /// **'{km} kilometers'**
+  /// **'{km, select, 1{1 kilometer} other{{km} kilometers}}'**
   String spokenKilometers(String km);
 
   /// No description provided for @arrived.
@@ -1739,7 +1739,7 @@ abstract class AppLocalizations {
   /// No description provided for @dawarichErrorCors.
   ///
   /// In en, this message translates to:
-  /// **'Dawarich cannot be reached from the browser. Dawarich does not allow this itself (CORS); add CORS headers for /api/v1 in your reverse proxy, or use the Android app.'**
+  /// **'Dawarich cannot be reached from the browser. Dawarich does not allow this itself (CORS); add CORS headers for /api/v1 in your reverse proxy, or use the Android or iOS app.'**
   String get dawarichErrorCors;
 
   /// No description provided for @dawarichErrorNotDawarich.
@@ -2041,6 +2041,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This address uses http://. Android only connects over https, and iOS allows http:// only inside your own network.'**
   String get serverNeedsHttps;
+
+  /// No description provided for @sheetHandle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show more or less of the route panel'**
+  String get sheetHandle;
 }
 
 class _AppLocalizationsDelegate

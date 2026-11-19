@@ -61,7 +61,9 @@ class NavTexts {
     bool sharing = false,
   }) {
     final numberFormat = NumberFormat('#0.#', language.replaceAll('-', '_'));
-    String spoken(double meters) => meters < 1000
+    // From 975 m it is a kilometer: rounded to 50 m that would be "1000
+    // meters".
+    String spoken(double meters) => meters < 975
         // To 50 m: "in 437 meters" sounds like a measurement error.
         ? l.spokenMeters(max(50, (meters / 50).round() * 50))
         : l.spokenKilometers(numberFormat.format(meters / 1000));
