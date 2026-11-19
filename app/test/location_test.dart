@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:homemaps/providers/settings.dart';
@@ -105,5 +107,57 @@ void main() {
     await Future<void>.delayed(Duration.zero);
     expect(c.read(locationProvider).status, LocationStatus.denied);
     expect(source.fixes.hasListener, isFalse);
+  });
+
+  test('a second tap while permission is being asked: one stream', () async {
+    final source = FakeSource(PermissionAnswer.yes);
+    final c = container(source);
+    final notifier = c.read(locationProvider.notifier);
+    final first = notifier.turnOn();
+    final second = notifier.turnOn();
+    await Future<void>.delayed(Duration.zero);
+    expect(source.requested, 1);
+    expect(source.follows, 1);
+    source.fixes.add(fix(52.1));
+    expect((await first)?.point.latitude, 52.1);
+    expect((await second)?.point.latitude, 52.1);
+    // And off is off: no forgotten stream that turns it back on.
+    notifier.turnOff();
+    source.fixes.add(fix(52.2));
+    await Future<void>.delayed(Duration.zero);
+    expect(c.read(locationProvider).status, LocationStatus.off);
+  });
+
+  test('navigation started while the app is off screen gets fixes', () async {
+    final source = FakeSource(PermissionAnswer.yes);
+    final c = container(source);
+    final notifier = c.read(locationProvider.notifier);
+    final wait = notifier.turnOn();
+    await Future<void>.delayed(Duration.zero);
+    source.fixes.add(fix(52.1));
+    await wait;
+
+    // The phone is locked: the stream stops, the last fix stays.
+    final binding = TestWidgetsFlutterBinding.instance;
+    binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    addTearDown(
+      () => binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed),
+    );
+    source.fixes.add(fix(52.2));
+    await Future<void>.delayed(Duration.zero);
+    expect(c.read(locationProvider).fix?.point.latitude, 52.1);
+
+    // The car starts navigating.
+    notifier.navigation((title: 'To Ede', text: 'x'));
+    source.fixes.add(fix(52.3));
+    await Future<void>.delayed(Duration.zero);
+    expect(c.read(locationProvider).fix?.point.latitude, 52.3);
+    expect(source.lastAccurate, isTrue);
+
+    // Done, still off screen: nothing keeps the GPS on.
+    notifier.navigation(null);
+    source.fixes.add(fix(52.4));
+    await Future<void>.delayed(Duration.zero);
+    expect(c.read(locationProvider).fix?.point.latitude, 52.3);
   });
 }

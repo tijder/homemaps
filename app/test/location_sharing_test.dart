@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -404,6 +405,35 @@ void main() {
       expect(again.first(5).single.lat, 1);
     });
 
+    test('a secret that loads late: every left-over point goes once', () async {
+      // At startup the queue is sent right away, and the secret arriving from
+      // secure storage changes the settings, which sends it again.
+      final store = _SlowSecretStore();
+      final sender = FakeSender();
+      final queue = ShareQueue();
+      for (var i = 0; i < 3; i++) {
+        await queue.add(SharedPoint(lat: 52.0 + i, lon: 5, tst: 100 + i));
+      }
+      final c = ProviderContainer(
+        overrides: [
+          shareSenderProvider.overrideWithValue(sender),
+          secretStoreProvider.overrideWithValue(store),
+          shareQueueProvider.overrideWithValue(queue),
+        ],
+      );
+      addTearDown(c.dispose);
+      c.read(shareSettingsProvider.notifier).state = settingsFor(
+        ShareTemplate.owntracks,
+      );
+      c.read(locationSharerProvider);
+      await pumpEventQueue();
+      expect(sender.requests, isEmpty);
+      store.ready.complete('secret');
+      await pumpEventQueue();
+      expect(queue.length, 0);
+      expect(sender.requests, hasLength(3));
+    });
+
     test('no more than the maximum', () async {
       final queue = ShareQueue();
       for (var i = 0; i < ShareQueue.maximum + 3; i++) {
@@ -472,4 +502,15 @@ void main() {
       expect(saved.url, 'http://10.0.0.2:5055');
     },
   );
+}
+
+/// Secure storage that takes its time, as it does on a cold start.
+class _SlowSecretStore implements SecretStore {
+  final ready = Completer<String?>();
+
+  @override
+  Future<String?> read() => ready.future;
+
+  @override
+  Future<void> write(String secret) async {}
 }

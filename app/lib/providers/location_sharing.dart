@@ -325,13 +325,16 @@ class LocationSharer extends Notifier<ShareStatus> {
   /// Sends the queue, oldest first, until it is empty or something goes wrong.
   Future<void> empty() async {
     if (_busy || state.stopped || (_retry?.isActive ?? false)) return;
-    await ref.read(shareSettingsProvider.notifier).loaded;
-    final settings = ref.read(shareSettingsProvider);
-    if (!settings.complete) return;
-    final queue = ref.read(shareQueueProvider);
-    final sender = ref.read(shareSenderProvider);
+    // Before the first wait: the secret that loads below changes the
+    // settings, which calls this again -- two loops would each send the same
+    // points and each remove "the first few" from the queue.
     _busy = true;
     try {
+      await ref.read(shareSettingsProvider.notifier).loaded;
+      final settings = ref.read(shareSettingsProvider);
+      if (!settings.complete) return;
+      final queue = ref.read(shareQueueProvider);
+      final sender = ref.read(shareSenderProvider);
       while (queue.length > 0) {
         final points = queue.first(pointsPerRequest(settings));
         String? error;
@@ -342,7 +345,13 @@ class LocationSharer extends Notifier<ShareStatus> {
           error = _errorText(e);
         }
         if (status >= 200 && status < 300) {
-          await queue.removeFirst(points.length);
+          // Only if what was sent is still at the front: the queue may have
+          // been cleared or trimmed meanwhile, and then "the first few" are
+          // points that haven't gone anywhere yet.
+          final head = queue.first(1);
+          if (head.isNotEmpty && head.single.tst == points.first.tst) {
+            await queue.removeFirst(points.length);
+          }
           _attempts = 0;
           state = ShareStatus(queued: queue.length, lastSent: DateTime.now());
           continue;

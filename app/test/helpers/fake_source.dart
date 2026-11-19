@@ -9,6 +9,9 @@ class FakeSource implements LocationFixSource {
 
   PermissionAnswer response;
   int requested = 0;
+
+  /// How often a stream was asked for.
+  int follows = 0;
   final fixes = StreamController<LocationFix>.broadcast();
   bool? lastAccurate;
   ({String title, String text})? lastNotification;
@@ -29,6 +32,7 @@ class FakeSource implements LocationFixSource {
     required bool accurate,
     ({String title, String text})? notification,
   }) {
+    follows++;
     lastAccurate = accurate;
     lastNotification = notification;
     return fixes.stream;

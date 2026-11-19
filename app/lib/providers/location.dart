@@ -213,6 +213,12 @@ class LocationNotifier extends Notifier<LocationState> {
   ({String title, String text})? _navigation;
   bool _navigating = false;
 
+  /// The app is not on screen: the stream only runs for navigation then.
+  bool _hidden = false;
+
+  /// A [turnOn] that is still asking for permission; a second tap joins it.
+  Future<LocationFix?>? _turningOn;
+
   /// Who is waiting for the first fix (see [firstFix]).
   final _waiters = <Completer<LocationFix?>>[];
 
@@ -246,13 +252,24 @@ class LocationNotifier extends Notifier<LocationState> {
 
   /// Asks for permission if needed and waits for the first fix (at most
   /// 20 s). Null if that fails; the reason is then in the state.
-  Future<LocationFix?> turnOn() async {
-    if (state.fix case final fix?) return fix;
+  Future<LocationFix?> turnOn() {
+    // Only while the stream runs: with the app off screen it is stopped, and
+    // the fix that's left is where you were then (the car's screen asks
+    // while the phone is locked).
+    if (state.fix case final fix? when _stream != null) {
+      return Future.value(fix);
+    }
     // Already (or still) searching: don't ask and start again, just wait.
     if (_stream != null) {
       state = const LocationState(LocationStatus.searching);
       return firstFix();
     }
+    // The browser's permission question doesn't block the page: a second tap
+    // while it is open must not start a second stream next to the first.
+    return _turningOn ??= _turnOn().whenComplete(() => _turningOn = null);
+  }
+
+  Future<LocationFix?> _turnOn() async {
     state = const LocationState(LocationStatus.searching);
     final response = await ref.read(locationSourceProvider).ask();
     if (response != PermissionAnswer.yes) {
@@ -265,7 +282,11 @@ class LocationNotifier extends Notifier<LocationState> {
     }
     _save(true);
     _start();
-    return firstFix();
+    final fix = await firstFix();
+    // Asked from off screen (the car) without navigating: one fix was what
+    // was needed, not a stream that keeps the GPS on in your pocket.
+    if (_hidden && !_navigating) _stop();
+    return fix;
   }
 
   void turnOff() {
@@ -309,23 +330,36 @@ class LocationNotifier extends Notifier<LocationState> {
     _navigation = notification;
     if (_stream != null) {
       _stop();
+      // Navigation ended while off screen: nothing needs the location now.
+      if (_navigating || !_hidden) _start();
+    } else if (_navigating && _on) {
+      // Started from the car with the phone locked: the stream was stopped
+      // when the app left the screen, and navigation can't do without.
       _start();
     }
   }
+
+  /// The location is on as far as the user is concerned, whether or not the
+  /// stream happens to run.
+  bool get _on =>
+      state.status == LocationStatus.enabled ||
+      state.status == LocationStatus.notFound ||
+      state.status == LocationStatus.searching;
 
   void _start() {
     // Not in the foreground: stop, except during navigation. Back: continue.
     _lifecycle ??= AppLifecycleListener(
       onHide: () {
+        _hidden = true;
         if (!_navigating) _stop();
       },
       onShow: () {
-        final busy =
-            state.status == LocationStatus.enabled ||
-            state.status == LocationStatus.notFound;
-        if (busy && _stream == null) _start();
+        _hidden = false;
+        if (_on && _stream == null) _start();
       },
     );
+    // Never two at once: the old one could no longer be stopped.
+    _stream?.cancel();
     _stream = ref
         .read(locationSourceProvider)
         .follow(accurate: _navigating, notification: _navigation)
