@@ -42,6 +42,16 @@ spec:
           annotations:
             summary: The traffic importer has not finished a cycle for {{ "{{ $value | humanizeDuration }}" }}
             description: Live traffic in Valhalla is stale. Check the logs of container `traffic` in the valhalla pod.
+        # The importer goes on without a feed that fails (NDW renamed one in
+        # 2026): this is the only place where that shows.
+        - alert: HomemapsTrafficFeedStale
+          expr: time() - homemaps_traffic_feed_last_success_timestamp_seconds > {{ .Values.monitoring.prometheusRule.feedMaxAgeSeconds }}
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: NDW feed {{ "{{ $labels.feed }}" }} has not arrived for {{ "{{ $value | humanizeDuration }}" }}
+            description: The importer runs without it. Check the logs of container `traffic` in the valhalla pod; NDW may have renamed or stopped the feed.
         - alert: HomemapsTrafficAbsent
           expr: absent(homemaps_traffic_last_cycle_timestamp_seconds)
           for: 30m

@@ -56,6 +56,9 @@ spec:
   template:
     metadata:
       labels: {{- include "homemaps.labels" $v | nindent 8 }}
+      annotations:
+        # start.sh is only read at start: a new thread count needs a new pod.
+        checksum/config: {{ .Values.valhalla.threads | toString | sha256sum | trunc 16 }}
     spec:
       automountServiceAccountToken: false
       {{- with .Values.imagePullSecrets }}
@@ -119,6 +122,10 @@ spec:
             - { name: INTERVAL_SECONDS, value: {{ $traffic.intervalSeconds | quote }} }
             - { name: CLOSURES, value: {{ $traffic.closures | quote }} }
             - { name: MSI_SECONDS, value: {{ $traffic.msiSeconds | quote }} }
+            - { name: INCIDENTS, value: {{ $traffic.incidents | quote }} }
+            - { name: BRIDGES, value: {{ $traffic.bridges | quote }} }
+            - { name: SPEED_LIMITS, value: {{ $traffic.speedLimits | quote }} }
+            - { name: PLANNING_SECONDS, value: {{ $traffic.planningSeconds | quote }} }
             # The OSM file of the last tileset build (same volume): for speed
             # limits by time of day.
             - { name: OSM_PBF, value: /data/source/region.osm.pbf }
@@ -127,6 +134,12 @@ spec:
             readOnlyRootFilesystem: true
           ports:
             - { name: metrics, containerPort: 9100 }
+          # Whether the loops still run, not whether NDW delivers: only the
+          # former is helped by a restart.
+          livenessProbe:
+            httpGet: { path: /healthz, port: metrics }
+            periodSeconds: 60
+            failureThreshold: 3
           resources: {{- toYaml $traffic.resources | nindent 12 }}
           volumeMounts:
             - { name: data, mountPath: /data }

@@ -11,7 +11,12 @@ ARG VERSION=""
 ENV VERSION=$VERSION
 RUN npm run build
 
-FROM nginxinc/nginx-unprivileged:1.31.6-alpine
+FROM nginxinc/nginx-unprivileged:1.31.7-alpine
+# The base image is only rebuilt now and then; see docker/web/Dockerfile for
+# why its Alpine packages are upgraded here. apk needs root for that only.
+USER root
+RUN apk upgrade --no-cache
+USER 101
 LABEL org.opencontainers.image.source="https://github.com/tijder/homemaps"
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /site/build /usr/share/nginx/html

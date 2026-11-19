@@ -158,6 +158,15 @@ valhalla:
     closures: true
     # -- How often to fetch the MSI signs above the motorway; 0 turns them off.
     msiSeconds: 60
+    # -- Accidents, breakdowns and objects on the road (SRTI).
+    incidents: true
+    # -- Bridges that are open right now.
+    bridges: true
+    # -- Temporary maximum speeds at road works.
+    speedLimits: true
+    # -- How often to fetch the planning feed (closures in the coming days, for
+    # "leave later"); 0 turns it off.
+    planningSeconds: 3600
     ndwUrl: https://opendata.ndw.nu
     resources:
       requests: { cpu: 20m, memory: 256Mi }
@@ -218,3 +227,7 @@ monitoring:
     enabled: false
     labels: {}
     maxAgeSeconds: 1800
+    # -- Alert when a single NDW feed has not arrived for this long (the importer
+    # goes on without it, so only this tells you). The planning feed is fetched
+    # once an hour.
+    feedMaxAgeSeconds: 10800

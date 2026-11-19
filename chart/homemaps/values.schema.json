@@ -71,7 +71,11 @@
             "enabled": { "type": "boolean" },
             "intervalSeconds": { "type": "integer", "minimum": 60 },
             "closures": { "type": "boolean" },
-            "msiSeconds": { "type": "integer", "minimum": 0 }
+            "msiSeconds": { "type": "integer", "minimum": 0 },
+            "incidents": { "type": "boolean" },
+            "bridges": { "type": "boolean" },
+            "speedLimits": { "type": "boolean" },
+            "planningSeconds": { "type": "integer", "minimum": 0 }
           }
         }
       }
