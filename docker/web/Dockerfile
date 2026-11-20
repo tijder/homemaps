@@ -1,7 +1,7 @@
 # The web build is made outside this image (flutter build web, see the workflow)
 # and only packaged here. Build from the repo root:
 #   docker build -f docker/web/Dockerfile .
-FROM nginxinc/nginx-unprivileged:1.31.7-alpine
+FROM docker.io/nginx/nginx-unprivileged:1.31.9-alpine
 
 # Upgrade the Alpine packages the base image ships with. nginx-unprivileged is
 # only rebuilt now and then, and until it is, a fixed package in the Alpine

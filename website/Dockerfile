@@ -11,7 +11,7 @@ ARG VERSION=""
 ENV VERSION=$VERSION
 RUN npm run build
 
-FROM nginxinc/nginx-unprivileged:1.31.7-alpine
+FROM docker.io/nginx/nginx-unprivileged:1.31.9-alpine
 # The base image is only rebuilt now and then; see docker/web/Dockerfile for
 # why its Alpine packages are upgraded here. apk needs root for that only.
 USER root
